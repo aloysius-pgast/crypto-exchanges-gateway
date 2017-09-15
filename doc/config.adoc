@@ -1,0 +1,210 @@
+= Config
+
+== Minimum config
+
+.Examples
+
+Below config will only give access to public API (since no key/secret combinations have been provided)
+
+[source,json]
+----
+{
+    "listen":{
+        /* only bind to localhost */
+        "ipaddr":"127.0.0.1",
+        "port":8000
+    },
+    "logLevel":"warn",
+    "coinmarketcap":{
+        "enabled":true,
+    },
+    "pushover":{
+        "enabled":false,
+        "user":"",
+        "token":""
+    },
+    "exchanges":{
+        "poloniex":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        },
+        "bittrex":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        },
+        "binance":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        }
+    }
+}
+----
+
+== Complete config
+
+.Examples
+
+Below config will only give access to both public and trading API (since key/secret combinations have been provided).
+
+Access will be restricted using the following :
+
+* an apikey header will be needed in every request
+* only one ip address will be allowed to access the service
+
+[source,json]
+----
+{
+    "listen":{
+        /* listen to all ip addresses */
+        "ipaddr":"*",
+        "port":8000
+    },
+    "logLevel":"debug",
+    "auth":{
+        "trustProxy":{
+            /* if trust proxy is enabled, client ip address will be retrieved based on X-Forwarded-For headers */
+            "enabled":true,
+            /* list of ip addresses of trusted proxies (only X-Forwarded-For headers received from 142.14.78.46 will be taken into account)/
+            "proxies":["142.14.78.46"]
+        },
+        /* used to protect access through an API key */
+        "apiKey":{
+            "enabled":true,
+            /* key should be sent in an apikey header (all requests without matching apikey will be rejected)*/
+            "key":"1234"
+        },
+        /* used to restrict access from a list of ip addresses */
+        "ipFilter":{
+            "enabled":true,
+            /* only requests from ip address 145.26.47.14 will be accepted (if trustProxy is enabled, client ip address might be retrieved from X-Forwarded-For)*/
+            "allow":["145.26.47.14"]
+        }
+    },
+    /* CoinMarketCap configuration */
+    "coinmarketcap":{
+        "enabled":true,
+        /* rate limiting to comply with CoinMarketCap */
+        "throttle":{
+            "publicApi":{
+                /* one request every 6 seconds */
+                "minPeriod":6
+            }
+        }
+    },
+    /* PushOver configuration */
+    "pushover":{
+        "enabled":true,
+        /* User key provided by PushOver (required if 'enabled' is 'true')
+        "user":"u9jst7bbo57zpty6n6nfa3di67ryzo",
+        /* Token provided by PushOver (required if 'enabled' is 'true')
+        "token":"azfdkcafb8ynexae7wwdmb4erc71as"
+    },
+    /* exchanges configuration */
+    "exchanges":{
+        "poloniex":{
+            "enabled":true,
+            /* API key provided by Poloniex */
+            "key":"ABCD",
+            /* Secret provided by Poloniex */
+            "secret":"EFGH",
+            /* rate limiting to comply with Poloniex */
+            "throttle":{
+                "publicApi":{
+                    "maxRequestsPerSecond":6
+                },
+                "tradingApi":{
+                    "maxRequestsPerSecond":6
+                }
+            }
+        },
+        "bittrex":{
+            "enabled":true,
+            /* API key provided by Bittrex */
+            "key":"ABCD",
+            /* Secret provided by Bittrex */
+            "secret":"EFGH",
+            /* rate limiting to comply with Bittrex */
+            "throttle":{
+                "lowIntensity":{
+                    /* one request every second */
+                    "minPeriod":1
+                },
+                "mediumIntensity":{
+                    /* one request every 10 seconds */
+                    "minPeriod":10
+                },
+                "highIntensity":{
+                    /* one request every 30 seconds */
+                    "minPeriod":30
+                }
+            }
+        },
+        "binance":{
+            "enabled":true,
+            /* API key provided by Binance */
+            "key":"ABCD",
+            /* Secret provided by Binance */
+            "secret":"EFGH",
+            /* rate limiting to comply with Binance */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":20
+                }
+            }
+        }
+    }
+}
+----
+
+== Retrieve current log level
+
+*GET* _/server/logLevel_
+
+=== Result
+
+.Examples
+
+Example for *GET* _/server/logLevel_
+
+[source,json]
+----
+{
+    "value":"debug"
+}
+----
+
+== Change current log level
+
+*POST* _/server/logLevel_
+
+=== Mandatory query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|value
+|string
+|New log level
+
+|===
+
+=== Result
+
+Result will be an empty object
+
+.Examples
+
+Example for *POST* _/server/logLevel?value=warn_
+
+[source,json]
+----
+{
+}
+----

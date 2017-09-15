@@ -1,0 +1,160 @@
+= Balances
+
+== Retrieve balances for all currencies
+
+*GET* _/exchanges/poloniex/balances_
+
+Uses Poloniex _returnCompleteBalances_ API
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|outputFormat
+|string (_custom_,_exchange_)
+|custom
+|If value is _exchange_ result returned by remote exchange will be returned untouched
+
+|===
+
+=== Result
+
+Result will be a dictionary using currencies as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_currency_
+|string
+|Currency (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency same as _currency_ key (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}total
+|float
+|Total quantity of current currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}available
+|float
+|Quantity of currency available for trading
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}onOrders
+|float
+|Quantity of currency currently reserved in open orders
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/poloniex/balances_
+
+[source,json]
+----
+{
+    "AMP":{
+        "currency":"AMP",
+        "total":1004.12793858,
+        "available":0,
+        "onOrders":1004.12793858
+    },
+    "BTC":{
+        "currency":"BTC",
+        "total":0.00001557,
+        "available":0.00001557,
+        "onOrders":0
+    },...
+}
+----
+
+== Retrieve balance for a single currency
+
+*GET* _/exchanges/poloniex/balances/{currency}_
+
+Uses Poloniex _returnCompleteBalances_ API
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{currency}
+|string
+|Currency to retrieve balance for (ex: _BTC_)
+
+|===
+
+=== Result
+
+Result will be a dictionary containing a single entry
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_currency_
+|string
+|Currency as requested in {currency} (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency same as _currency_ key (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}total
+|float
+|Total quantity of current currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}available
+|float
+|Quantity of currency available for trading
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}onOrders
+|float
+|Quantity of currency currently reserved in open orders
+
+|===
+
+[NOTE]
+====
+In case currency does not exists, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/exchanges/poloniex/pairs/AMP_
+
+[source,json]
+----
+{
+    "AMP":{
+        "currency":"AMP",
+        "total":1004.12793858,
+        "available":0,
+        "onOrders":1004.12793858
+    }
+}
+----
+
+Example for *GET* _/exchanges/poloniex/pairs/INVALID_
+
+[source,json]
+----
+{
+}
+----

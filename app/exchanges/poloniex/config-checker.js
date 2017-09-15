@@ -1,0 +1,102 @@
+"use strict";
+const path = require('path');
+const _ = require('lodash');
+const AbstractConfigCheckerClass = require('../../abstract-config-checker');
+
+class ConfigChecker extends AbstractConfigCheckerClass
+{
+
+// maximum number of requests per seconds for public api
+static get PUBLIC_API_MAX_REQUESTS_PER_SECOND() { return  6 };
+// maximum number of requests per seconds for trading api
+static get TRADING_API_MAX_REQUESTS_PER_SECOND() { return 6 };
+
+constructor()
+{
+    // default config
+    let cfg = {
+        enabled:true,
+        key:"",
+        secret:"",
+        throttle:{
+            publicApi:{
+                maxRequestsPerSecond:ConfigChecker.PUBLIC_API_MAX_REQUESTS_PER_SECOND
+            },
+            tradingApi:{
+                maxRequestsPerSecond:ConfigChecker.TRADING_API_MAX_REQUESTS_PER_SECOND
+            }
+        }
+    }
+    super(cfg, 'exchanges[poloniex]');
+}
+
+_check()
+{
+    // exchange is enabled by default
+    if (undefined === this._config.enabled)
+    {
+        return true;
+    }
+    if (!this._isValidBoolean(this._config.enabled))
+    {
+        this._invalid('enabled');
+        return false;
+    }
+    this._finalConfig.enabled = this._config.enabled;
+
+    // exchange is disabled
+    if (!this._finalConfig.enabled)
+    {
+        return true;
+    }
+
+    //-- check key & secret
+    let valid = true;
+    if (undefined !== this._config.key)
+    {
+        this._finalConfig.key = this._config.key;
+    }
+    if (undefined !== this._config.secret)
+    {
+        this._finalConfig.secret = this._config.secret;
+    }
+
+    //-- update throttle config
+    if (undefined !== this._config.throttle)
+    {
+        // update throttle config for public API
+        if (undefined !== this._config.throttle.publicApi && undefined !== this._config.throttle.publicApi.maxRequestsPerSecond)
+        {
+            let value = parseInt(this._config.throttle.publicApi.maxRequestsPerSecond);
+            if (isNaN(value) || value <= 0)
+            {
+                this._invalid({name:'throttle[publicApi][maxRequestsPerSecond]',value:this._config.throttle.publicApi.maxRequestsPerSecond});
+                valid = false;
+            }
+            else
+            {
+                this._finalConfig.throttle.publicApi.maxRequestsPerSecond = value;
+            }
+        }
+        // update throttle config for trading API
+        if (undefined !== this._config.throttle.tradingApi && undefined !== this._config.throttle.tradingApi.maxRequestsPerSecond)
+        {
+            let value = parseInt(this._config.throttle.tradingApi.maxRequestsPerSecond);
+            if (isNaN(value) || value <= 0)
+            {
+                this._invalid({name:'throttle[tradingApi][maxRequestsPerSecond]',value:this._config.throttle.tradingApi.maxRequestsPerSecond});
+                valid = false;
+            }
+            else
+            {
+                this._finalConfig.throttle.tradingApi.maxRequestsPerSecond = value;
+            }
+        }
+    }
+
+    return valid;
+}
+
+}
+
+module.exports = ConfigChecker;

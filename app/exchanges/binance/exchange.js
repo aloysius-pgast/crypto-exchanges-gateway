@@ -1,0 +1,1142 @@
+"use strict";
+
+const Api = require('binance');
+const PromiseHelper = require('../../promise-helper');
+const Bottleneck = require('bottleneck');
+const util = require('util');
+const logger = require('winston');
+const _ = require('lodash');
+
+class Exchange
+{
+
+constructor(config)
+{
+    let opt = {
+        key:config.exchanges.binance.key,
+        secret:config.exchanges.binance.secret,
+        timeout:15000,
+        disableBeautification:true
+    };
+    this._restClient = new Api.BinanceRest(opt);
+    let wait = parseInt(1000 / config.exchanges.binance.throttle.global.maxRequestsPerSecond);
+    this._limiterGlobal = new Bottleneck(config.exchanges.binance.throttle.global.maxRequestsPerSecond, wait);
+    this._cachedPairs = {
+        lastTimestamp:0,
+        nextTimestamp:0,
+        // cache result for 300s
+        cachePeriod:300,
+        cache:{}
+    };
+    // how many cached orders should we keep ?
+    this._cachedOrdersMaxSize = 500;
+    // list of order number => {pair:"X-Y", state:"open|closed", timestamp:int}
+    this._cachedOrders = {};
+}
+
+/**
+ * Free cache to ensure we don't keep too many entries in memory
+ */
+_freeCachedOrders()
+{
+    if (Object.keys(this._cachedOrders).length > this._cachedOrdersMaxSize)
+    {
+        let self = this;
+        let arr = [];
+        // remove all closed orders
+        _.forEach(self._cachedOrders, function (entry, orderNumber) {
+            if ('closed' == entry.state)
+            {
+                arr.push(orderNumber);
+            }
+        });
+        _.forEach(arr, function (orderNumber) {
+            delete self._cachedOrders[orderNumber];
+        });
+    }
+}
+
+/**
+ * Convert pair from exchange format YX to custom format X-Y
+ *
+ * @param {string} pair pair in exchange format (YX)
+ * @return {string} pair in custom format (X-Y)
+ */
+_toCustomPair(pair)
+{
+    let baseCurrency = pair.substr(-3);
+    let currency;
+    if ('SDT' == baseCurrency)
+    {
+        baseCurrency = 'USDT';
+        currency = pair.substr(0, pair.length - 4);
+    }
+    else
+    {
+        currency = pair.substr(0, pair.length - 3);
+    }
+    return baseCurrency + '-' + currency;
+}
+
+/**
+ * Convert pair from custom format X-Y to exchange format YX
+ * @param {string} pair pair in custom format (X-Y)
+ * @return {string} pair in exchange format (YX)
+ */
+_toExchangePair(pair)
+{
+    let arr = pair.split('-');
+    return arr[1] + arr[0];
+}
+
+/**
+ * @param {array} pairs array of pair symbol (X-Y)
+ */
+_tickers(pairs)
+{
+    let self = this;
+    let arr = [];
+    _.forEach(pairs, function (entry) {
+        let p = self._limiterGlobal.schedule(function(){
+            let pair = self._toExchangePair(entry);
+            return self._restClient.ticker24hr({symbol:pair});
+        });
+        arr.push({promise:p, context:{exchange:'binance',api:'ticker24hr',pair:entry}});
+    });
+    return new Promise((resolve, reject) => {
+        PromiseHelper.all(arr).then(function(data){
+            let list = {};
+            _.forEach(data, function (entry) {
+                // could not retrieve specific ticker
+                if (!entry.success)
+                {
+                    return;
+                }
+                list[entry.context.pair] = {
+                    pair:entry.context.pair,
+                    last: parseFloat(entry.value.lastPrice),
+                    sell: parseFloat(entry.value.askPrice),
+                    buy: parseFloat(entry.value.bidPrice),
+                    high: parseFloat(entry.value.highPrice),
+                    low: parseFloat(entry.value.lowPrice),
+                    volume: parseFloat(entry.value.volume),
+                    timestamp: parseInt(entry.value.closeTime / 1000.0)
+                }
+            });
+            resolve(list);
+        });
+    });
+}
+
+/**
+* Returns ticker for a list of currencies
+*
+* Format of result depends on opt.outputFormat parameter
+*
+* If opt.outputFormat is 'exchange' AND opt.pairs only contains one pair, the result returned by exchange will be returned unchanged
+*
+* {
+*     priceChange: '0.00009500',
+*     priceChangePercent: '1.820',
+*     weightedAvgPrice: '0.00543070',
+*     prevClosePrice: '0.00523400',
+*     lastPrice: '0.00531500',
+*     lastQty: '35.50000000',
+*     bidPrice: '0.00529800',
+*     bidQty: '15.34000000',
+*     askPrice: '0.00532000',
+*     askQty: '57.00000000',
+*     openPrice: '0.00522000',
+*     highPrice: '0.00575600',
+*     lowPrice: '0.00519800',
+*     volume: '274380.34000000',
+*     quoteVolume: '1490.07613021',
+*     openTime: 1505055069221,
+*     closeTime: 1505141469221,
+*     fristId: 798353,
+*     lastId: 812361,
+*     count: 14009
+* }
+*
+* If opt.outputFormat is 'custom' OR opt.pairs contains more than one pair, the result will be as below
+*
+* {
+*     "BTC-NEO":{
+*         "pair":"BTC-NEO",
+*         "last":0.00531500,
+*         "sell":0.00532000,
+*         "buy":0.00529800,
+*         "high":0.00575600,
+*         "low":0.00519800,
+*         "volume":274380.34,
+*         "timestamp":1502120848
+*      },...
+* }
+*
+* @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair)
+* @param {string} opt.pairs list of pairs to retrieve tickers for
+* @return {Promise} format depends on parameter opt.outputFormat
+*/
+tickers(opt)
+{
+    let self = this;
+    if (1 == opt.pairs.length && 'exchange' == opt.outputFormat)
+    {
+        return this._limiterGlobal.schedule(function(){
+            let pair = self._toExchangePair(opt.pairs[0]);
+            let p = self._restClient.ticker24hr({symbol:pair});
+            return p;
+        });
+    }
+    // no pairs ? => retrieve all
+    if (0 == opt.pairs.length)
+    {
+        return new Promise((resolve, reject) => {
+            self.pairs({useCache:true}).then(function(data){
+                let pairs = [];
+                _.forEach(data, function (entry, pair) {
+                    pairs.push(pair);
+                });
+                resolve(self._tickers(pairs));
+            }).catch(function(err){
+                logger.error('Could not retrieve pairs : %s', err.msg);
+                resolve({});
+            });
+        });
+    }
+    return self._tickers(opt.pairs);
+}
+
+/**
+ * Returns existing pairs
+ *
+ * opt.useCache : if true cached version will be used (default = false)
+ *
+ * Result will be as below
+ *
+ * {
+ *     "X-Y":{
+ *         "pair":"X-Y",
+ *         "baseCurrency":"X",
+ *         "currency":"Y"
+ *     },...
+ * }
+ *
+ * @return {Promise}
+ */
+pairs(opt)
+{
+    let self = this;
+    let timestamp = parseInt(new Date().getTime() / 1000.0);
+    if (undefined !== opt && undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+    {
+        return new Promise((resolve, reject) => {
+            resolve(self._cachedPairs.cache);
+        });
+    }
+    return this._limiterGlobal.schedule(function(){
+        let p = self._restClient.allPrices();
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = {}
+                _.forEach(data, function (entry) {
+                    // based on discussion with Binance support, currency with a price of 0 are not trading
+                    if (0 == entry.price)
+                    {
+                        return;
+                    }
+                    let baseCurrency = entry.symbol.substr(-3);
+                    switch (baseCurrency)
+                    {
+                        // only keep BTC, ETH & USD as base currency
+                        case 'BTC':
+                        case 'ETH':
+                        case 'SDT':
+                            break;
+                        default:
+                            return;
+                    }
+                    let currency;
+                    if ('SDT' == baseCurrency)
+                    {
+                        baseCurrency = 'USDT';
+                        currency = entry.symbol.substr(0, entry.symbol.length - 4);
+                    }
+                    else
+                    {
+                        currency = entry.symbol.substr(0, entry.symbol.length - 3);
+                    }
+                    let pair = baseCurrency + '-' + currency;
+                    list[pair] = {
+                        pair:pair,
+                        baseCurrency: baseCurrency,
+                        currency: currency
+                    }
+                });
+                self._cachedPairs.cache = list;
+                self._cachedPairs.lastTimestamp = timestamp;
+                self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                resolve(list);
+            }).catch(function(err){
+                reject(err.msg);
+            });
+        });
+    });
+}
+
+/**
+ * Returns order book
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     "lastUpdateId":5030329,
+ *     "bids":[
+ *         ["0.00529700","125.74000000",[]],
+ *         ["0.00528800","385.20000000",[]],
+ *         ...
+ *     ],
+ *     "asks":[
+ *         ["0.00530300","16.83000000",[]],
+ *         ["0.00530500","16.02000000",[]],
+ *         ...
+ *     ]
+ * }
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * {
+ *     "buy":[
+ *         {"rate":0.005297,"quantity":125.74},
+ *         {"rate":0.005288,"quantity":385.2},
+ *         ...
+ *     ],
+ *     "sell":[
+ *         {"rate":0.005303,"quantity":16.83},
+ *         {"rate":0.005305,"quantity":16.02},
+ *         ...
+ *     ]
+ * }
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {string} opt.pair pair to retrieve order book for
+ * @param {integer} opt.limit how many entries to retrieve from order book (max = 100)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+ orderBook(opt) {
+    let self = this;
+    // we're using low intensity limiter but there is no official answer on this
+    return this._limiterGlobal.schedule(function(){
+        let pair = self._toExchangePair(opt.pair);
+        let p = self._restClient.depth({symbol:pair, limit:opt.limit});
+        // return raw results
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let result = {
+                    buy:_.map(data.bids, arr => {
+                        return {
+                            rate:parseFloat(arr[0]),
+                            quantity:parseFloat(arr[1])
+                        }
+                    }),
+                    sell:_.map(data.asks, arr => {
+                        return {
+                            rate:parseFloat(arr[0]),
+                            quantity:parseFloat(arr[1])
+                        }
+                    })
+                }
+                resolve(result);
+            }).catch(function(err){
+                reject(err.msg);
+            });
+        });
+    });
+}
+
+/**
+ * @param {string} orderNumber identifier of the order
+ * @param {string} pair pair of the order (X-Y)
+ * @param {object} dictionary of expected order states {'state1':1,'state2':1} (ex: {'NEW':1,'PARTIALLY_FILLED':1}) (optional)
+ */
+_queryOrder(orderNumber,pair,orderStates)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        return new Promise((resolve, reject) => {
+            let exchangePair = self._toExchangePair(pair);
+            let p = self._restClient.queryOrder({symbol:exchangePair,origClientOrderId:orderNumber});
+            p.then(function(order){
+                // we only support LIMIT orders
+                if ('LIMIT' != order.type)
+                {
+                    resolve(null);
+                    return;
+                }
+                // not the status we are looking for
+                if (undefined !== orderStates && undefined === orderStates[order.status])
+                {
+                    resolve(null);
+                    return;
+                }
+                resolve(order);
+            }).catch(function(err){
+                logger.error("Could not query order '%s' : %s", orderNumber, err.msg);
+                resolve(null);
+            });
+        });
+    });
+}
+
+/**
+ * @param {array} data array as returned by openOrders exchange API
+ */
+_formatOpenOrders(data)
+{
+    let self = this;
+    if (0 != data.length)
+    {
+        this._freeCachedOrders();
+    }
+    let list = {};
+    let timestamp = parseInt(new Date().getTime() / 1000.0);
+    _.forEach(data, function (entry) {
+        let orderType;
+        let pair =  self._toCustomPair(entry.symbol);
+        self._cachedOrders[entry.clientOrderId] = {pair:pair,state:'open',timestamp:timestamp};
+        switch (entry.side)
+        {
+            case 'BUY':
+                orderType = 'buy';
+                break;
+            case 'SELL':
+                orderType = 'sell';
+                break;
+            default:
+                return;
+        }
+        let order = {
+            pair:pair,
+            orderType:orderType,
+            orderNumber:entry.clientOrderId,
+            targetRate:parseFloat(entry.price),
+            quantity:parseFloat(entry.origQty),
+            openTimestamp:parseInt(entry.time / 1000)
+        }
+        order.targetPrice = order.targetRate * order.quantity;
+        order.remainingQuantity = order.quantity - parseFloat(entry.executedQty);
+        list[order.orderNumber] = order;
+    });
+    return list;
+}
+
+/**
+ * @param {array} pairs array of pair symbols (X-Y)
+ */
+_openOrders(pairs)
+{
+    let self = this;
+    let arr = [];
+    _.forEach(pairs, function (entry) {
+        let p = self._limiterGlobal.schedule(function(){
+            let pair = self._toExchangePair(entry);
+            return self._restClient.openOrders({symbol:pair});
+        });
+        arr.push({promise:p, context:{exchange:'binance',api:'openOrders',pair:entry}});
+    });
+    return new Promise((resolve, reject) => {
+        PromiseHelper.all(arr).then(function(data){
+            let list = [];
+            _.forEach(data, function (entry) {
+                // could not retrieve order for this key
+                if (!entry.success)
+                {
+                    return;
+                }
+                _.forEach(entry.value, function (order) {
+                    // we only support LIMIT orders
+                    if ('LIMIT' != order.type)
+                    {
+                        return;
+                    }
+                    list.push(order);
+                });
+            });
+            resolve(self._formatOpenOrders(list));
+        });
+    });
+}
+
+/**
+ * Returns open orders
+ *
+ * If opt.outputFormat is 'exchange' AND opt.pairs only contains one pair, the result returned by exchange will be returned unchanged
+ *
+ * [
+ *     {
+ *         "symbol":"BNBETH",
+ *         "orderId":989273,
+ *         "clientOrderId":"Xfs4XfHeXqHYycNB4s2PoT",
+ *         "price":"0.00950000",
+ *         "origQty":"250.00000000",
+ *         "executedQty":"0.00000000",
+ *         "status":"NEW",
+ *         " timeInForce":"GTC",
+ *         "type":"LIMIT",
+ *         "side":"SELL",
+ *         "stopPrice":"0.00000000",
+ *         "icebergQty":"0.00000000",
+ *         "time":1503564675740
+ *     },...
+ * ]
+ *
+ * Otherwise result will be as below
+ *
+ * {
+ *     "Xfs4XfHeXqHYycNB4s2PoT":{
+ *         "pair":"ETH-BNB",
+ *         "orderType":"sell",
+ *         "orderNumber":"Xfs4XfHeXqHYycNB4s2PoT",
+ *         "targetRate":0.0095,
+ *         "quantity":250,
+ *         "openTimestamp":1503564675,
+ *         "targetPrice":2.375,
+ *         "remainingQuantity":250
+ *     },...
+ * }
+ *
+ * @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair)
+ * @param {string} opt.pairs used to restrict results to only a list of pairs (optional)
+ * @return {Promise}
+ */
+openOrders(opt)
+{
+    let self = this;
+    if (1 == opt.pairs.length && 'exchange' == opt.outputFormat)
+    {
+        return this._limiterGlobal.schedule(function(){
+            let pair = self._toExchangePair(opt.pairs[0]);
+            let p = self._restClient.openOrders({symbol:pair});
+            return p;
+        });
+    }
+    if (0 == opt.pairs.length)
+    {
+        return new Promise((resolve, reject) => {
+            self.pairs({useCache:true}).then(function(data){
+                let pairs = [];
+                _.forEach(data, function (entry, pair) {
+                    pairs.push(pair);
+                });
+                resolve(self._openOrders(pairs));
+            }).catch(function(err){
+                logger.error('Could not retrieve pairs : %s', err.msg);
+                resolve({});
+            });
+        });
+    }
+    return self._openOrders(opt.pairs);
+}
+
+ /**
+  * Returns a single open order
+  *
+  * Output format will be as below
+  *
+  * {
+  *     "Xfs4XfHeXqHYycNB4s2PoT":{
+  *         "pair":"ETH-BNB",
+  *         "orderType":"sell",
+  *         "orderNumber":"Xfs4XfHeXqHYycNB4s2PoT",
+  *         "targetRate":0.0095,
+  *         "quantity":250,
+  *         "openTimestamp":1503564675,
+  *         "targetPrice":2.375,
+  *         "remainingQuantity":250
+  *     },...
+  * }
+  *
+  * @param {string} opt.orderNumber identifier or the order to retrieve
+  * @param {string} opt.pair order pair (optional)
+  * @return {Promise}
+  */
+openOrder(opt)
+{
+    let self = this;
+    // we don't know the pair for this order
+    let pair = this._cachedOrders[opt.orderNumber];
+    if (undefined !== pair)
+    {
+        pair = pair.pair;
+    }
+    else
+    {
+        // retrieve all open orders
+        if (undefined === opt.pair)
+        {
+            return new Promise((resolve, reject) => {
+                self.openOrders({outputFormat:'custom',pairs:[]}).then(function(list){
+                    // order not found ?
+                    if (undefined === list[opt.orderNumber])
+                    {
+                        resolve({});
+                        return;
+                    }
+                    let result = {};
+                    result[opt.orderNumber] = list[opt.orderNumber];
+                    resolve(result);
+                }).catch(function(err){
+                    reject(err.msg);
+                });
+            });
+        }
+        else
+        {
+            pair = opt.pair;
+        }
+    }
+    return new Promise((resolve, reject) => {
+        let p = self._queryOrder(opt.orderNumber, pair, {'NEW':1,'PARTIALLY_FILLED':1});
+        p.then(function(order){
+            // order was not found
+            if (null === order)
+            {
+                resolve({});
+                return;
+            }
+            let list = self._formatOpenOrders([order]);
+            // order is not open
+            if (undefined === list[opt.orderNumber])
+            {
+                resolve({});
+                return;
+            }
+            resolve(list);
+        });
+    });
+}
+
+/**
+ * @param {array} data array as returned by openOrders exchange API
+ */
+_formatClosedOrders(data)
+{
+    let self = this;
+    if (0 != data.length)
+    {
+        this._freeCachedOrders();
+    }
+    let list = {};
+    let timestamp = parseInt(new Date().getTime() / 1000.0);
+    _.forEach(data, function (entry) {
+        let orderType;
+        let pair =  self._toCustomPair(entry.symbol);
+        self._cachedOrders[entry.clientOrderId] = {pair:pair,state:'closed',timestamp:timestamp};
+        switch (entry.side)
+        {
+            case 'BUY':
+                orderType = 'buy';
+                break;
+            case 'SELL':
+                orderType = 'sell';
+                break;
+            // we only support buy/sell orders
+            default:
+                return;
+        }
+        let order = {
+            pair:pair,
+            orderType:orderType,
+            orderNumber:entry.clientOrderId,
+            actualRate:parseFloat(entry.price),
+            quantity:parseFloat(entry.executedQty),
+            closedTimestamp:parseInt(entry.time / 1000)
+        }
+        order.actualPrice = order.actualRate * order.quantity;
+        list[order.orderNumber] = order;
+    });
+    return list;
+}
+
+/**
+ * @param {array} pairs array of pair symbols (X-Y)
+ */
+_closedOrders(pairs)
+{
+    let self = this;
+    let arr = [];
+    _.forEach(pairs, function (entry) {
+        let p = self._limiterGlobal.schedule(function(){
+            let pair = self._toExchangePair(entry);
+            return self._restClient.allOrders({symbol:pair});
+        });
+        arr.push({promise:p, context:{exchange:'binance',api:'allOrders',pair:entry}});
+    });
+    return new Promise((resolve, reject) => {
+        PromiseHelper.all(arr).then(function(data){
+            let list = [];
+            _.forEach(data, function (entry) {
+                // could not retrieve order for this key
+                if (!entry.success)
+                {
+                    return;
+                }
+                _.forEach(entry.value, function (order) {
+                    // we only support LIMIT orders
+                    if ('LIMIT' != order.type)
+                    {
+                        return;
+                    }
+                    // only keep filled OR canceled orders with qty != 0
+                    switch (order.status)
+                    {
+                        case 'FILLED':
+                            list.push(order);
+                            break;
+                        case 'CANCELED':
+                            // accept canceled orders if qty != 0
+                            if (0 != order.executedQty)
+                            {
+                                list.push(order);
+                                break;
+                            }
+                        default:
+                            return;
+                    }
+                });
+            });
+            resolve(self._formatClosedOrders(list));
+        });
+    });
+}
+
+/**
+ * Returns closed orders
+ *
+ * If opt.outputFormat is 'exchange' AND opt.pairs only contains one pair, the result returned by exchange will be returned unchanged
+ *
+ * [
+ *     {
+ *         "symbol":"BNBETH",
+ *         "orderId":308098,
+ *         "clientOrderId":"wFqzWVr3QFbChRphOndNBG",
+ *         "price":"0.00472143",
+ *         "origQty":"1269.00000000",
+ *         "executedQty":"1269.00000000",
+ *         "status":"FILLED",
+ *         "timeInForce":"GTC",
+ *         "type":"LIMIT",
+ *         "side":"BUY",
+ *         "stopPrice":"0.00000000",
+ *         "icebergQty":"0.00000000",
+ *         "time":1502718468838
+ *     },...
+ * ]
+ *
+ * Otherwise result will be as below
+ *
+ * {
+ *     "Xfs4XfHeXqHYycNB4s2PoT":{
+ *         "pair":"ETH-BNB",
+ *         "orderType":"sell",
+ *         "orderNumber":"Xfs4XfHeXqHYycNB4s2PoT",
+ *         "targetRate":0.0095,
+ *         "quantity":250,
+ *         "openTimestamp":1503564675,
+ *         "targetPrice":2.375,
+ *         "remainingQuantity":250
+ *     },...
+ * }
+ *
+ * @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair)
+ * @param {string} opt.pairs used to restrict results to only a list of pairs (optional)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+closedOrders(opt)
+{
+    let self = this;
+    if (1 == opt.pairs.length && 'exchange' == opt.outputFormat)
+    {
+        return this._limiterGlobal.schedule(function(){
+            return new Promise((resolve, reject) => {
+                let pair = self._toExchangePair(opt.pairs[0]);
+                let p = self._restClient.allOrders({symbol:pair});
+                let list = [];
+                p.then(function(data){
+                    _.forEach(data, function (entry) {
+                        // only keep filled OR canceled orders with qty != 0
+                        switch (entry.status)
+                        {
+                            case 'FILLED':
+                                list.push(entry);
+                                break;
+                            case 'CANCELED':
+                                // accept canceled orders if qty != 0
+                                if (0 != entry.executedQty)
+                                {
+                                    list.push(entry);
+                                    break;
+                                }
+                            default:
+                                return;
+                        }
+                    });
+                    resolve(list);
+                }).catch(function(err){
+                    reject(err.msg);
+                });
+            });
+        });
+    }
+    if (0 == opt.pairs.length)
+    {
+        return new Promise((resolve, reject) => {
+            self.pairs({useCache:true}).then(function(data){
+                let pairs = [];
+                _.forEach(data, function (entry, pair) {
+                    pairs.push(pair);
+                });
+                resolve(self._closedOrders(pairs));
+            }).catch(function(err){
+                logger.error('Could not retrieve pairs : %s', err.msg);
+                resolve({});
+            });
+        });
+    }
+    return self._closedOrders(opt.pairs);
+}
+
+/**
+ * Returns a single closed order
+ *
+ * Output format will be as below
+ *
+ * {
+ *     "Xfs4XfHeXqHYycNB4s2PoT":{
+ *         "pair":"ETH-BNB",
+ *         "orderType":"sell",
+ *         "orderNumber":"Xfs4XfHeXqHYycNB4s2PoT",
+ *         "actualRate":0.0095,
+ *         "quantity":250,
+ *         "closedTimestamp":1503564675,
+ *         "actualPrice":2.375
+ *     },...
+ * }
+ *
+ * @param {string} opt.orderNumber identifier or the order to retrieve
+ * @param {string} opt.pair order pair (optional)
+ * @return {Promise}
+ */
+closedOrder(opt)
+{
+   let self = this;
+   // we don't know the pair for this order
+   let pair = this._cachedOrders[opt.orderNumber];
+   if (undefined !== pair)
+   {
+       pair = pair.pair;
+   }
+   else
+   {
+       // retrieve all open orders
+       if (undefined === opt.pair)
+       {
+           return new Promise((resolve, reject) => {
+               self.closedOrders({outputFormat:'custom',pairs:[]}).then(function(list){
+                   // order not found ?
+                   if (undefined === list[opt.orderNumber])
+                   {
+                       resolve({});
+                       return;
+                   }
+                   let result = {};
+                   result[opt.orderNumber] = list[opt.orderNumber];
+                   resolve(result);
+               }).catch(function(err){
+                   reject(err.msg);
+               });
+           });
+       }
+       else
+       {
+           pair = opt.pair;
+       }
+   }
+   return new Promise((resolve, reject) => {
+       let p = self._queryOrder(opt.orderNumber, pair, {'FILLED':1,'CANCELED':1});
+       p.then(function(order){
+           // order was not found
+           if (null === order)
+           {
+               resolve({});
+               return;
+           }
+           if ('CANCELED' == order.status)
+           {
+               // ignore canceled orders if qty == 0
+               if (0 == order.executedQty)
+               {
+                   resolve({});
+                   return;
+               }
+           }
+           let list = self._formatClosedOrders([order]);
+           // order is not open
+           if (undefined === list[opt.orderNumber])
+           {
+               resolve({});
+               return;
+           }
+           resolve(list);
+       });
+   });
+}
+
+/**
+ * Creates a new order
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     symbol: 'QTUMBTC',
+ *     orderId: 146789,
+ *     clientOrderId: 'sPcSX5jTbNKsthiGBstRlw',
+ *     transactTime: 1505409949340
+ * }
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * {
+ *     "orderNumber": "sPcSX5jTbNKsthiGBstRlw"
+ * }
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {string} opt.pair pair to create order for
+ * @param {string} opt.orderType (buy|sell) order type
+ * @param {float} opt.quantity quantity to buy/sell
+ * @param {float} opt.targetRate price per unit
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+addOrder(opt) {
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        // convert pair to remote format
+        let pair = self._toExchangePair(opt.pair);
+        let timestamp = new Date().getTime();
+        let query = {
+            symbol:pair,
+            side:'BUY',
+            type:'LIMIT',
+            quantity:opt.quantity,
+            price:opt.targetRate,
+            timeInForce:'GTC',
+            timestamp:timestamp
+        };
+        if ('sell' == opt.orderType)
+        {
+            query.side = 'SELL';
+        }
+        let p = self._restClient.newOrder(query);
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                // cache pair for this order
+                self._cachedOrders[data.clientOrderId] = {pair:opt.pair,state:'open',timestamp:parseInt(timestamp)};
+                // return raw results
+                if ('exchange' == opt.outputFormat)
+                {
+                    resolve(data);
+                    return;
+                }
+                // only return order number
+                let result = {
+                    orderNumber:data.clientOrderId
+                }
+                resolve(result);
+            }).catch(function(err){
+                reject(err);
+            });
+        });
+    });}
+
+_cancelOrder(orderNumber,pair,outputFormat)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        // convert pair to remote format
+        let exchangePair = self._toExchangePair(pair);
+        let query = {
+            symbol:exchangePair,
+            origClientOrderId:orderNumber
+        };
+        // we need to retrieve the fucking pair
+        let p = self._restClient.cancelOrder(query);
+        // return raw results by default
+        if ('exchange' == outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                // return empty body
+                let result = {}
+                resolve(result);
+            }).catch(function(err){
+                reject(err);
+            });
+        });
+    });
+}
+
+/**
+ * Cancels an order
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     symbol: 'QTUMBTC',
+ *     origClientOrderId: 'TtzziegEebZrQpzPMxITBq',
+ *     orderId: 149965,
+ *     clientOrderId: '50dybC3DRoSL6sATfm7PCU'
+ * }
+ *
+ * If opt.outputFormat is 'custom', result will be an empty object
+ *
+ * {
+ * }
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {string} opt.orderNumber unique identifier of the order to cancel
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+cancelOrder(opt) {
+    let self = this;
+    // we don't know the pair for this order
+    let pair = this._cachedOrders[opt.orderNumber];
+    if (undefined !== pair)
+    {
+        pair = pair.pair;
+    }
+    else
+    {
+        // retrieve all open orders
+        if (undefined === opt.pair)
+        {
+            return new Promise((resolve, reject) => {
+                self.openOrders({outputFormat:'custom',pairs:[]}).then(function(list){
+                    // order not found ?
+                    if (undefined === list[opt.orderNumber])
+                    {
+                        reject('Order does not exist');
+                        return;
+                    }
+                    resolve(self._cancelOrder(opt.orderNumber, list[opt.orderNumber].pair, opt.outputFormat));
+                }).catch(function(err){
+                    reject(err.msg);
+                });
+            });
+        }
+        else
+        {
+            pair = opt.pair;
+        }
+    }
+    return self._cancelOrder(opt.orderNumber, pair, opt.outputFormat);
+}
+
+/**
+ * Return balances
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     "success":true,
+ *     "message":"",
+ *     "result":[
+ *         {
+ *             "Currency":"BCC",
+ *             "Balance":0,
+ *             "Available":0,
+ *             "Pending":0,
+ *             "CryptoAddress":null
+ *         },
+ *         {
+ *             "Currency":"BTC",
+ *             "Balance":0.73943812,
+ *             "Available":0.73943812,
+ *             "Pending":0,
+ *             "CryptoAddress":"1AMM8oDfXxfGjLYH8pYRjZhBXRXE98WNt9r"
+ *         },...
+ *     ]
+ * }
+ *
+ * If opt.outputFormat is 'custom', the result will be as below (currencies with a 0 balance will be filtered out)
+ *
+ * {
+ *     "BTC":{
+ *         "currency":"BTC",
+ *         "total":0.73943812,
+ *         "available":0.73943812,
+ *         "onOrders":0
+ *     },
+ *     "NEO":{
+ *         "currency":"NEO",
+ *         "total":5.70415443,
+ *         "available":5.70415443,
+ *         "onOrders":0
+ *     },...
+ * }
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {string} opt.currency used to retrieve balance for a single currency (optional)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+balances(opt)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        let p = self._restClient.account();
+        // return raw results by default
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = {};
+                _.forEach(data.balances, function (value) {
+                    // only keep the currency we're interested in
+                    if (undefined !== opt.currency && opt.currency != value.asset)
+                    {
+                        return;
+                    }
+                    let available = parseFloat(value.free);
+                    let onOrders = parseFloat(value.locked);
+                    let total = available + onOrders;
+                    // ignore currency with 0 balance
+                    if (0 == total)
+                    {
+                        return;
+                    }
+                    let b = {
+                        currency:value.asset,
+                        total:total,
+                        available:available,
+                        onOrders:onOrders
+                    }
+                    list[value.asset] = b;
+                });
+                resolve(list);
+            }).catch(function(err){
+                reject(err);
+            });
+        });
+    });
+}
+
+}
+
+module.exports = Exchange;

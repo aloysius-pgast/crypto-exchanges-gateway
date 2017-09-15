@@ -1,0 +1,66 @@
+= Currencies
+
+== Retrieve all symbols
+
+*GET* _/coinmarketcap/symbols_
+
+Uses CoinMarketCap _ticker_ API
+
+=== Result
+
+Result will be an array of currency names
+
+.Examples
+
+Example for *GET* _/coinmarketcap/symbols_
+
+[source,json]
+----
+[
+    "$$$",
+    "020",
+    "1337",
+    "1CR",
+    "1ST",
+    ...
+    "BNB",
+    "BTC",
+    ...
+    "ETH",
+    ...
+    "NEO",
+    ...
+]
+----
+
+== Retrieve all currencies which can be used to convert tickers
+
+*GET* _/coinmarketcap/convertCurrencies_
+
+=== Result
+
+Result will be an array of currency names
+
+.Examples
+
+Example for *GET* _/coinmarketcap/convertCurrencies_
+
+[source,json]
+----
+[
+    "AUD",
+    "BRL",
+    "CAD",
+    "CHF",
+    "CNY",
+    "EUR",
+    "GBP",
+    "HKD",
+    "IDR",
+    "INR",
+    "JPY",
+    "KRW",
+    "MXN",
+    "RUB"
+]
+----

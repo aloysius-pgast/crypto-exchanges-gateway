@@ -1,0 +1,56 @@
+= Pairs
+
+== Retrieve all pairs
+
+*GET* _/exchanges/bittrex/pairs_
+
+Uses Bittrex _getmarketsummaries_ API
+
+=== Result
+
+Result will be a dictionary using pairs as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_pair_
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_ (same as _pair_ key)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|string
+|Base currency (part _X_ in pair _X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency (part _Y_ in pair _X-Y_)
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/pairs_
+
+[source,json]
+----
+{
+    "BITCNY-BTC":{
+        "pair":"BITCNY-BTC",
+        "baseCurrency":"BITCNY",
+        "currency":"BTC"
+    },
+    "BTC-1ST":{
+        "pair":"BTC-1ST",
+        "baseCurrency":"BTC",
+        "currency":"1ST"
+    },
+    ...
+}
+----

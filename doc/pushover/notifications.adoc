@@ -1,0 +1,152 @@
+= Notifications
+
+== Send a notification
+
+*POST* _/pushover/notify_
+
+Uses PushOver _https://api.pushover.net/1/messages.json_ API
+
+[NOTE]
+====
+Query parameters can be sent in one of the following format :
+
+* directly in the url (as usually done in GET requests)
+* in the body (_application/x-www-form-urlencoded_)
+====
+
+=== Mandatory query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|message
+|string
+|Message to send
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|title
+|string
+|
+|Notification title. If not defined, app's name (defined in PushOver GUI) is used
+
+|format
+|string (_html_,_text_)
+|html
+|Message format
+
+|priority
+|string (_lowest_,_low_,_normal_,_high_,_emergency_)
+|normal
+|Notification priority
+
+|device
+|string
+|
+|Device name (used to restrict notification to a single device)
+
+|sound
+|string
+|
+|Sound to play (must be a supported sound name, otherwise an error will be returned)
+
+|url
+|string
+|
+|Url to open
+
+|urlTitle
+|string
+|
+|Title to display instead of the url (will be ignored if _url_ is not set)
+
+|timestamp
+|integer
+|
+|A Unix timestamp of your message's date and time to display to the user, rather than the time your message is received by PushOver API
+
+|retry
+|integer
+|
+|Specifies how often (in seconds) the Pushover servers will send the same notification to the user. This parameter must have a value of at least _30_ seconds between retries (will be ignored unless _priority_ is _emergency_)
+
+|expire
+|integer
+|
+|Specifies how many seconds your notification will continue to be retried for (every retry seconds). If the notification has not been acknowledged in expire seconds,  it will be marked as expired and will stop being sent to the user (will be ignored unless _priority_ is _emergency_)
+
+|===
+
+=== Result
+
+Result will be an empty object
+
+.Examples
+
+Example for *POST* _/pushover/notify?message=Test_
+
+[source,json]
+----
+{
+}
+----
+
+== Check messages counter
+
+*GET* _/pushover/counter_
+
+=== Result
+
+[NOTE]
+====
+If method is call and no message has been sent since start, all values will be _null_
+====
+
+Result will be a dictionary
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|max
+|integer
+|Maximum number of messages an application is allowed to send per period (ie: per month)
+
+|remaining
+|integer
+|How many messages can still be sent in current period
+
+|resetTimestamp
+|integer
+|Unix timestamp when new period will start
+
+|===
+
+.Examples
+
+Example for *GET* _/pushover/counter_
+
+[source,json]
+----
+{
+    "max":7500,
+    "remaining":7464,
+    "resetTimestamp":1504242000
+}
+----

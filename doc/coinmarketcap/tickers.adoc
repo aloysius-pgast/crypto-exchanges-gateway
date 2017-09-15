@@ -1,0 +1,195 @@
+= Tickers
+
+== Retrieve tickers for all currencies or a list of symbols
+
+*GET* _/coinmarketcap/tickers_
+
+Uses CoinMarketCap _ticker_ API
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|outputFormat
+|string (_custom_,_coinmarketcap_)
+|custom
+|If value is _coinmarketcap_ result returned by CoinMarketCap will be returned untouched
+
+|limit
+|integer
+|
+|Only returns the top _limit_ results
+
+|symbols
+|string (comma-separated)
+|
+|Comma-separated list of symbols to retrieve tickers for
+
+|convert
+|string
+|
+|Return _price_, _24h volume_, and _market cap_ in terms of another currency (ex: _EUR_)
+
+|===
+
+=== Result
+
+[NOTE]
+====
+This only applies when _outputFormat_ is set to _custom_
+====
+
+Result will be an array of entries such as below
+
+[cols="1a,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|id
+|string
+|Currency identifier (ex: _bitcoin_)
+
+|name
+|string
+|Currency name (ex: _Bitcoin_)
+
+|symbol
+|string
+|Currency symbol (ex: _BTC_)
+
+|rank
+|integer
+|Currency rank
+
+|price_usd
+|float
+|Per-unit price in _USD_
+
+|price_btc
+|float
+|Per-unit price in _BTC_
+
+|24h_volume_usd
+|float
+|_USD_ volume of last 24H
+
+|market_cap_usd
+|float
+|_USD_ market cap
+
+|available_supply
+|float
+|Available supply
+
+|percent_change_1h
+|float
+|Price change during last hour (in %)
+
+|percent_change_24h
+|float
+|Price change during last 24 hours (in %)
+
+|percent_change_7d
+|float
+|Price change during last 7 days (in %)
+
+|percent_change_7d
+|float
+|Price change during last 7 days (in %)
+
+|last_updated
+|integer
+|Unix timestamp of last update
+
+|convert_currency
+|string
+|_XXX_ currency used for conversion (will be _null_ if parameter _convert_ was not set)
+
+|price_converted
+|float
+|Per-unit price in converted currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+
+|24h_volume_converted
+|float
+|Volume of last 24H in converted currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+
+|market_cap_converted
+|float
+|Market cap in currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+
+|===
+
+.Examples
+
+Example for *GET* _/coinmarketcap/tickers?limit=3&convert=EUR_
+
+[source,json]
+----
+[
+    {
+        "name":"Bitcoin",
+        "symbol":"BTC",
+        "rank":1,
+        "last_updated":1502955265,
+        "convert_currency":"EUR",
+        "price_converted":3670.0231928,
+        "24h_volume_converted":1759217786.8,
+        "market_cap_converted":60596530981,
+        "price_usd":4323.04,
+        "price_btc":1,
+        "24h_volume_usd":2072240000,
+        "market_cap_usd":71378629924,
+        "available_supply":16511212,
+        "total_supply":16511212,
+        "percent_change_1h":-0.23,
+        "percent_change_24h":5.59,
+        "percent_change_7d":28.33
+    },
+    {
+        "name":"Ethereum",
+        "symbol":"ETH",
+        "rank":2,
+        "last_updated":1502955258,
+        "convert_currency":"EUR",
+        "price_converted":261.447044815,
+        "24h_volume_converted":804241254.19,
+        "market_cap_converted":24589748150,
+        "price_usd":307.967,
+        "price_btc":0.0715967,
+        "24h_volume_usd":947342000,
+        "market_cap_usd":28965066229,
+        "available_supply":94052500,
+        "total_supply":94052500,
+        "percent_change_1h":1.15,
+        "percent_change_24h":6.8,
+        "percent_change_7d":3.52
+    },
+    {
+        "name":"Ripple",
+        "symbol":"XRP",
+        "rank":3,
+        "last_updated":1502955242,
+        "convert_currency":"EUR",
+        "price_converted":0.1351248778,
+        "24h_volume_converted":72383088.168,
+        "market_cap_converted":5181206947,
+        "price_usd":0.159168,
+        "price_btc":0.000037,
+        "24h_volume_usd":85262400,
+        "market_cap_usd":6103112625,
+        "available_supply":38343841883,
+        "total_supply":99994523265,
+        "percent_change_1h":-0.18,
+        "percent_change_24h":2.84,
+        "percent_change_7d":-12.45
+    }
+]
+----

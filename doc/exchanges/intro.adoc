@@ -1,0 +1,53 @@
+= Intro
+
+Current implementation support following exchanges :
+
+* Bittrex
+* Binance
+* Poloniex
+
+== Pairs format
+
+Pairs will always be formatted as _X-Y_ where
+
+* X is the base currency (ie: BTC, ETH, USDT)
+* Y is the traded currency
+
+.Examples
+
+* USDT-BTC is the pair used to trade BTC in USDT
+* BTC-ETH is the pair used to trade ETH in BTC
+
+== Retrieve the list of enabled exchanges
+
+*GET* _/exchanges_
+
+=== Result
+
+Result will be an array containing the exchanges which are currently enabled (in config)
+
+.Examples
+
+Example for *GET* _/exchanges_
+
+[source,json]
+----
+["binance","bittrex","poloniex"]
+----
+
+== Retrieve the list of enabled exchanges supporting a pair
+
+*GET* _/exchanges?pair=X-Y_
+
+=== Result
+
+Result will be an array containing the exchanges which are currently enabled (in config) and support given pair
+
+.Examples
+
+Example for *GET* _/exchanges?pair=USDT-NEO_
+
+[source,json]
+----
+["bittrex"]
+----

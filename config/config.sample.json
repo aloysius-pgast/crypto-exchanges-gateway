@@ -1,0 +1,32 @@
+{
+    "listen":{
+        "ipaddr":"127.0.0.1",
+        "port":8000
+    },
+    "logLevel":"warn",
+    "coinmarketcap":{
+        "enabled":true
+    },
+    "pushover":{
+        "enabled":false,
+        "user":"",
+        "token":""
+    },
+    "exchanges":{
+        "poloniex":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        },
+        "bittrex":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        },
+        "binance":{
+            "enabled":true,
+            "key":"",
+            "secret":""
+        }
+    }
+}

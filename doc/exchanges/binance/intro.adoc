@@ -1,0 +1,36 @@
+= Intro
+
+== Dependencies
+
+Depends on following extensions :
+
+* binance
+
+== Rate limiting
+
+Following throttling is implemented when calling Binance API
+
+* 20 requests per second
+
+Throttling can be customized in _config.json_
+
+[source,json]
+----
+{
+    ...
+    "exchanges":{
+        "binance":{
+            "enabled":true,
+            "key":"",
+            "secret":"",
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":1
+                }
+            }
+        },
+        ...
+    }
+    ...
+}
+----

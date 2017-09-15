@@ -1,0 +1,32 @@
+= Server
+
+== Retrieve server uptime
+
+*GET* _/server/uptime_
+
+=== Result
+
+Result will be a dictionary
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|uptime
+|integer
+|Uptime in seconds
+
+|===
+
+.Examples
+
+Example for *GET* _/server/uptime_
+
+[source,json]
+----
+{
+    "uptime":"debug"
+}
+----
