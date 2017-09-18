@@ -51,3 +51,54 @@ Example for *GET* _/exchanges?pair=USDT-NEO_
 ----
 ["bittrex"]
 ----
+
+== Retrieve the list of enabled exchanges supporting a giben currency (ie: _Y_ in _X-Y_ pair)
+
+*GET* _/exchanges?currency=Y_
+
+=== Result
+
+Result will be an array containing the exchanges which are currently enabled (in config) and support _Y_ currency
+
+.Examples
+
+Example for *GET* _/exchanges?currency=ETH_
+
+[source,json]
+----
+["bittrex"]
+----
+
+== Retrieve the list of enabled exchanges supporting a given _currency_ (ie: _Y_ in _X-Y_ pair)
+
+*GET* _/exchanges?currency=Y_
+
+=== Result
+
+Result will be an array containing the exchanges which are currently enabled (in config) and support _Y_ currency
+
+.Examples
+
+Example for *GET* _/exchanges?currency=ETH_
+
+[source,json]
+----
+["binance","bittrex","poloniex"]
+----
+
+== Retrieve the list of enabled exchanges supporting a given _base currency_ (ie: _X_ in _X-Y_ pair)
+
+*GET* _/exchanges?currency=X_
+
+=== Result
+
+Result will be an array containing the exchanges which are currently enabled (in config) and support _X_ base currency
+
+.Examples
+
+Example for *GET* _/exchanges?baseCurrency=USDT_
+
+[source,json]
+----
+["binance","bittrex","poloniex"]
+----

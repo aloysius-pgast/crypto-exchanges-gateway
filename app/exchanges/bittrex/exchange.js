@@ -132,6 +132,8 @@ tickers(opt)
  *     },...
  * }
  *
+ * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional)
+ * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
  * @return {Promise}
  */
 pairs(opt)
@@ -149,6 +151,22 @@ pairs(opt)
                 let list = {}
                 _.forEach(response.result, function (entry) {
                     let arr = entry.MarketName.split('-');
+                    if (undefined !== opt.currency)
+                    {
+                        // ignore this pair
+                        if (opt.currency != arr[1])
+                        {
+                            return;
+                        }
+                    }
+                    else if (undefined !== opt.baseCurrency)
+                    {
+                        // ignore this pair
+                        if (opt.baseCurrency != arr[0])
+                        {
+                            return;
+                        }
+                    }
                     list[entry.MarketName] = {
                         pair:entry.MarketName,
                         baseCurrency: arr[0],

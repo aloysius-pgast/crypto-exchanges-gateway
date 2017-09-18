@@ -13,8 +13,13 @@ if (!config.exchanges.binance.enabled)
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
 
-let getPairs = function(){
-    return exchange.pairs();
+/**
+ * Retrieves existing pairs
+ * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional)
+ * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
+ */
+let getPairs = function(opt){
+    return exchange.pairs(opt);
 }
 pairFinder.register('binance', getPairs);
 
@@ -96,9 +101,19 @@ app.get('/exchanges/binance/tickers/:pair', (req, res) => {
 
 /**
  * Retrieves existing pairs
+ * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional)
+ * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
  */
 app.get('/exchanges/binance/pairs', (req, res) => {
     let opt = {};
+    if (undefined != req.query.currency && '' != req.query.currency)
+    {
+        opt.currency = req.query.currency;
+    }
+    else if (undefined != req.query.baseCurrency && '' != req.query.baseCurrency)
+    {
+        opt.baseCurrency = req.query.baseCurrency;
+    }
     exchange.pairs(opt)
         .then(function(data) {
             res.send(data);

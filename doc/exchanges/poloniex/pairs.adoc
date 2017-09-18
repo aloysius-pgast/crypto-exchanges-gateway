@@ -6,6 +6,28 @@
 
 Uses Poloniex _returnTicker_ API
 
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|currency
+|string
+|
+|Used to only retrieve pairs having a given _currency_ (ex: _ETH_ in _BTC-ETH_ pair)
+
+|baseCurrency
+|string
+|
+|Used to only retrieve pairs having a given _base currency_ (ex: _BTC_ in _BTC-ETH_ pair) (will be ignored if _currency_ is set)
+
+|===
+
 === Result
 
 Result will be a dictionary using pairs as keys
