@@ -5,7 +5,7 @@ function usage()
     echo "branch : master|dev (default=master)"
     exit 1
 }
-GIT_BRANCH=master
+DOCKERFILE=Dockerfile
 TIMESTAMP=`date +"%Y%m%d%H%M%S"`
 if [ "$1" == '-h' ] || [ "$1" == '--help' ]
 then
@@ -13,6 +13,15 @@ then
 fi
 if ! [ -z "$1" ]
 then
-    GIT_BRANCH=$1
+    case $1 in
+        dev)
+            DOCKERFILE=Dockerfile.dev
+            ;;
+        master)
+            DOCKERFILE=Dockerfile
+            ;;
+        *)
+            usage
+    esac
 fi
-docker build --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchange-gateway .
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchange-gateway .
