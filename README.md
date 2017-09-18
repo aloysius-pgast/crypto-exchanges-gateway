@@ -33,7 +33,7 @@ Following methods are currently supported :
 * List closed orders
 * Retrieve balances
 
-See [documentation](doc/exchanges/index.adoc) for an overview of each API
+See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each API
 
 ## Limitations
 
@@ -43,8 +43,8 @@ Margin trading is not supported (and is unlikely to be)
 
 Currently supports following services :
 
-* [CoinMarket](https://coinmarketcap.com/) (see [documentation](doc/coinmarketcap/index.adoc) for an overview of each API)
-* [PushOver](https://pushover.net/) (see [documentation](doc/pushover/index.adoc) for an overview of each API)
+* [CoinMarket](https://coinmarketcap.com/) (see [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API)
+* [PushOver](https://pushover.net/) (see [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
 
 ## Rate limiting
 
@@ -52,27 +52,27 @@ Rate limiting is implemented when required by exchange thanks to [Bottleneck](ht
 
 ## Installation
 
-Install dependencies
+* Install dependencies
 
 ```
 npm install
 ```
 
-Copy sample config
+* Copy sample config
 
 ```
 cp config/config.sample.json config/config.json
 ```
 
-Check [documentation](doc/config.adoc) for detailed information on each config section
+Check [documentation in _doc_ directory](doc/config.adoc) for detailed information on each config section
 
-Start gateway
+* Start gateway
 
 ```
 node gateway.js
 ```
 
-Check which exchanges are enabled
+* Check which exchanges are enabled
 
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
 
@@ -80,9 +80,9 @@ Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON conte
 ["binance","bittrex","poloniex"]
 ```
 
-Check BTC & ETH prices on CoinMarketCap
+* Check BTC & ETH prices on CoinMarketCap
 
-open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser. You should see JSON content such as below :
+Open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser. You should see JSON content such as below :
 
 ```javascript
 [
@@ -125,6 +125,34 @@ open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser
         "percent_change_7d":-37.43
     }
 ]
+```
+
+* Place an order to buy 1 NEO at 0.0040BTC on Bittrex (assuming you have enough funds)
+
+Execute the following in a terminal :
+
+```
+curl -X POST 'http://127.0.0.1:8000/exchanges/bittrex/openOrders?pair=BTC-NEO&quantity=1&targetRate=0.0040'
+```
+
+You should see JSON content such as below :
+
+```
+{"orderNumber":"8bc49a59-1056-4c20-90f2-893fff2be279"}
+```
+
+* Cancel above order (assuming order still exists)
+
+Execute the following in a terminal :
+
+```
+curl -X DELETE 'http://127.0.0.1:8000/exchanges/bittrex/openOrders/8bc49a59-1056-4c20-90f2-893fff2be279'
+```
+
+You should see JSON content such as below in case order is valid :
+
+```
+{}
 ```
 
 ## Dependencies
