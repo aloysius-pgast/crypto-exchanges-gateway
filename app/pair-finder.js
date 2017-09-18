@@ -45,16 +45,8 @@ find(opt)
                 {
                     return;
                 }
-                // check pair
-                if (undefined !== opt.pair)
-                {
-                    if (undefined === entry.value[pair])
-                    {
-                        return;
-                    }
-                }
                 // empty result ?
-                else if (0 == Object.keys(entry.value).length)
+                if (0 == Object.keys(entry.value).length)
                 {
                     return;
                 }

@@ -86,12 +86,17 @@ app.get('/exchanges/poloniex/tickers/:pair', (req, res) => {
 
 /**
  * Retrieves existing pairs
- * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional)
- * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
+ * @param {string} pair : used to retrieve only a single pair (ex: BTC-ETH (optional)
+ * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  */
 app.get('/exchanges/poloniex/pairs', (req, res) => {
     let opt = {};
-    if (undefined != req.query.currency && '' != req.query.currency)
+    if (undefined !== req.query.pair && '' != req.query.pair)
+    {
+        opt.pair = req.query.pair;
+    }
+    else if (undefined != req.query.currency && '' != req.query.currency)
     {
         opt.currency = req.query.currency;
     }

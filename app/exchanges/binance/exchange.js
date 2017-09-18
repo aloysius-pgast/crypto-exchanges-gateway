@@ -221,15 +221,16 @@ tickers(opt)
  * }
  *
  * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
- * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional)
- * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
+ * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
+ * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  * @return {Promise}
  */
 pairs(opt)
 {
     let self = this;
     let timestamp = parseInt(new Date().getTime() / 1000.0);
-    let checkCurrencies = undefined !== opt && (undefined !== opt.currency || undefined !== opt.baseCurrency);
+    let checkCurrencies = undefined !== opt && (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency);
     // only use cache if currency/baseCurrency are not defined
     if (!checkCurrencies && undefined !== opt && undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
     {
@@ -269,10 +270,19 @@ pairs(opt)
                     {
                         currency = entry.symbol.substr(0, entry.symbol.length - 3);
                     }
-                    // check if we're interested in such currency / base currency
+                    let pair = baseCurrency + '-' + currency;
+                    // check if we're interested in such pair / currency / base currency
                     if (checkCurrencies)
                     {
-                        if (undefined !== opt.currency)
+                        if (undefined !== opt.pair)
+                        {
+                            // ignore this pair
+                            if (opt.pair != pair)
+                            {
+                                return;
+                            }
+                        }
+                        else if (undefined !== opt.currency)
                         {
                             // ignore this pair
                             if (opt.currency != currency)
@@ -289,7 +299,6 @@ pairs(opt)
                             }
                         }
                     }
-                    let pair = baseCurrency + '-' + currency;
                     list[pair] = {
                         pair:pair,
                         baseCurrency: baseCurrency,
