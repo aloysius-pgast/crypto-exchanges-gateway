@@ -81,6 +81,8 @@ Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON conte
 ["binance","bittrex","poloniex"]
 ```
 
+By default, only public API will be enabled. In order to access trading/private API, you need to update _config.json_ with appropriate _user_ and _secret_ provided by exchange (check [documentation in _doc_ directory](doc/config.adoc) )
+
 * Check BTC & ETH prices on CoinMarketCap
 
 Open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser. You should see JSON content such as below :
@@ -138,7 +140,7 @@ curl -X POST 'http://127.0.0.1:8000/exchanges/bittrex/openOrders?pair=BTC-NEO&qu
 
 You should see JSON content such as below :
 
-```
+```javascript
 {"orderNumber":"8bc49a59-1056-4c20-90f2-893fff2be279"}
 ```
 
@@ -152,8 +154,54 @@ curl -X DELETE 'http://127.0.0.1:8000/exchanges/bittrex/openOrders/8bc49a59-1056
 
 You should see JSON content such as below in case order is valid :
 
-```
+```javascript
 {}
+```
+
+## Docker
+
+A docker image is available at https://hub.docker.com/r/apendergast/crypto-exchange-gateway
+
+* Pull image
+
+```
+docker pull apendergast/crypto-exchange-gateway
+```
+
+* Run image
+
+```
+docker run --rm -p 8000:8000 --name ceg apendergast/crypto-exchange-gateway
+```
+
+You should then be able to access service on http://127.0.0.1:8000
+
+* Check which exchanges are enabled
+
+Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
+
+```javascript
+["binance","bittrex","poloniex"]
+```
+
+By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
+
+* cfg.logLevel : log level
+* cfg.pushover.user : PushOver user key
+* cfg.pushover.token : PushOver token
+* cfg.exchanges.poloniex.key : Poloniex user key
+* cfg.exchanges.poloniex.secret : Poloniex secret
+* cfg.exchanges.bittrex.key : Bittrex user key
+* cfg.exchanges.bittrex.secret : Bittrex secret
+* cfg.exchanges.binance.key : Binance user key
+* cfg.exchanges.binance.secret : Binance secret
+
+_Examples_ :
+
+Run container with Bittrex user/key environment variables
+
+```
+docker run --rm -p 8000:8000 --name ceg -e cfg.exchanges.bittrex.key='abcdefghijkl' -e cfg.exchanges.bittrex.secret='123456789' apendergast/crypto-exchange-gateway
 ```
 
 ## Dependencies
