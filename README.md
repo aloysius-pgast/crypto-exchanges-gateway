@@ -24,11 +24,12 @@ Currently supports for following exchanges :
 * [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
 * More to come...
 
-Following methods are currently supported :
+Following API are currently supported :
 
 * Retrieve pairs
 * Retrieve tickers
 * Retrieve order book
+* Retrieve last executed trades
 * List open orders
 * List closed orders
 * Retrieve balances

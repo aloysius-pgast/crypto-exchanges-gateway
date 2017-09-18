@@ -154,6 +154,48 @@ app.get('/exchanges/poloniex/orderBooks/:pair', (req, res) => {
         });
 });
 
+/**
+ * Returns last trades for a given pair (Poloniex only allows to retrieve last 200)
+ *
+ * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
+ * @param {integer} afterTradeId only retrieve trade with an ID > afterTradeId (optional, will be ignored if outputFormat is set to 'exchange')
+ * @param {string} pair pair to retrieve last trades for
+ */
+app.get('/exchanges/poloniex/trades/:pair', (req, res) => {
+    let opt = {outputFormat:'custom'};
+    if (undefined === req.params.pair || '' == req.params.pair)
+    {
+        res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
+        return;
+    }
+    opt.pair = req.params.pair;
+    if ('exchange' == req.query.outputFormat)
+    {
+        opt.outputFormat = 'exchange';
+    }
+    if ('custom' == opt.outputFormat)
+    {
+        if (undefined !== req.query.afterTradeId)
+        {
+            let afterTradeId = parseInt(req.query.afterTradeId);
+            if (isNaN(afterTradeId) || afterTradeId <= 0)
+            {
+                res.status(400).send({origin:"gateway",error:util.format("Parameter 'afterTradeId' should be an integer > 0 : value = '%s'", req.query.afterTradeId)});
+                return;
+            }
+            opt.afterTradeId = afterTradeId;
+        }
+    }
+    exchange.trades(opt)
+        .then(function(data) {
+            res.send(data);
+        })
+        .catch(function(err)
+        {
+            res.status(503).send({origin:"remote",error:err});
+        });
+});
+
 //-- below routes require valid key/secret
 if ('' === config.exchanges.poloniex.key || '' === config.exchanges.poloniex.secret)
 {

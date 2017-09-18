@@ -87,7 +87,7 @@ Result will be an array of trade object (*the first one being the newest*)
 
 .Examples
 
-Example for *GET* _/exchanges/bittrex/trades/USDT-ETH_
+Example for *GET* _/exchanges/bittrex/trades/BTC-ETH_
 
 [source,json]
 ----

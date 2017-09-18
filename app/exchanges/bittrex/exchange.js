@@ -196,101 +196,6 @@ pairs(opt)
  * {
  *     "success":true,
  *     "message":"",
- *     "result":[
- *         {
- *             "Id":113534543,
- *             "TimeStamp":"2017-09-18T09:24:55.777",
- *             "Quantity":0.01735772,
- *             "Price":0.0732,
- *             "Total":0.00127058,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *          },
- *          {
- *             "Id":113534540,
- *             "TimeStamp":"2017-09-18T09:24:55.37",
- *             "Quantity":0.01003977,
- *             "Price":0.0732,
- *             "Total":0.00073491,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *         },...
- *     ]
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * [
- *     {
- *         "id":113534972,
- *         "quantity":0.19996545,
- *         "rate":0.07320996,
- *         "price":0.01463946,
- *         "timestamp":1505726820
- *     },
- *     {
- *         "id":113534957,
- *         "quantity":0.14025718,
- *         "rate":0.07320997,
- *         "price":0.01026822,
- *         "timestamp":1505726816
- *     }
- * ]
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
- * @return {Promise} format depends on parameter opt.outputFormat
- */
- trades(opt) {
-    let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
-        return new Promise((resolve, reject) => {
-            self._client.getmarkethistory({market:opt.pair}, (response, error) => {
-                if (null !== error)
-                {
-                    reject(error.message);
-                    return;
-                }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
-                    return;
-                }
-                let list = [];
-                _.forEach(response.result, function(entry){
-                    // only keep trades with an ID > afterTradeId
-                    if (undefined !== opt.afterTradeId)
-                    {
-                        if (entry.Id <= opt.afterTradeId)
-                        {
-                            return;
-                        }
-                    }
-                    list.push({
-                        id:entry.Id,
-                        quantity:entry.Quantity,
-                        rate:entry.Price,
-                        price:entry.Total,
-                        timestamp:parseInt(new Date(entry.TimeStamp).getTime() / 1000.0)
-                    })
-                });
-                resolve(list);
-            });
-        });
-    });
-}
-
-/**
- * Returns order book
- *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
  *     "result":{
  *         "buy":[
  *             {
@@ -376,6 +281,101 @@ pairs(opt)
                     })
                 }
                 resolve(result);
+            });
+        });
+    });
+}
+
+/**
+ * Returns last trades
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     "success":true,
+ *     "message":"",
+ *     "result":[
+ *         {
+ *             "Id":113534543,
+ *             "TimeStamp":"2017-09-18T09:24:55.777",
+ *             "Quantity":0.01735772,
+ *             "Price":0.0732,
+ *             "Total":0.00127058,
+ *             "FillType":"PARTIAL_FILL",
+ *             "OrderType":"SELL"
+ *          },
+ *          {
+ *             "Id":113534540,
+ *             "TimeStamp":"2017-09-18T09:24:55.37",
+ *             "Quantity":0.01003977,
+ *             "Price":0.0732,
+ *             "Total":0.00073491,
+ *             "FillType":"PARTIAL_FILL",
+ *             "OrderType":"SELL"
+ *         },...
+ *     ]
+ * }
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * [
+ *     {
+ *         "id":113534972,
+ *         "quantity":0.19996545,
+ *         "rate":0.07320996,
+ *         "price":0.01463946,
+ *         "timestamp":1505726820
+ *     },
+ *     {
+ *         "id":113534957,
+ *         "quantity":0.14025718,
+ *         "rate":0.07320997,
+ *         "price":0.01026822,
+ *         "timestamp":1505726816
+ *     }
+ * ]
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
+ * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+ trades(opt) {
+    let self = this;
+    // we're using low intensity limiter but there is no official answer on this
+    return this._limiterLowIntensity.schedule(function(){
+        return new Promise((resolve, reject) => {
+            self._client.getmarkethistory({market:opt.pair}, (response, error) => {
+                if (null !== error)
+                {
+                    reject(error.message);
+                    return;
+                }
+                // return raw results
+                if ('exchange' == opt.outputFormat)
+                {
+                    resolve(response);
+                    return;
+                }
+                let list = [];
+                _.forEach(response.result, function(entry){
+                    // only keep trades with an ID > afterTradeId
+                    if (undefined !== opt.afterTradeId)
+                    {
+                        if (entry.Id <= opt.afterTradeId)
+                        {
+                            return;
+                        }
+                    }
+                    list.push({
+                        id:entry.Id,
+                        quantity:entry.Quantity,
+                        rate:entry.Price,
+                        price:entry.Total,
+                        timestamp:parseInt(new Date(entry.TimeStamp).getTime() / 1000.0)
+                    })
+                });
+                resolve(list);
             });
         });
     });
