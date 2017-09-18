@@ -160,7 +160,7 @@ You should see JSON content such as below in case order is valid :
 
 ## Docker
 
-A docker image is available at https://hub.docker.com/r/apendergast/crypto-exchange-gateway
+A docker image is available at https://hub.docker.com/r/apendergast/crypto-exchanges-gateway/
 
 * Pull image
 
