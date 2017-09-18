@@ -11,7 +11,7 @@ constructor()
 {
     let cfg = {
         listen:{
-            ipaddr:'127.0.0.1',
+            ipaddr:'*',
             port:8000
         },
         logLevel:'warn',
@@ -32,7 +32,17 @@ constructor()
         pushover:{
             enabled:false
         },
-        exchanges:{}
+        exchanges:{
+            binance:{
+                enabled:true
+            },
+            bittrex:{
+                enabled:true
+            },
+            poloniex:{
+                enabled:true
+            }
+        }
     }
     super(cfg);
 }
@@ -126,7 +136,7 @@ _checkExchanges()
     let valid = true;
     if (undefined === this._config.exchanges)
     {
-        return true;
+        this._config.exchanges = this._defaultConfig.exchanges;
     }
     // try to load all config-checker.js file in exchanges directory
     let exchangesDir = path.join(__dirname, 'exchanges');

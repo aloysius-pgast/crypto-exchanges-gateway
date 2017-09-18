@@ -1,2 +1,17 @@
 #!/bin/bash
-docker build . -t apendergast/crypto-exchange-gateway
+function usage()
+{
+    echo "Usage $0 <branch>"
+    echo "branch : master|dev (default=master)"
+    exit 1
+}
+GIT_BRANCH=master
+if [ "$1" == '-h' ] || [ "$1" == '--help' ]
+then
+    usage
+fi
+if ! [ -z "$1" ]
+then
+    GIT_BRANCH=$1
+fi
+docker build . --build-arg GIT_BRANCH=$GIT_BRANCH -t apendergast/crypto-exchange-gateway
