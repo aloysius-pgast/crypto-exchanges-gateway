@@ -14,4 +14,4 @@ if ! [ -z "$1" ]
 then
     GIT_BRANCH=$1
 fi
-docker build . --build-arg GIT_BRANCH=$GIT_BRANCH -t apendergast/crypto-exchange-gateway
+docker build --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH -t apendergast/crypto-exchange-gateway .
