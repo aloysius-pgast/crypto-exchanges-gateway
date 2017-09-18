@@ -30,14 +30,30 @@ _.forEach(config.exchanges, function (entry, name) {
  * List available exchanges
  *
  * @param {string} pair used to list only exchanges containing a given pair (optional)
+ * @param {string} currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if pair or currency are set)
  */
 app.get('/exchanges', (req, res) => {
-    if (undefined === req.query.pair || '' == req.query.pair)
+    let opt = {};
+    if (undefined !== req.query.pair && '' != req.query.pair)
+    {
+        opt.pair = req.query.pair;
+    }
+    else if (undefined !== req.query.currency && '' != req.query.currency)
+    {
+        opt.currency = req.query.currency;
+    }
+    else if (undefined !== req.query.baseCurrency && '' != req.query.baseCurrency)
+    {
+        opt.baseCurrency = req.query.baseCurrency;
+    }
+    // return all enable exchanges
+    else
     {
         res.send(enabledExchanges);
         return;
     }
-    pairFinder.find(req.query.pair)
+    pairFinder.find(opt)
         .then(function(data) {
             res.send(data);
         })

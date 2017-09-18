@@ -210,8 +210,6 @@ tickers(opt)
 /**
  * Returns existing pairs
  *
- * opt.useCache : if true cached version will be used (default = false)
- *
  * Result will be as below
  *
  * {
@@ -222,13 +220,19 @@ tickers(opt)
  *     },...
  * }
  *
+ * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
+ * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
+ * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  * @return {Promise}
  */
 pairs(opt)
 {
     let self = this;
     let timestamp = parseInt(new Date().getTime() / 1000.0);
-    if (undefined !== opt && undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+    let checkCurrencies = undefined !== opt && (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency);
+    // only use cache if currency/baseCurrency are not defined
+    if (!checkCurrencies && undefined !== opt && undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
     {
         return new Promise((resolve, reject) => {
             resolve(self._cachedPairs.cache);
@@ -267,6 +271,34 @@ pairs(opt)
                         currency = entry.symbol.substr(0, entry.symbol.length - 3);
                     }
                     let pair = baseCurrency + '-' + currency;
+                    // check if we're interested in such pair / currency / base currency
+                    if (checkCurrencies)
+                    {
+                        if (undefined !== opt.pair)
+                        {
+                            // ignore this pair
+                            if (opt.pair != pair)
+                            {
+                                return;
+                            }
+                        }
+                        else if (undefined !== opt.currency)
+                        {
+                            // ignore this pair
+                            if (opt.currency != currency)
+                            {
+                                return;
+                            }
+                        }
+                        else if (undefined !== opt.baseCurrency)
+                        {
+                            // ignore this pair
+                            if (opt.baseCurrency != baseCurrency)
+                            {
+                                return;
+                            }
+                        }
+                    }
                     list[pair] = {
                         pair:pair,
                         baseCurrency: baseCurrency,
@@ -351,6 +383,97 @@ pairs(opt)
                     })
                 }
                 resolve(result);
+            }).catch(function(err){
+                reject(err.msg);
+            });
+        });
+    });
+}
+
+/**
+ * Returns last trades
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * [
+ *     {
+ *         "a":1132434,
+ *         "p":"0.07252000",
+ *         "q":"0.50000000",
+ *         "f":1199586,
+ *         "l":1199586,
+ *         "T":1505725537806,
+ *         "m":true,
+ *         "M":true
+ *     },
+ *     {
+ *         "a":1132435,
+ *         "p":"0.07252000",
+ *         "q":"0.50000000",
+ *         "f":1199587,
+ *         "l":1199587,
+ *         "T":1505725538108,
+ *         "m":true,
+ *         "M":true
+ *     }
+ * ]
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * [
+ *     {
+ *         "id":1132933,
+ *         "quantity":0.95,
+ *         "rate":0.072699,
+ *         "price":0.06906405,
+ *         "timestamp":1505731777
+ *     },
+ *     {
+ *         "id":1132932,
+ *         "quantity":1,
+ *         "rate":0.072602,
+ *         "price":0.072602,
+ *         "timestamp":1505731693
+ *     }
+ * ]
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
+ * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+ trades(opt) {
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        let exchangePair = self._toExchangePair(opt.pair);
+        let params = {symbol:exchangePair};
+        if (undefined !== opt.afterTradeId)
+        {
+            // fromId is inclusive, we want all trades with an ID > afterTradeId
+            params.fromId = opt.afterTradeId + 1;
+        }
+        let p = self._restClient.aggTrades(params);
+        // return raw results
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = [];
+                _.forEach(data, function(entry){
+                    let quantity = parseFloat(entry.q);
+                    let rate = parseFloat(entry.p);
+                    let price = quantity * rate;
+                    list.unshift({
+                        id:entry.a,
+                        quantity:quantity,
+                        rate:rate,
+                        price:price,
+                        timestamp:parseInt(entry.T / 1000.0)
+                    })
+                });
+                resolve(list);
             }).catch(function(err){
                 reject(err.msg);
             });

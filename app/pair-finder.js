@@ -23,29 +23,30 @@ register(name, f){
 /**
  * List exchanges which support a pair
  *
- * @param {string} pair (X-Y)
+ * @param {string} opt.pair used to list only exchanges containing a given pair (optional)
+ * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if opt.pair is set)
+ * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if opt.pair or opt.currency are set)
  * @return Promise which will resolve to a list of exchanges names (ex: ["binance","bittrex"])
  */
-find(pair)
+find(opt)
 {
     let self = this;
     let arr = [];
     _.forEach(self._functions, function (f, name) {
-        let p = f();
+        let p = f(opt);
         arr.push({promise:p, context:{exchange:name,api:'pairs'}});
     });
     return new Promise((resolve, reject) => {
         let list = [];
         PromiseHelper.all(arr).then(function(data){
-            //console.error(data);
             _.forEach(data, function (entry) {
                 // could not retrieve pair for this exchange
                 if (!entry.success)
                 {
                     return;
                 }
-                // pair does not exist
-                if (undefined === entry.value[pair])
+                // empty result ?
+                if (0 == Object.keys(entry.value).length)
                 {
                     return;
                 }

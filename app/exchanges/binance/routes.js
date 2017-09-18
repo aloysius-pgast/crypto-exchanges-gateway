@@ -13,8 +13,13 @@ if (!config.exchanges.binance.enabled)
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
 
-let getPairs = function(){
-    return exchange.pairs();
+/**
+ * Retrieves existing pairs
+ * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional)
+ * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (will be ignored if currency is set) (optional)
+ */
+let getPairs = function(opt){
+    return exchange.pairs(opt);
 }
 pairFinder.register('binance', getPairs);
 
@@ -96,9 +101,24 @@ app.get('/exchanges/binance/tickers/:pair', (req, res) => {
 
 /**
  * Retrieves existing pairs
+ * @param {string} pair : used to retrieve only a single pair (ex: BTC-ETH (optional)
+ * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  */
 app.get('/exchanges/binance/pairs', (req, res) => {
     let opt = {};
+    if (undefined !== req.query.pair && '' != req.query.pair)
+    {
+        opt.pair = req.query.pair;
+    }
+    else if (undefined != req.query.currency && '' != req.query.currency)
+    {
+        opt.currency = req.query.currency;
+    }
+    else if (undefined != req.query.baseCurrency && '' != req.query.baseCurrency)
+    {
+        opt.baseCurrency = req.query.baseCurrency;
+    }
     exchange.pairs(opt)
         .then(function(data) {
             res.send(data);
@@ -121,7 +141,7 @@ app.get('/exchanges/binance/pairs', (req, res) => {
  *
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pair pair to retrieve order book for
- * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100) (must be a )
+ * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100)
  */
 app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
     let opt = {outputFormat:'custom', limit:100};
@@ -159,6 +179,48 @@ app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
             {
                 res.status(503).send({origin:"remote",error:err.msg});
             }
+        });
+});
+
+/**
+ * Returns last trades for a given pair (Binance only allows to retrieve last 500)
+ *
+ * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
+ * @param {integer} afterTradeId only retrieve trade with an ID > afterTradeId (optional, will be ignored if outputFormat is set to 'exchange')
+ * @param {string} pair pair to retrieve last trades for
+ */
+app.get('/exchanges/binance/trades/:pair', (req, res) => {
+    let opt = {outputFormat:'custom'};
+    if (undefined === req.params.pair || '' == req.params.pair)
+    {
+        res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
+        return;
+    }
+    opt.pair = req.params.pair;
+    if ('exchange' == req.query.outputFormat)
+    {
+        opt.outputFormat = 'exchange';
+    }
+    if ('custom' == opt.outputFormat)
+    {
+        if (undefined !== req.query.afterTradeId)
+        {
+            let afterTradeId = parseInt(req.query.afterTradeId);
+            if (isNaN(afterTradeId) || afterTradeId <= 0)
+            {
+                res.status(400).send({origin:"gateway",error:util.format("Parameter 'afterTradeId' should be an integer > 0 : value = '%s'", req.query.afterTradeId)});
+                return;
+            }
+            opt.afterTradeId = afterTradeId;
+        }
+    }
+    exchange.trades(opt)
+        .then(function(data) {
+            res.send(data);
+        })
+        .catch(function(err)
+        {
+            res.status(503).send({origin:"remote",error:err});
         });
 });
 

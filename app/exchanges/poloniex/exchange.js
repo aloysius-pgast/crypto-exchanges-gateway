@@ -151,6 +151,9 @@ tickers(opt)
  *     },...
  * }
  *
+ * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
+ * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
+ * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
 pairs(opt)
@@ -163,8 +166,31 @@ pairs(opt)
                 let list = {}
                 _.forEach(data, function (value, key) {
                     let arr = key.split('_');
-                    let pair = key;
-                    pair = arr[0] + '-' + arr[1];
+                    let pair = arr[0] + '-' + arr[1];
+                    if (undefined !== opt.pair)
+                    {
+                        // ignore this pair
+                        if (opt.pair != pair)
+                        {
+                            return;
+                        }
+                    }
+                    else if (undefined !== opt.currency)
+                    {
+                        // ignore this pair
+                        if (opt.currency != arr[1])
+                        {
+                            return;
+                        }
+                    }
+                    else if (undefined !== opt.baseCurrency)
+                    {
+                        // ignore this pair
+                        if (opt.baseCurrency != arr[0])
+                        {
+                            return;
+                        }
+                    }
                     list[pair] = {
                         pair:pair,
                         baseCurrency: arr[0],
@@ -245,6 +271,99 @@ pairs(opt)
                     })
                 }
                 resolve(result);
+            }).catch(function(err){
+                reject(err);
+            });
+        });
+    });
+}
+
+/**
+ * Returns last trades
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * {
+ *     "success":true,
+ *     "message":"",
+ *     "result":[
+ *         {
+ *             "Id":113534543,
+ *             "TimeStamp":"2017-09-18T09:24:55.777",
+ *             "Quantity":0.01735772,
+ *             "Price":0.0732,
+ *             "Total":0.00127058,
+ *             "FillType":"PARTIAL_FILL",
+ *             "OrderType":"SELL"
+ *          },
+ *          {
+ *             "Id":113534540,
+ *             "TimeStamp":"2017-09-18T09:24:55.37",
+ *             "Quantity":0.01003977,
+ *             "Price":0.0732,
+ *             "Total":0.00073491,
+ *             "FillType":"PARTIAL_FILL",
+ *             "OrderType":"SELL"
+ *         },...
+ *     ]
+ * }
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * [
+ *     {
+ *         "id":113534972,
+ *         "quantity":0.19996545,
+ *         "rate":0.07320996,
+ *         "price":0.01463946,
+ *         "timestamp":1505726820
+ *     },
+ *     {
+ *         "id":113534957,
+ *         "quantity":0.14025718,
+ *         "rate":0.07320997,
+ *         "price":0.01026822,
+ *         "timestamp":1505726816
+ *     }
+ * ]
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
+ * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+ trades(opt) {
+    let self = this;
+    return this._limiterPublic.schedule(function(){
+        // convert pair to remote format
+        let pair = self._toExchangePair(opt.pair);
+        let p = self._client.returnTradeHistory(pair);
+        // return raw results
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = [];
+                _.forEach(data, function(entry){
+                    // only keep trades with an ID > afterTradeId
+                    if (undefined !== opt.afterTradeId)
+                    {
+                        if (entry.tradeID <= opt.afterTradeId)
+                        {
+                            return;
+                        }
+                    }
+                    list.push({
+                        id:entry.tradeID,
+                        quantity:parseFloat(entry.amount),
+                        rate:parseFloat(entry.rate),
+                        price:parseFloat(entry.total),
+                        timestamp:parseInt(new Date(entry.date).getTime() / 1000.0)
+                    })
+                });
+                resolve(list);
             }).catch(function(err){
                 reject(err);
             });
