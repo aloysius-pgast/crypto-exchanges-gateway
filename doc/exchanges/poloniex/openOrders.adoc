@@ -89,7 +89,7 @@ Example for *GET* _/exchanges/poloniex/openOrders_
 ----
 {
     "27372196264": {
-        "pair":"BTC-AMP"
+        "pair":"BTC-AMP",
         "orderType":"sell",
         "orderNumber":"27372196264",
         "quantity":1004.12793858,

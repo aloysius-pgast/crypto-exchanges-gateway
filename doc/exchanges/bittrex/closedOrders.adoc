@@ -99,7 +99,7 @@ Example for *GET* _/exchanges/bittrex/closedOrders_
         "orderType":"buy",
         "quantity":2.4927,
         "actualPrice":40.72509999,
-        "actualRate":16.12999999
+        "actualRate":16.12999999,
         "closedTimestamp":1498939537
     },...
 }
@@ -188,7 +188,7 @@ Example for *GET* _/exchanges/bittrex/closedOrders/62d4368c-4363-4c9e-b992-98521
         "orderType":"buy",
         "quantity":2.4927,
         "actualPrice":40.72509999,
-        "actualRate":16.12999999
+        "actualRate":16.12999999,
         "closedTimestamp":1498939537
     }
 }

@@ -2,8 +2,6 @@
 
 include::intro.adoc[leveloffset=1]
 
-include::exchanges.adoc[leveloffset=1]
-
 include::poloniex/index.adoc[leveloffset=1]
 
 include::bittrex/index.adoc[leveloffset=1]
