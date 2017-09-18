@@ -6,6 +6,7 @@ function usage()
     exit 1
 }
 GIT_BRANCH=master
+TIMESTAMP=`date +"%Y%m%d%H%M%S"`
 if [ "$1" == '-h' ] || [ "$1" == '--help' ]
 then
     usage
@@ -14,4 +15,4 @@ if ! [ -z "$1" ]
 then
     GIT_BRANCH=$1
 fi
-docker build --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH -t apendergast/crypto-exchange-gateway .
+docker build --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchange-gateway .

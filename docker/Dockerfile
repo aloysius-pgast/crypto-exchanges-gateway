@@ -1,7 +1,9 @@
 FROM node:alpine as builder
 WORKDIR /root/
-ARG GIT_BRANCH
-RUN apk add --update bash git && \
+RUN apk add --update bash git
+ARG GIT_BRANCH=dev
+ARG TIMESTAMP=0
+RUN echo "$TIMESTAMP" && \
     git clone https://github.com/aloysius-pgast/crypto-exchanges-gateway.git && cd crypto-exchanges-gateway && \
     git checkout $GIT_BRANCH && \
     npm install && cp docker/config.docker.json config/config.json
