@@ -8,6 +8,8 @@ include::tickers.adoc[leveloffset=1]
 
 include::orderBooks.adoc[leveloffset=1]
 
+include::trades.adoc[leveloffset=1]
+
 include::openOrders.adoc[leveloffset=1]
 
 include::closedOrders.adoc[leveloffset=1]
