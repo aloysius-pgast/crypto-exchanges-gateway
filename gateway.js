@@ -58,6 +58,44 @@ if (!checker.check(config))
 }
 config = checker.getCfg();
 
+//-- update config based on environment (used when using docker container)
+// check exchanges config
+_.forEach(['binance','bittrex','poloniex'], function(exchange) {
+    let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
+    let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
+    if (undefined !== key && '' != key && undefined !== secret && '' != secret)
+    {
+        logger.warn("Enabling '%s' exchange...", exchange);
+        config.exchanges[exchange]['key'] = key;
+        config.exchanges[exchange]['secret'] = secret;
+    }
+});
+// check pushover config
+let pushoverUser = process.env['cfg.pushover.user'];
+let pushoverToken = process.env['cfg.pushover.token'];
+if (undefined !== pushoverUser && '' != pushoverUser && undefined !== pushoverToken && '' != pushoverToken)
+{
+    logger.warn("Enabling 'PushOver' service...", exchange);
+    config.pushover.enabled = true;
+    config.pushover.user = pushoverUser;
+    config.pushover.token = pushoverToken;
+}
+// check config
+let logLevel = process.env['cfg.logLevel'];
+if (undefined !== logLevel)
+{
+    switch (logLevel)
+    {
+        case 'error':
+        case 'warn':
+        case 'info':
+        case 'verbose':
+        case 'debug':
+        case 'silly':
+            config.logLevel = logLevel;
+    }
+}
+
 // update log level
 logger.level = config.logLevel;
 

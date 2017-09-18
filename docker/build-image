@@ -1,0 +1,27 @@
+#!/bin/bash
+function usage()
+{
+    echo "Usage $0 <branch>"
+    echo "branch : master|dev (default=master)"
+    exit 1
+}
+DOCKERFILE=Dockerfile
+TIMESTAMP=`date +"%Y%m%d%H%M%S"`
+if [ "$1" == '-h' ] || [ "$1" == '--help' ]
+then
+    usage
+fi
+if ! [ -z "$1" ]
+then
+    case $1 in
+        dev)
+            DOCKERFILE=Dockerfile.dev
+            ;;
+        master)
+            DOCKERFILE=Dockerfile
+            ;;
+        *)
+            usage
+    esac
+fi
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchange-gateway .
