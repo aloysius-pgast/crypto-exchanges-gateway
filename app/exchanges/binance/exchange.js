@@ -391,6 +391,97 @@ pairs(opt)
 }
 
 /**
+ * Returns last trades
+ *
+ * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+ *
+ * [
+ *     {
+ *         "a":1132434,
+ *         "p":"0.07252000",
+ *         "q":"0.50000000",
+ *         "f":1199586,
+ *         "l":1199586,
+ *         "T":1505725537806,
+ *         "m":true,
+ *         "M":true
+ *     },
+ *     {
+ *         "a":1132435,
+ *         "p":"0.07252000",
+ *         "q":"0.50000000",
+ *         "f":1199587,
+ *         "l":1199587,
+ *         "T":1505725538108,
+ *         "m":true,
+ *         "M":true
+ *     }
+ * ]
+ *
+ * If opt.outputFormat is 'custom', the result will be as below
+ *
+ * [
+ *     {
+ *         "id":1132933,
+ *         "quantity":0.95,
+ *         "rate":0.072699,
+ *         "price":0.06906405,
+ *         "timestamp":1505731777
+ *     },
+ *     {
+ *         "id":1132932,
+ *         "quantity":1,
+ *         "rate":0.072602,
+ *         "price":0.072602,
+ *         "timestamp":1505731693
+ *     }
+ * ]
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
+ * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+ trades(opt) {
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        let exchangePair = self._toExchangePair(opt.pair);
+        let params = {symbol:exchangePair};
+        if (undefined !== opt.afterTradeId)
+        {
+            // fromId is inclusive, we want all trades with an ID > afterTradeId
+            params.fromId = opt.afterTradeId + 1;
+        }
+        let p = self._restClient.aggTrades(params);
+        // return raw results
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = [];
+                _.forEach(data, function(entry){
+                    let quantity = parseFloat(entry.q);
+                    let rate = parseFloat(entry.p);
+                    let price = quantity * rate;
+                    list.unshift({
+                        id:entry.a,
+                        quantity:quantity,
+                        rate:rate,
+                        price:price,
+                        timestamp:parseInt(entry.T / 1000.0)
+                    })
+                });
+                resolve(list);
+            }).catch(function(err){
+                reject(err.msg);
+            });
+        });
+    });
+}
+
+/**
  * @param {string} orderNumber identifier of the order
  * @param {string} pair pair of the order (X-Y)
  * @param {object} dictionary of expected order states {'state1':1,'state2':1} (ex: {'NEW':1,'PARTIALLY_FILLED':1}) (optional)

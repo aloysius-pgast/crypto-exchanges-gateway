@@ -141,7 +141,7 @@ app.get('/exchanges/binance/pairs', (req, res) => {
  *
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pair pair to retrieve order book for
- * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100) (must be a )
+ * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100)
  */
 app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
     let opt = {outputFormat:'custom', limit:100};
@@ -179,6 +179,48 @@ app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
             {
                 res.status(503).send({origin:"remote",error:err.msg});
             }
+        });
+});
+
+/**
+ * Returns last trades for a given pair (Binance only allows to retrieve last 500)
+ *
+ * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
+ * @param {integer} afterTradeId only retrieve trade with an ID > afterTradeId (optional, will be ignored if outputFormat is set to 'exchange')
+ * @param {string} pair pair to retrieve last trades for
+ */
+app.get('/exchanges/binance/trades/:pair', (req, res) => {
+    let opt = {outputFormat:'custom'};
+    if (undefined === req.params.pair || '' == req.params.pair)
+    {
+        res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
+        return;
+    }
+    opt.pair = req.params.pair;
+    if ('exchange' == req.query.outputFormat)
+    {
+        opt.outputFormat = 'exchange';
+    }
+    if ('custom' == opt.outputFormat)
+    {
+        if (undefined !== req.query.afterTradeId)
+        {
+            let afterTradeId = parseInt(req.query.afterTradeId);
+            if (isNaN(afterTradeId) || afterTradeId <= 0)
+            {
+                res.status(400).send({origin:"gateway",error:util.format("Parameter 'afterTradeId' should be an integer > 0 : value = '%s'", req.query.afterTradeId)});
+                return;
+            }
+            opt.afterTradeId = afterTradeId;
+        }
+    }
+    exchange.trades(opt)
+        .then(function(data) {
+            res.send(data);
+        })
+        .catch(function(err)
+        {
+            res.status(503).send({origin:"remote",error:err});
         });
 });
 
