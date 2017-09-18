@@ -124,6 +124,10 @@ _checkPushOver()
 _checkExchanges()
 {
     let valid = true;
+    if (undefined === this._config.exchanges)
+    {
+        return true;
+    }
     // try to load all config-checker.js file in exchanges directory
     let exchangesDir = path.join(__dirname, 'exchanges');
     _.forEach(fs.readdirSync(exchangesDir), (e) => {
