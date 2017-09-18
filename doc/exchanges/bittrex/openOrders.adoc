@@ -73,7 +73,7 @@ Result will be a dictionary using order number as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
 |float
-|Expected total price (_quantity_ * _targetPrice_)
+|Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |integer (unix timestamp)
@@ -173,7 +173,7 @@ Result will be a dictionary containing a single entry
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
 |float
-|Expected total price (_quantity_ * _targetPrice_)
+|Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |integer (unix timestamp)

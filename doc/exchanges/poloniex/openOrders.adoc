@@ -73,7 +73,7 @@ Result will be a dictionary using order number as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
 |float
-|Expected total price (_quantity_ * _targetPrice_)
+|Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |integer (unix timestamp)
@@ -163,7 +163,7 @@ Result will be a dictionary containing a single entry
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
 |float
-|Expected total price (_quantity_ * _targetPrice_)
+|Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |integer (unix timestamp)
@@ -183,16 +183,15 @@ Example for *GET* _/exchanges/poloniex/openOrders/27126940036_
 [source,json]
 ----
 {
-    "27126940036":{
+    "27372196264":{
         "pair":"BTC-AMP",
-        "orderNumber":"27126940036",
-        "orderType":"buy",
-        "quantity":697.02533491,
-        "actualRate":0.00017535,
-        "actualPrice":0.12222339,
-        "commission":0.00305558475,
-        "tradesCount":1,
-        "closedTimestamp":1498939537
+        "orderType":"sell",
+        "orderNumber":"27372196264",
+        "quantity":1004.12793858,
+        "remainingQuantity":1004.12793858,
+        "targetRate":0.00021042,
+        "targetPrice":0.2112886,
+        "openTimestamp":1499350174
     }
 }
 ----
