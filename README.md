@@ -15,6 +15,15 @@ Use it at your own risks and be careful with your money ;)
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 
+## How to use it
+
+[Install](#installation) it wherever you want and start sending requests from your own program
+
+* it can be hosted on a VM in the cloud
+* it can be installed at home, on a [Raspberry Pi](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)
+
+Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
+
 ## Available Exchanges
 
 Currently supports for following exchanges :
