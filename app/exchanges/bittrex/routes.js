@@ -1,7 +1,9 @@
 "use strict";
 const util = require('util');
+const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
+const serviceRegistry = require('../../service-registry');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -9,6 +11,9 @@ if (!config.exchanges.bittrex.enabled)
 {
     return;
 }
+
+// public features
+let features = ['tickers','orderBook','pairs','trades'];
 
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
@@ -186,8 +191,15 @@ app.get('/exchanges/bittrex/trades/:pair', (req, res) => {
 //-- below routes require valid key/secret
 if ('' === config.exchanges.bittrex.key || '' === config.exchanges.bittrex.secret)
 {
+    // register exchange
+    serviceRegistry.registerExchange('bittrex', 'Bittrex', features);
     return;
 }
+
+// add private features
+features = _.concat(features, ['openOrders','closedOrders','balances']);
+// register exchange
+serviceRegistry.registerExchange('bittrex', 'Bittrex', features);
 
 /**
  * Returns open orders

@@ -239,13 +239,13 @@ pairs(opt)
         });
     }
     return this._limiterGlobal.schedule(function(){
-        let p = self._restClient.allPrices();
+        let p = self._restClient.allBookTickers();
         return new Promise((resolve, reject) => {
             p.then(function(data){
                 let list = {}
                 _.forEach(data, function (entry) {
                     // based on discussion with Binance support, currency with a price of 0 are not trading
-                    if (0 == entry.price)
+                    if (0 == entry.askPrice && 0 == entry.bidPrice)
                     {
                         return;
                     }

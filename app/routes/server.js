@@ -3,6 +3,7 @@ const util = require('util');
 const _ = require('lodash');
 const logger = require('winston');
 const requestHelper = require('../request-helper');
+const serviceRegistry = require('../service-registry');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -23,6 +24,13 @@ app.get('/server/uptime', (req, res) => {
  */
 app.get('/server/logLevel', (req, res) => {
     res.send({value:config.logLevel});
+});
+
+/**
+ * Return available services
+ */
+app.get('/server/services', (req, res) => {
+    res.send(serviceRegistry.getServices());
 });
 
 /**

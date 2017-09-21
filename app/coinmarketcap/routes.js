@@ -2,6 +2,7 @@
 const util = require('util');
 const _ = require('lodash');
 const requestHelper = require('../request-helper');
+const serviceRegistry = require('../service-registry');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -9,6 +10,9 @@ if (!config.coinmarketcap.enabled)
 {
     return;
 }
+
+// register service
+serviceRegistry.registerService('coinmarketcap', 'CoinMarketCap', []);
 
 const acceptedConvertCurrencies = {
     "AUD":1,

@@ -30,3 +30,87 @@ Example for *GET* _/server/uptime_
     "uptime":"debug"
 }
 ----
+
+== Retrieve list of services and features
+
+*GET* _/server/services_
+
+=== Result
+
+Result will be a dictionary with two entries :
+
+* _exchanges_ : per-exchange features
+* _others_ : features for other services such as _PushOver_
+
+[NOTE]
+====
+* Only enabled exchanges will be present
+* Value for a feature will always be _true_ (if feature is not supported, it won't be in dictionnary)
+====
+
+.Examples
+
+Example for *GET* _/server/uptime_
+
+[source,json]
+----
+{
+    "exchanges":{
+        "binance":{
+            "id":"binance",
+            "name":"Binance",
+            "features":{
+                "tickers":true,
+                "orderBook":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        },
+        "bittrex":{
+            "id":"bittrex",
+            "name":"Bittrex",
+            "features":{
+                "tickers":true,
+                "orderBook":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        },
+        "poloniex":{
+            "id":"poloniex",
+            "name":"Poloniex",
+            "features":{
+                "tickers":true,
+                "orderBook":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        }
+    },
+    "others":{
+        "coinmarketcap":{
+            "id":"coinmarketcap",
+            "name":"CoinMarketCap",
+            "features":{
+
+            }
+        },
+        "pushover":{
+            "id":"pushover",
+            "name":"PushOver",
+            "features":{
+
+            }
+        }
+    }
+}
+----
