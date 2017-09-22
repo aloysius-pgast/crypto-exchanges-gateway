@@ -61,7 +61,7 @@ Example for *GET* _/server/uptime_
             "name":"Binance",
             "features":{
                 "tickers":true,
-                "orderBook":true,
+                "orderBooks":true,
                 "pairs":true,
                 "trades":true,
                 "openOrders":true,
@@ -74,7 +74,7 @@ Example for *GET* _/server/uptime_
             "name":"Bittrex",
             "features":{
                 "tickers":true,
-                "orderBook":true,
+                "orderBooks":true,
                 "pairs":true,
                 "trades":true,
                 "openOrders":true,
@@ -87,7 +87,7 @@ Example for *GET* _/server/uptime_
             "name":"Poloniex",
             "features":{
                 "tickers":true,
-                "orderBook":true,
+                "orderBooks":true,
                 "pairs":true,
                 "trades":true,
                 "openOrders":true,

@@ -13,7 +13,7 @@ if (!config.exchanges.binance.enabled)
 }
 
 // public features
-let features = ['tickers','orderBook','pairs','trades'];
+let features = ['tickers','orderBooks','pairs','trades'];
 
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
