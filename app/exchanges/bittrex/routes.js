@@ -207,7 +207,7 @@ else if ('demo' == config.exchanges.bittrex.key && 'demo' == config.exchanges.bi
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
 // register exchange
-serviceRegistry.registerExchange('bittrex', 'Bittrex', features);
+serviceRegistry.registerExchange('bittrex', 'Bittrex', features, demoMode);
 
 /**
  * Returns open orders

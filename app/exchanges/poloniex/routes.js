@@ -212,7 +212,7 @@ if ('' === config.exchanges.poloniex.key || '' === config.exchanges.poloniex.sec
 }
 else if ('demo' == config.exchanges.poloniex.key && 'demo' == config.exchanges.poloniex.secret)
 {
-    demoMode = false;
+    demoMode = true;
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
