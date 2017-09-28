@@ -4,6 +4,7 @@ const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
 const serviceRegistry = require('../../service-registry');
+const FakeExchangeClass = require('../../fake-exchange');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -17,6 +18,7 @@ let features = ['tickers','orderBooks','pairs','trades'];
 
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
+let fakeExchange = null;
 
 /**
  * Retrieves existing pairs
@@ -195,6 +197,10 @@ if ('' === config.exchanges.bittrex.key || '' === config.exchanges.bittrex.secre
     serviceRegistry.registerExchange('bittrex', 'Bittrex', features);
     return;
 }
+else if ('demo' == config.exchanges.bittrex.key && 'demo' == config.exchanges.bittrex.secret)
+{
+    fakeExchange = new FakeExchangeClass(exchange);
+}
 
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
@@ -229,14 +235,22 @@ app.get('/exchanges/bittrex/openOrders', (req, res) => {
             }
         }
     }
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -252,14 +266,22 @@ app.get('/exchanges/bittrex/openOrders/:orderNumber', (req, res) => {
         return;
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -328,14 +350,22 @@ app.post('/exchanges/bittrex/openOrders', bodyParser, (req, res) => {
     }
     opt.quantity = value;
     //-- create order
-    exchange.addOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.addOrder(opt);
+    }
+    else
+    {
+        p = exchange.addOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -356,15 +386,23 @@ app.delete('/exchanges/bittrex/openOrders/:orderNumber', (req, res) => {
         return;
     }
     opt.orderNumber = req.params.orderNumber;
-    //-- create order
-    exchange.cancelOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    //-- cancel order
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.cancelOrder(opt);
+    }
+    else
+    {
+        p = exchange.cancelOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -394,14 +432,22 @@ app.get('/exchanges/bittrex/closedOrders', (req, res) => {
             }
         }
     }
-    exchange.closedOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -417,14 +463,22 @@ app.get('/exchanges/bittrex/closedOrders/:orderNumber', (req, res) => {
         return;
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.closedOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -436,14 +490,22 @@ app.get('/exchanges/bittrex/balances', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 /**
@@ -460,14 +522,22 @@ app.get('/exchanges/bittrex/balances/:currency', (req, res) => {
         return;
     }
     opt.currency = req.params.currency;
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        res.status(503).send({origin:"remote",error:err});
+    });
 });
 
 };

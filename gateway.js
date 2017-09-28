@@ -81,7 +81,14 @@ _.forEach(config.exchanges, function(obj, exchange) {
     {
         if ('' != config.exchanges[exchange]['key'] && '' != config.exchanges[exchange]['secret'])
         {
-            logger.warn("%s exchange is enabled (public API & trading API)", exchange);
+            if ('demo' == config.exchanges[exchange]['key'] && 'demo' == config.exchanges[exchange]['secret'])
+            {
+                logger.warn("%s exchange is enabled (public API & trading API)(DEMO)", exchange);
+            }
+            else
+            {
+                logger.warn("%s exchange is enabled (public API & trading API)", exchange);
+            }
         }
         else
         {

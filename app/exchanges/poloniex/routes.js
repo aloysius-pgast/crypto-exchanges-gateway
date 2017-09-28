@@ -4,6 +4,7 @@ const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
 const serviceRegistry = require('../../service-registry');
+const FakeExchangeClass = require('../../fake-exchange');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -17,6 +18,7 @@ let features = ['tickers','orderBooks','pairs','trades'];
 
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
+let fakeExchange = null;
 
 /**
  * Retrieves existing pairs
@@ -123,7 +125,6 @@ app.get('/exchanges/poloniex/pairs', (req, res) => {
  * Returns order book for a given pair
  *
  * @param {string} pair pair to retrieve order book for (X-Y)
-
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {integer} limit how many entries to retrieve (optional, default = 50)
  */
@@ -208,6 +209,10 @@ if ('' === config.exchanges.poloniex.key || '' === config.exchanges.poloniex.sec
     serviceRegistry.registerExchange('poloniex', 'Poloniex', features);
     return;
 }
+else if ('demo' == config.exchanges.poloniex.key && 'demo' == config.exchanges.poloniex.secret)
+{
+    fakeExchange = new FakeExchangeClass(exchange);
+}
 
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
@@ -241,14 +246,22 @@ app.get('/exchanges/poloniex/openOrders', (req, res) => {
             }
         }
     }
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -264,14 +277,22 @@ app.get('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
         return;
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -341,14 +362,22 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
     opt.quantity = value;
 
     //-- create order
-    exchange.addOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.addOrder(opt);
+    }
+    else
+    {
+        p = exchange.addOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -369,15 +398,23 @@ app.delete('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
         return;
     }
     opt.orderNumber = req.params.orderNumber;
-    //-- create order
-    exchange.cancelOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    //-- cancel order
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.cancelOrder(opt);
+    }
+    else
+    {
+        p = exchange.cancelOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -431,20 +468,22 @@ app.get('/exchanges/poloniex/closedOrders', (req, res) => {
             }
         }
     }
-    exchange.closedOrders(opt)
-        .then(function(data) {
-            // always return an object if outputFormat is exchange
-            if ('exchange' == opt.outputFormat && 0 == data.length)
-            {
-                res.send({});
-                return;
-            }
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -466,14 +505,22 @@ app.get('/exchanges/poloniex/closedOrders/:orderNumber', (req, res) => {
         opt.outputFormat = 'exchange';
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.closedOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 /**
@@ -486,14 +533,54 @@ app.get('/exchanges/poloniex/balances', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(ex)
-        {
-            res.status(503).send({origin:"remote",error:ex.message});
-        });
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
+});
+
+/**
+ * Retrieves balance for a single currency
+ *
+ * @param {string} currency currency to retrieve balance for
+ *
+ */
+app.get('/exchanges/poloniex/balances/:currency', (req, res) => {
+    let opt = {outputFormat:'custom'};
+    if (undefined === req.params.currency || '' == req.params.currency)
+    {
+        res.status(400).send({origin:"gateway",error:"Missing url parameter 'currency'"});
+        return;
+    }
+    opt.currency = req.params.currency;
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(ex)
+    {
+        res.status(503).send({origin:"remote",error:ex.message});
+    });
 });
 
 };

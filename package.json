@@ -7,11 +7,11 @@
   "author": "Aloysius Pendergast <aloysius.pgast@gmail.com>",
   "license": "ISC",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/aloysius-pgast/crypto-exchanges-gateway.git"
+    "type": "git",
+    "url": "https://github.com/aloysius-pgast/crypto-exchanges-gateway.git"
   },
   "dependencies": {
-    "binance":"https://github.com/aloysius-pgast/binance#master",
+    "binance": "https://github.com/aloysius-pgast/binance#master",
     "body-parser": "^1.17.2",
     "bottleneck": "^1.16.0",
     "chump": "^1.2.0",
@@ -20,6 +20,7 @@
     "lodash": "^4.17.4",
     "node.bittrex.api": "^0.4.3",
     "poloniex-api-node": "^1.3.1",
+    "uuid": "^3.1.0",
     "winston": "^2.3.1"
   }
 }

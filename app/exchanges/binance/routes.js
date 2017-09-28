@@ -4,6 +4,7 @@ const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
 const serviceRegistry = require('../../service-registry');
+const FakeExchangeClass = require('../../fake-exchange');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -17,6 +18,7 @@ let features = ['tickers','orderBooks','pairs','trades'];
 
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
+let fakeExchange = null;
 
 /**
  * Retrieves existing pairs
@@ -236,6 +238,10 @@ if ('' === config.exchanges.binance.key || '' === config.exchanges.binance.secre
     serviceRegistry.registerExchange('binance', 'Binance', features);
     return;
 }
+else if ('demo' == config.exchanges.binance.key && 'demo' == config.exchanges.binance.secret)
+{
+    fakeExchange = new FakeExchangeClass(exchange);
+}
 
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
@@ -266,21 +272,29 @@ app.get('/exchanges/binance/openOrders', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -301,21 +315,29 @@ app.get('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
     {
         opt.pair = req.query.pair;
     }
-    exchange.openOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -384,21 +406,29 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
     }
     opt.quantity = value;
     //-- create order
-    exchange.addOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.addOrder(opt);
+    }
+    else
+    {
+        p = exchange.addOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -424,23 +454,30 @@ app.delete('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
     {
         opt.pair = req.query.pair;
     }
-    //-- create order
-    exchange.cancelOrder(opt)
-        .then(function(data) {
-            console.error(data);
-            res.send(data);
-        })
-        .catch(function(err)
+    //-- cancel order
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.cancelOrder(opt);
+    }
+    else
+    {
+        p = exchange.cancelOrder(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -467,21 +504,29 @@ app.get('/exchanges/binance/closedOrders', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.closedOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -502,21 +547,29 @@ app.get('/exchanges/binance/closedOrders/:orderNumber', (req, res) => {
         opt.pair = req.query.pair;
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.closedOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -528,21 +581,29 @@ app.get('/exchanges/binance/balances', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -559,21 +620,29 @@ app.get('/exchanges/binance/balances/:currency', (req, res) => {
         return;
     }
     opt.currency = req.params.currency;
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 };

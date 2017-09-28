@@ -226,6 +226,7 @@ This project was made possible thanks to following projects :
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
 * [winston](https://www.npmjs.com/package/winston) (for logging)
 * [chump](https://www.npmjs.com/package/chump) (for PushOver)
+* [uuid](https://www.npmjs.com/package/uuid)
 
 ## Donate
 
