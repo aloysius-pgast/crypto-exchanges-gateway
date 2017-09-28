@@ -12,7 +12,7 @@ if (!config.coinmarketcap.enabled)
 }
 
 // register service
-serviceRegistry.registerService('coinmarketcap', 'CoinMarketCap', []);
+serviceRegistry.registerService('coinmarketcap', 'Coin Market Cap', []);
 
 const acceptedConvertCurrencies = {
     "AUD":1,

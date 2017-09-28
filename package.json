@@ -4,7 +4,7 @@
   "description": "Your gateway to the crypto world",
   "main": "gateway.js",
   "scripts": {},
-  "author": "Aloysius Pendergast",
+  "author": "Aloysius Pendergast <aloysius.pgast@gmail.com>",
   "license": "ISC",
   "repository": {
       "type": "git",

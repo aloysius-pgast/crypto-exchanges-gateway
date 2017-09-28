@@ -128,6 +128,15 @@ logger.level = config.logLevel;
 const bParser = bodyParser.urlencoded({ extended: false })
 const app = express();
 
+// gui sub directory will server static content
+app.use('/ui', express.static('ui'));
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
+    next();
+});
+
 // do we want to trust proxy
 if (config.auth.trustProxy.enabled)
 {

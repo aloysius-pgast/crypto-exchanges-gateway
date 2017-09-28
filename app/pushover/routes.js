@@ -12,7 +12,7 @@ if (!config.pushover.enabled)
 }
 
 // register service
-serviceRegistry.registerService('pushover', 'PushOver', []);
+serviceRegistry.registerService('pushover', 'Push Over', []);
 
 const PushOverClass = require('./pushover');
 const pushover = new PushOverClass(config);
