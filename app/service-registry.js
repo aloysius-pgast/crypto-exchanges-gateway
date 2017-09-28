@@ -18,17 +18,26 @@ constructor()
  * @param {string} id exchange id
  * @param {string} exchange name
  * @param {array} features dictionary of features {string:true} (optional)
+ * @param {boolean} demoMode indicates whether or not demo mode is enabled for this exchange
  */
-registerExchange(id, name, list)
+registerExchange(id, name, list, demoMode)
 {
     let features = {};
+    let demo = false;
     if (undefined !== list)
     {
         _.forEach(list, function(feature){
             features[feature] = true;
         });
     }
-    this._services.exchanges[id] = {id:id,name:name,features:features}
+    if (undefined !== demoMode)
+    {
+        if (true === demoMode)
+        {
+            demo = true;
+        }
+    }
+    this._services.exchanges[id] = {id:id,name:name,features:features,demo:demo}
 }
 
 /**
@@ -37,17 +46,26 @@ registerExchange(id, name, list)
  * @param {string} id service id
  * @param {string} exchange name
  * @param {array} features dictionary of features {string:true} (optional)
+ * @param {boolean} demoMode indicates whether or not demo mode is enabled for this service
  */
-registerService(id, name, list)
+registerService(id, name, list, demoMode)
 {
     let features = {};
+    let demo = false;
     if (undefined !== list)
     {
         _.forEach(list, function(feature){
             features[feature] = true;
         });
     }
-    this._services.others[id] = {id:id,name:name,features:features}
+    if (undefined !== demoMode)
+    {
+        if (true === demoMode)
+        {
+            demo = true;
+        }
+    }
+    this._services.others[id] = {id:id,name:name,features:features,demo:demo}
 }
 
 getServices()

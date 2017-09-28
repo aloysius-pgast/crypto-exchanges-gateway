@@ -203,21 +203,23 @@ app.get('/exchanges/poloniex/trades/:pair', (req, res) => {
 });
 
 //-- below routes require valid key/secret
+let demoMode = false;
 if ('' === config.exchanges.poloniex.key || '' === config.exchanges.poloniex.secret)
 {
     // register exchange
-    serviceRegistry.registerExchange('poloniex', 'Poloniex', features);
+    serviceRegistry.registerExchange('poloniex', 'Poloniex', features, demoMode);
     return;
 }
 else if ('demo' == config.exchanges.poloniex.key && 'demo' == config.exchanges.poloniex.secret)
 {
+    demoMode = false;
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
 // register exchange
-serviceRegistry.registerExchange('poloniex', 'Poloniex', features);
+serviceRegistry.registerExchange('poloniex', 'Poloniex', features, demoMode);
 
 /**
  * Returns all open orders

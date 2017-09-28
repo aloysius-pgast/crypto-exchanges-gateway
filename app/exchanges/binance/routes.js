@@ -232,21 +232,23 @@ app.get('/exchanges/binance/trades/:pair', (req, res) => {
 });
 
 //-- below routes require valid key/secret
+let demoMode = false;
 if ('' === config.exchanges.binance.key || '' === config.exchanges.binance.secret)
 {
     // register exchange
-    serviceRegistry.registerExchange('binance', 'Binance', features);
+    serviceRegistry.registerExchange('binance', 'Binance', features, demoMode);
     return;
 }
 else if ('demo' == config.exchanges.binance.key && 'demo' == config.exchanges.binance.secret)
 {
+    demoMode = true;
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
 // register exchange
-serviceRegistry.registerExchange('binance', 'Binance', features);
+serviceRegistry.registerExchange('binance', 'Binance', features, demoMode);
 
 /**
  * Returns open orders

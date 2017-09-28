@@ -40,12 +40,13 @@ Example for *GET* _/server/uptime_
 Result will be a dictionary with two entries :
 
 * _exchanges_ : per-exchange features
-* _others_ : features for other services such as _PushOver_
+* _others_ : features for other services such as _Push Over_
 
 [NOTE]
 ====
 * Only enabled exchanges will be present
 * Value for a feature will always be _true_ (if feature is not supported, it won't be in dictionnary)
+* When property _demo_ is _true_ for an entry, it means that this exchange or service is running in demo mode and will return *fake/random* data for API calls which require authentication (such as trading API on exchanges)
 ====
 
 .Examples
@@ -59,6 +60,7 @@ Example for *GET* _/server/uptime_
         "binance":{
             "id":"binance",
             "name":"Binance",
+            "demo":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -72,6 +74,7 @@ Example for *GET* _/server/uptime_
         "bittrex":{
             "id":"bittrex",
             "name":"Bittrex",
+            "demo":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -85,6 +88,7 @@ Example for *GET* _/server/uptime_
         "poloniex":{
             "id":"poloniex",
             "name":"Poloniex",
+            "demo":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -99,14 +103,16 @@ Example for *GET* _/server/uptime_
     "others":{
         "coinmarketcap":{
             "id":"coinmarketcap",
-            "name":"CoinMarketCap",
+            "name":"Coin Market Cap",
+            "demo":false,
             "features":{
 
             }
         },
         "pushover":{
             "id":"pushover",
-            "name":"PushOver",
+            "name":"Push Over",
+            "demo":false,
             "features":{
 
             }

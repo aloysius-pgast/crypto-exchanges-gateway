@@ -191,14 +191,16 @@ app.get('/exchanges/bittrex/trades/:pair', (req, res) => {
 });
 
 //-- below routes require valid key/secret
+let demoMode = false;
 if ('' === config.exchanges.bittrex.key || '' === config.exchanges.bittrex.secret)
 {
     // register exchange
-    serviceRegistry.registerExchange('bittrex', 'Bittrex', features);
+    serviceRegistry.registerExchange('bittrex', 'Bittrex', features, demoMode);
     return;
 }
 else if ('demo' == config.exchanges.bittrex.key && 'demo' == config.exchanges.bittrex.secret)
 {
+    demoMode = true;
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
