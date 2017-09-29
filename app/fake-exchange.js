@@ -230,7 +230,7 @@ cancelOrder(opt) {
  *     },...
  * }
  *
- * @param {string} opt.currency used to retrieve balance for a single currency (optional)
+ * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
  * @return {Promise}
  */
 balances(opt)
@@ -339,13 +339,16 @@ _generateBalances(pairs, opt)
 {
     let list = {};
     let currencies;
-    if (undefined === opt.currency)
+    if (undefined === opt.currencies)
     {
         currencies = this._generateCurrencies(pairs, [fakeData.balances.minCount, fakeData.balances.maxCount]);
+        currencies.push('BTC');
+        currencies.push('USDT');
+        currencies = _.uniq(currencies);
     }
     else
     {
-        currencies = [opt.currency];
+        currencies = opt.currencies;
     }
     _.forEach(currencies, (c) => {
         let available = this._generateQuantity();

@@ -1214,7 +1214,7 @@ cancelOrder(opt) {
  * }
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.currency used to retrieve balance for a single currency (optional)
+ * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
 balances(opt)
@@ -1230,9 +1230,16 @@ balances(opt)
         return new Promise((resolve, reject) => {
             p.then(function(data){
                 let list = {};
+                let filteredList = {};
+                if (undefined !== opt.currencies && 0 !== opt.currencies.length)
+                {
+                    _.forEach(opt.currencies, function(entry){
+                        filteredList[entry] = 1;
+                    });
+                }
                 _.forEach(data.balances, function (value) {
-                    // only keep the currency we're interested in
-                    if (undefined !== opt.currency && opt.currency != value.asset)
+                    // only keep the currencies we're interested in
+                    if (undefined !== opt.currencies && undefined === filteredList[value.asset])
                     {
                         return;
                     }

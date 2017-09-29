@@ -841,7 +841,7 @@ cancelOrder(opt) {
  * }
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.currency used to retrieve balance for a single currency (optional)
+ * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
 balances(opt)
@@ -863,9 +863,16 @@ balances(opt)
                     return;
                 }
                 let list = {};
+                let filteredList = {};
+                if (undefined !== opt.currencies && 0 !== opt.currencies.length)
+                {
+                    _.forEach(opt.currencies, function(entry){
+                        filteredList[entry] = 1;
+                    });
+                }
                 _.forEach(response.result, function(entry) {
-                    // only keep the currency we're interested in
-                    if (undefined !== opt.currency && opt.currency != entry.Currency)
+                    // only keep the currencies we're interested in
+                    if (undefined !== opt.currencies && undefined === filteredList[entry.Currency])
                     {
                         return;
                     }

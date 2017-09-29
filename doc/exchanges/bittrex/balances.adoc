@@ -16,6 +16,11 @@ Uses Bittrex _getbalances_ API
 |Default
 |Description
 
+|currencies
+|string (comma-separated)
+|
+|Comma-separated list of currencies to retrieve balances for (will be ignored if value of _outputFormat_ is _exchange_)
+
 |outputFormat
 |string (_custom_,_exchange_)
 |custom

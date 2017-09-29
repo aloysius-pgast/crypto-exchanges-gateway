@@ -535,6 +535,21 @@ app.get('/exchanges/poloniex/balances', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
+    if ('custom' == opt.outputFormat)
+    {
+        if (undefined !== req.query.currencies && '' != req.query.currencies)
+        {
+            // support both array and comma-separated string
+            if (Array.isArray(req.query.currencies))
+            {
+                opt.currencies = req.query.currencies;
+            }
+            else
+            {
+                opt.currencies = req.query.currencies.split(',');
+            }
+        }
+    }
     let p;
     if (null !== fakeExchange)
     {
@@ -566,7 +581,7 @@ app.get('/exchanges/poloniex/balances/:currency', (req, res) => {
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'currency'"});
         return;
     }
-    opt.currency = req.params.currency;
+    opt.currencies = [req.params.currency];
     let p;
     if (null !== fakeExchange)
     {
