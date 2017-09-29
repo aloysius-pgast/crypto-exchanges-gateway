@@ -1,5 +1,5 @@
 "use strict";
-const uuidGenerator = require('uuid/v1');
+const uuidGenerator = require('uuid/v4');
 const _ = require('lodash');
 const logger = require('winston');
 
@@ -10,7 +10,7 @@ const fakeData = {
         maxCount:15
     },
     closedOrders:{
-        minCount:0,
+        minCount:1,
         maxCount:15
     },
     balances:{
@@ -18,8 +18,8 @@ const fakeData = {
         maxCount:15,
     },
     rate:{
-        min:0.1,
-        max:50
+        min:0.0001,
+        max:0.95
     },
     quantity:{
         min:0.1,
@@ -78,7 +78,7 @@ constructor(realExchange)
      opt.outputFormat = 'custom';
      let self = this;
      return new Promise((resolve, reject) => {
-         let p = this._realExchange.pairs(opt).then(function(data) {
+         let p = self._realExchange.pairs(opt).then(function(data) {
              let list;
              try
              {
@@ -141,7 +141,7 @@ closedOrders(opt)
     opt.outputFormat = 'custom';
     let self = this;
     return new Promise((resolve, reject) => {
-        let p = this._realExchange.pairs(opt).then(function(data) {
+        let p = self._realExchange.pairs(opt).then(function(data) {
             let list;
             try
             {
@@ -238,7 +238,7 @@ balances(opt)
     opt.outputFormat = 'custom';
     let self = this;
     return new Promise((resolve, reject) => {
-        let p = this._realExchange.pairs(opt).then(function(data) {
+        let p = self._realExchange.pairs(opt).then(function(data) {
             let list;
             try
             {
@@ -292,7 +292,7 @@ _generateOpenOrders(pairs, opt)
             orderType:this._generateOrderType(),
             orderNumber:n,
             quantity:quantity,
-            remainingQuantity:this._generateFloat(quantity / 2.0, quantity),
+            remainingQuantity:this._generateRemainingQuantity(quantity),
             targetRate:rate,
             targetPrice:price,
             openTimestamp:this._generateTimestamp()
@@ -425,6 +425,17 @@ _generateTimestamp()
 _generateQuantity()
 {
     return this._generateFloat(fakeData.quantity.min, fakeData.quantity.max);
+}
+
+_generateRemainingQuantity(quantity)
+{
+    let value = Math.random();
+    // 100% remaining quantity 95% of times
+    if (value <= 0.95)
+    {
+        return quantity;
+    }
+    return this._generateFloat(quantity * 0.85, quantity);
 }
 
 _generateRate()
