@@ -4,11 +4,15 @@ const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
 const serviceRegistry = require('../../service-registry');
+const statistics = require('../../statistics');
 const FakeExchangeClass = require('../../fake-exchange');
 
 module.exports = function(app, bodyParser, config) {
 
-if (!config.exchanges.poloniex.enabled)
+const exchangeId = 'poloniex';
+const exchangeName = 'Poloniex';
+
+if (!config.exchanges[exchangeId].enabled)
 {
     return;
 }
@@ -28,7 +32,7 @@ let fakeExchange = null;
 let getPairs = function(opt){
     return exchange.pairs(opt);
 }
-pairFinder.register('poloniex', getPairs);
+pairFinder.register(exchangeId, getPairs);
 
 /**
  * Returns tickers for all pairs (or a list of pairs)
@@ -36,7 +40,7 @@ pairFinder.register('poloniex', getPairs);
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pairs pairs to retrieve ticker for (optional, will be ignored if 'outputFormat' is 'exchange')
  */
-app.get('/exchanges/poloniex/tickers', (req, res) => {
+app.get(`/exchanges/${exchangeId}/tickers`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if ('exchange' == req.query.outputFormat)
     {
@@ -59,10 +63,12 @@ app.get('/exchanges/poloniex/tickers', (req, res) => {
     }
     exchange.tickers(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', true);
             res.send(data);
         })
         .catch(function(ex)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
             res.status(503).send({origin:"remote",error:ex.message});
         });
 });
@@ -73,20 +79,23 @@ app.get('/exchanges/poloniex/tickers', (req, res) => {
  * @param {string} pair pairs to retrieve ticker for
  *
  */
-app.get('/exchanges/poloniex/tickers/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/tickers/:pair`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
     opt.pairs = [req.params.pair];
     exchange.tickers(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', true);
             res.send(data);
         })
         .catch(function(ex)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
             res.status(503).send({origin:"remote",error:ex.message});
         });
 });
@@ -97,7 +106,7 @@ app.get('/exchanges/poloniex/tickers/:pair', (req, res) => {
  * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
  * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  */
-app.get('/exchanges/poloniex/pairs', (req, res) => {
+app.get(`/exchanges/${exchangeId}/pairs`, (req, res) => {
     let opt = {};
     if (undefined !== req.query.pair && '' != req.query.pair)
     {
@@ -113,10 +122,12 @@ app.get('/exchanges/poloniex/pairs', (req, res) => {
     }
     exchange.pairs(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getPairs', true);
             res.send(data);
         })
         .catch(function(ex)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getPairs', false);
             res.status(503).send({origin:"remote",error:ex.message});
         });
 });
@@ -128,10 +139,11 @@ app.get('/exchanges/poloniex/pairs', (req, res) => {
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {integer} limit how many entries to retrieve (optional, default = 50)
  */
-app.get('/exchanges/poloniex/orderBooks/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/orderBooks/:pair`, (req, res) => {
     let opt = {outputFormat:'custom', limit:50};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
@@ -141,6 +153,7 @@ app.get('/exchanges/poloniex/orderBooks/:pair', (req, res) => {
         let limit = parseInt(req.query.limit);
         if (isNaN(limit) || limit <= 0)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
             res.status(400).send({origin:"gateway",error:util.format("Parameter 'limit' should be an integer > 0 : value = '%s'", req.query.limit)});
             return;
         }
@@ -152,10 +165,12 @@ app.get('/exchanges/poloniex/orderBooks/:pair', (req, res) => {
     }
     exchange.orderBook(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', true);
             res.send(data);
         })
         .catch(function(ex)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
             res.status(503).send({origin:"remote",error:ex.message});
         });
 });
@@ -167,10 +182,11 @@ app.get('/exchanges/poloniex/orderBooks/:pair', (req, res) => {
  * @param {integer} afterTradeId only retrieve trade with an ID > afterTradeId (optional, will be ignored if outputFormat is set to 'exchange')
  * @param {string} pair pair to retrieve last trades for
  */
-app.get('/exchanges/poloniex/trades/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/trades/:pair`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
@@ -186,6 +202,7 @@ app.get('/exchanges/poloniex/trades/:pair', (req, res) => {
             let afterTradeId = parseInt(req.query.afterTradeId);
             if (isNaN(afterTradeId) || afterTradeId <= 0)
             {
+                statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
                 res.status(400).send({origin:"gateway",error:util.format("Parameter 'afterTradeId' should be an integer > 0 : value = '%s'", req.query.afterTradeId)});
                 return;
             }
@@ -194,23 +211,25 @@ app.get('/exchanges/poloniex/trades/:pair', (req, res) => {
     }
     exchange.trades(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTrades', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
             res.status(503).send({origin:"remote",error:err});
         });
 });
 
 //-- below routes require valid key/secret
 let demoMode = false;
-if ('' === config.exchanges.poloniex.key || '' === config.exchanges.poloniex.secret)
+if ('' === config.exchanges[exchangeId].key || '' === config.exchanges[exchangeId].secret)
 {
     // register exchange
-    serviceRegistry.registerExchange('poloniex', 'Poloniex', features, demoMode);
+    serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
     return;
 }
-else if ('demo' == config.exchanges.poloniex.key && 'demo' == config.exchanges.poloniex.secret)
+else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchanges[exchangeId].secret)
 {
     demoMode = true;
     fakeExchange = new FakeExchangeClass(exchange);
@@ -219,15 +238,15 @@ else if ('demo' == config.exchanges.poloniex.key && 'demo' == config.exchanges.p
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
 // register exchange
-serviceRegistry.registerExchange('poloniex', 'Poloniex', features, demoMode);
+serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
 
 /**
- * Returns all open orders
+ * Returns open orders
  *
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pairs pairs to retrieve open orders for (optional, will be ignored if 'outputFormat' is 'exchange')
  */
-app.get('/exchanges/poloniex/openOrders', (req, res) => {
+app.get(`/exchanges/${exchangeId}/openOrders`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if ('exchange' == req.query.outputFormat)
     {
@@ -258,10 +277,12 @@ app.get('/exchanges/poloniex/openOrders', (req, res) => {
         p = exchange.openOrders(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -271,10 +292,11 @@ app.get('/exchanges/poloniex/openOrders', (req, res) => {
  *
  * @param {string} orderNumber unique identifier of the order to return
  */
-app.get('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
+app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -289,10 +311,12 @@ app.get('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
         p = exchange.openOrders(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -306,7 +330,7 @@ app.get('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
  * @param {float} targetRate rate to use for order
  * @param {float} quantity quantity to buy/sell
  */
-app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
+app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     let opt = {outputFormat:'custom'}
     let value = RequestHelper.getParam(req, 'outputFormat');
     if ('exchange' == value)
@@ -317,11 +341,13 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'orderType');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'orderType'"});
         return;
     }
     if ('buy' != value && 'sell' != value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'orderType' is not valid : value = '%s'", value)});
         return;
     }
@@ -330,6 +356,7 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'pair');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'pair'"});
         return;
     }
@@ -338,12 +365,14 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'targetRate');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'targetRate'"});
         return;
     }
     let targetRate = parseFloat(value);
     if (isNaN(targetRate) || targetRate <= 0)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'targetRate' should be a float > 0 : value = '%s'", value)});
         return;
     }
@@ -352,12 +381,14 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'quantity');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'quantity'"});
         return;
     }
     let quantity = parseFloat(value);
     if (isNaN(quantity) || quantity <= 0)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'quantity' should be a float > 0 : value = '%s'", value)});
         return;
     }
@@ -374,10 +405,12 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
         p = exchange.addOrder(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -388,7 +421,7 @@ app.post('/exchanges/poloniex/openOrders', bodyParser, (req, res) => {
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} orderNumber unique identifier of the order to cancel
  */
-app.delete('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
+app.delete(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if ('exchange' == req.query.outputFormat)
     {
@@ -396,6 +429,7 @@ app.delete('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
     }
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -411,10 +445,12 @@ app.delete('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
         p = exchange.cancelOrder(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -427,7 +463,7 @@ app.delete('/exchanges/poloniex/openOrders/:orderNumber', (req, res) => {
  * @param {integer} toTimestamp when to stop searching for completed orders (optional, defaults to now) (requires fromTimestamp)
  * @param {string} pairs pairs to retrieve closed orders for (optional, will be ignored if 'outputFormat' is 'exchange')
  */
-app.get('/exchanges/poloniex/closedOrders', (req, res) => {
+app.get(`/exchanges/${exchangeId}/closedOrders`, (req, res) => {
     let currentTimestamp = parseInt(new Date().getTime() / 1000);
     let minTimestamp = currentTimestamp - (3600 * 24);
     let opt = {outputFormat:'custom', fromTimestamp:minTimestamp, toTimestamp:currentTimestamp};
@@ -440,6 +476,7 @@ app.get('/exchanges/poloniex/closedOrders', (req, res) => {
         let fromTimestamp = parseInt(req.query.fromTimestamp);
         if (isNaN(fromTimestamp) || fromTimestamp <= 0)
         {
+            statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
             res.status(400).send({origin:"gateway",error:util.format("Query parameter 'fromTimestamp' should be a Unix timestamp integer >= 0 : value = '%s'", req.query.fromTimestamp)});
             return;
         }
@@ -449,6 +486,7 @@ app.get('/exchanges/poloniex/closedOrders', (req, res) => {
             let toTimestamp = parseInt(req.query.toTimestamp);
             if (isNaN(toTimestamp) || toTimestamp <= 0)
             {
+                statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
                 res.status(400).send({origin:"gateway",error:util.format("Query parameter 'toTimestamp' should be a Unix timestamp integer >= 0 : value = '%s'", req.query.toTimestamp)});
                 return;
             }
@@ -480,10 +518,12 @@ app.get('/exchanges/poloniex/closedOrders', (req, res) => {
         p = exchange.closedOrders(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -494,11 +534,12 @@ app.get('/exchanges/poloniex/closedOrders', (req, res) => {
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} orderNumber unique identifier of the order to return
  */
-app.get('/exchanges/poloniex/closedOrders/:orderNumber', (req, res) => {
+app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
     let currentTimestamp = parseInt(new Date().getTime() / 1000);
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -517,10 +558,12 @@ app.get('/exchanges/poloniex/closedOrders/:orderNumber', (req, res) => {
         p = exchange.closedOrders(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -529,7 +572,7 @@ app.get('/exchanges/poloniex/closedOrders/:orderNumber', (req, res) => {
  * Retrieves balances
  *
  */
-app.get('/exchanges/poloniex/balances', (req, res) => {
+app.get(`/exchanges/${exchangeId}/balances`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if ('exchange' == req.query.outputFormat)
     {
@@ -560,10 +603,12 @@ app.get('/exchanges/poloniex/balances', (req, res) => {
         p = exchange.balances(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -574,10 +619,11 @@ app.get('/exchanges/poloniex/balances', (req, res) => {
  * @param {string} currency currency to retrieve balance for
  *
  */
-app.get('/exchanges/poloniex/balances/:currency', (req, res) => {
+app.get(`/exchanges/${exchangeId}/balances/:currency`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.currency || '' == req.params.currency)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'currency'"});
         return;
     }
@@ -592,10 +638,12 @@ app.get('/exchanges/poloniex/balances/:currency', (req, res) => {
         p = exchange.balances(opt);
     }
     p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', true);
         res.send(data);
     })
     .catch(function(ex)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });

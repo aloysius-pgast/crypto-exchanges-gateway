@@ -4,6 +4,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const requestHelper = require('../request-helper');
 const serviceRegistry = require('../service-registry');
+const statistics = require('../statistics');
 
 module.exports = function(app, bodyParser, config) {
 
@@ -31,6 +32,13 @@ app.get('/server/logLevel', (req, res) => {
  */
 app.get('/server/services', (req, res) => {
     res.send(serviceRegistry.getServices());
+});
+
+/**
+ * Return statistics
+ */
+app.get('/server/statistics', (req, res) => {
+    res.send(statistics.getStatistics());
 });
 
 /**

@@ -120,3 +120,58 @@ Example for *GET* _/server/uptime_
     }
 }
 ----
+
+== Retrieve statistics of exchanges API (success, failure)
+
+*GET* _/server/statistics_
+
+=== Result
+
+Result will be a dictionary with two entries :
+
+* _exchanges_ : per-exchange statistics
+* _others_ : statistics for other services such as _Push Over_
+
+[NOTE]
+====
+* Statistics will only be created the first time an API is called (ie: statistics for _getTickers_ API of an exchange won't appear if it has not be called yet)
+====
+
+.Examples
+
+Example for *GET* _/server/statistics_
+
+[source,json]
+----
+{
+    "exchanges":{
+        "fakeExchange":{
+            "getBalances":{
+                "success":2,
+                "failure":0
+            }
+        },
+        "poloniex":{
+            "getPairs":{
+                "success":3,
+                "failure":0
+            },
+            "getOrderBooks":{
+                "success":1,
+                "failure":0
+            },
+            "getTrades":{
+                "success":1,
+                "failure":0
+            },
+            "getTickers":{
+                "success":2,
+                "failure":0
+            }
+        }
+    },
+    "others":{
+
+    }
+}
+----
