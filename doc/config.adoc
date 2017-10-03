@@ -14,6 +14,10 @@ Below config will only give access to public API (since no key/secret combinatio
         "ipaddr":"127.0.0.1",
         "port":8000
     },
+    "ui":{
+        /* enable ui : ui should be built first */
+        "enabled":true
+    },
     "logLevel":"warn",
     "coinmarketcap":{
         "enabled":true,
@@ -61,6 +65,10 @@ Access will be restricted using the following :
         /* listen to all ip addresses */
         "ipaddr":"*",
         "port":8000
+    },
+    "ui":{
+        /* enable ui : ui should be built first */
+        "enabled":true
     },
     "logLevel":"debug",
     "auth":{

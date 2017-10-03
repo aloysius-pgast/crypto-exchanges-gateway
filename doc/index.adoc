@@ -2,6 +2,8 @@
 
 include::config.adoc[leveloffset=1]
 
+include::ui/index.adoc[leveloffset=1]
+
 include::server.adoc[leveloffset=1]
 
 include::coinmarketcap/index.adoc[leveloffset=1]

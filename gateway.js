@@ -97,6 +97,34 @@ _.forEach(config.exchanges, function(obj, exchange) {
     }
 });
 
+//-- check ui config
+let enableUi = process.env['cfg.ui.enabled'];
+if (undefined !== enableUi && '' !== enableUi)
+{
+    if (true === enableUi || '1' == enableUi)
+    {
+        config.ui.enabled = true;
+    }
+    else if (false === enableUi || '0' == enableUi)
+    {
+        config.ui.enabled = false;
+    }
+}
+// ensure ui has been built
+if (config.ui.enabled)
+{
+    var uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
+    if (!fs.existsSync(uiBundleFile))
+    {
+        //config.ui.enabled = false;
+        logger.warn("UI won't be enabled because it does not seem to have been built");
+    }
+}
+if (config.ui.enabled)
+{
+    logger.warn("UI is enabled");
+}
+
 //-- check pushover config
 let pushoverUser = process.env['cfg.pushover.user'];
 let pushoverToken = process.env['cfg.pushover.token'];
@@ -134,9 +162,6 @@ logger.level = config.logLevel;
 // create app
 const bParser = bodyParser.urlencoded({ extended: false })
 const app = express();
-
-// gui sub directory will server static content
-app.use('/ui', express.static('ui'));
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");

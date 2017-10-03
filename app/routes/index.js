@@ -6,6 +6,7 @@ const errors = require('./errors');
 const coinmarketcap = require('../coinmarketcap/routes');
 const pushover = require('../pushover/routes');
 const exchanges = require('./exchanges');
+const ui = require('./ui');
 
 module.exports = function(app, bodyParser, config) {
     auth(app, bodyParser, config);
@@ -13,6 +14,7 @@ module.exports = function(app, bodyParser, config) {
     coinmarketcap(app, bodyParser, config);
     pushover(app, bodyParser, config);
     exchanges(app, bodyParser, config);
+    ui(app, bodyParser, config);
     server(app, bodyParser, config);
     _default(app, bodyParser, config);
     errors(app, bodyParser, config);

@@ -1,0 +1,6 @@
+{
+  "name": "OrderBook",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./OrderBook.js"
+}

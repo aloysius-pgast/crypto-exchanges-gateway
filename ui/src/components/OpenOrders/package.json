@@ -1,0 +1,6 @@
+{
+  "name": "OpenOrders",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./OpenOrders.js"
+}

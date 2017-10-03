@@ -1,0 +1,6 @@
+{
+  "name": "DemoModeWarning",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./DemoModeWarning.js"
+}
