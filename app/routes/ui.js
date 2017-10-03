@@ -20,6 +20,7 @@ if (!config.ui.enabled)
 app.get('/ui/config/config.json', (req, res) => {
     // use req.headers.host instead of req.hostname to ensure port number is preserved
     let endpoint = util.format('%s://%s', req.protocol, req.headers.host);
+    logger.error(req.headers);
     res.send({
         apiEndpoint:endpoint
     });
