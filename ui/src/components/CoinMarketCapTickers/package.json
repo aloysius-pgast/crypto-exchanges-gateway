@@ -1,0 +1,6 @@
+{
+  "name": "CoinMarketCapTickers",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./CoinMarketCapTickers.js"
+}

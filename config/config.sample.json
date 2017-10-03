@@ -3,6 +3,9 @@
         "ipaddr":"127.0.0.1",
         "port":8000
     },
+    "ui":{
+        "enabled":true
+    },
     "logLevel":"warn",
     "coinmarketcap":{
         "enabled":true

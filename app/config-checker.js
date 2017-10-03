@@ -26,6 +26,9 @@ constructor()
                 allow:[]
             }
         },
+        ui:{
+           enabled:false
+        },
         coinmarketcap:{
             enabled:false
         },
@@ -62,6 +65,10 @@ _check()
     {
         valid = false;
     }
+    if (!this._checkUi())
+    {
+        valid = false;
+    }
     if (!this._checkCoinMarketCap())
     {
         valid = false;
@@ -73,6 +80,28 @@ _check()
     if (!this._checkExchanges())
     {
         valid = false;
+    }
+    return valid;
+}
+
+_checkUi()
+{
+    let valid = true;
+    if (undefined === this._config.ui)
+    {
+        return true;
+    }
+    if (undefined !== this._config.ui.enabled)
+    {
+        if (!this._isValidBoolean(this._config.ui.enabled))
+        {
+            this._invalid({name:'ui.enabled', value:this._config.ui.enabled});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.ui.enabled = this._config.ui.enabled;
+        }
     }
     return valid;
 }

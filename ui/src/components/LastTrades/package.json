@@ -1,0 +1,6 @@
+{
+  "name": "LastTrades",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./LastTrades.js"
+}

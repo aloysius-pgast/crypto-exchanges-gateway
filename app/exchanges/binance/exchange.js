@@ -239,13 +239,13 @@ pairs(opt)
         });
     }
     return this._limiterGlobal.schedule(function(){
-        let p = self._restClient.allPrices();
+        let p = self._restClient.allBookTickers();
         return new Promise((resolve, reject) => {
             p.then(function(data){
                 let list = {}
                 _.forEach(data, function (entry) {
                     // based on discussion with Binance support, currency with a price of 0 are not trading
-                    if (0 == entry.price)
+                    if (0 == entry.askPrice && 0 == entry.bidPrice)
                     {
                         return;
                     }
@@ -1214,7 +1214,7 @@ cancelOrder(opt) {
  * }
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.currency used to retrieve balance for a single currency (optional)
+ * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
 balances(opt)
@@ -1230,9 +1230,16 @@ balances(opt)
         return new Promise((resolve, reject) => {
             p.then(function(data){
                 let list = {};
+                let filteredList = {};
+                if (undefined !== opt.currencies && 0 !== opt.currencies.length)
+                {
+                    _.forEach(opt.currencies, function(entry){
+                        filteredList[entry] = 1;
+                    });
+                }
                 _.forEach(data.balances, function (value) {
-                    // only keep the currency we're interested in
-                    if (undefined !== opt.currency && opt.currency != value.asset)
+                    // only keep the currencies we're interested in
+                    if (undefined !== opt.currencies && undefined === filteredList[value.asset])
                     {
                         return;
                     }

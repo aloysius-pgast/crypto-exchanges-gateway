@@ -230,7 +230,7 @@ Query parameters can be sent in one of the following format :
 
 === Mandatory query parameters
 
-[cols="1,1a,1a,3a", options="header"]
+[cols="1,1a,1a", options="header"]
 |===
 
 |Name

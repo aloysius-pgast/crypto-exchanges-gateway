@@ -30,3 +30,148 @@ Example for *GET* _/server/uptime_
     "uptime":"debug"
 }
 ----
+
+== Retrieve list of services and features
+
+*GET* _/server/services_
+
+=== Result
+
+Result will be a dictionary with two entries :
+
+* _exchanges_ : per-exchange features
+* _others_ : features for other services such as _Push Over_
+
+[NOTE]
+====
+* Only enabled exchanges will be present
+* Value for a feature will always be _true_ (if feature is not supported, it won't be in dictionnary)
+* When property _demo_ is _true_ for an entry, it means that this exchange or service is running in demo mode and will return *fake/random* data for API calls which require authentication (such as trading API on exchanges)
+====
+
+.Examples
+
+Example for *GET* _/server/uptime_
+
+[source,json]
+----
+{
+    "exchanges":{
+        "binance":{
+            "id":"binance",
+            "name":"Binance",
+            "demo":false,
+            "features":{
+                "tickers":true,
+                "orderBooks":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        },
+        "bittrex":{
+            "id":"bittrex",
+            "name":"Bittrex",
+            "demo":false,
+            "features":{
+                "tickers":true,
+                "orderBooks":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        },
+        "poloniex":{
+            "id":"poloniex",
+            "name":"Poloniex",
+            "demo":false,
+            "features":{
+                "tickers":true,
+                "orderBooks":true,
+                "pairs":true,
+                "trades":true,
+                "openOrders":true,
+                "closedOrders":true,
+                "balances":true
+            }
+        }
+    },
+    "others":{
+        "coinmarketcap":{
+            "id":"coinmarketcap",
+            "name":"Coin Market Cap",
+            "demo":false,
+            "features":{
+
+            }
+        },
+        "pushover":{
+            "id":"pushover",
+            "name":"Push Over",
+            "demo":false,
+            "features":{
+
+            }
+        }
+    }
+}
+----
+
+== Retrieve statistics of exchanges API (success, failure)
+
+*GET* _/server/statistics_
+
+=== Result
+
+Result will be a dictionary with two entries :
+
+* _exchanges_ : per-exchange statistics
+* _others_ : statistics for other services such as _Push Over_
+
+[NOTE]
+====
+* Statistics will only be created the first time an API is called (ie: statistics for _getTickers_ API of an exchange won't appear if it has not be called yet)
+====
+
+.Examples
+
+Example for *GET* _/server/statistics_
+
+[source,json]
+----
+{
+    "exchanges":{
+        "fakeExchange":{
+            "getBalances":{
+                "success":2,
+                "failure":0
+            }
+        },
+        "poloniex":{
+            "getPairs":{
+                "success":3,
+                "failure":0
+            },
+            "getOrderBooks":{
+                "success":1,
+                "failure":0
+            },
+            "getTrades":{
+                "success":1,
+                "failure":0
+            },
+            "getTickers":{
+                "success":2,
+                "failure":0
+            }
+        }
+    },
+    "others":{
+
+    }
+}
+----

@@ -14,6 +14,9 @@ Use it at your own risks and be careful with your money ;)
 * Handles authentication so that on client side you can concentrate on what really matters
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
+* Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
+
+<img src="doc/ui/img/tickers.png" width="400"/>
 
 ## How to use it
 
@@ -196,6 +199,7 @@ Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON conte
 By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
 
 * cfg.logLevel : log level
+* cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
 * cfg.exchanges.poloniex.key : Poloniex user key
@@ -226,6 +230,7 @@ This project was made possible thanks to following projects :
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
 * [winston](https://www.npmjs.com/package/winston) (for logging)
 * [chump](https://www.npmjs.com/package/chump) (for PushOver)
+* [uuid](https://www.npmjs.com/package/uuid)
 
 ## Donate
 

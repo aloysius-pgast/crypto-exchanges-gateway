@@ -1,0 +1,6 @@
+{
+  "name": "ComponentLoadingSpinner",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./ComponentLoadingSpinner.js"
+}

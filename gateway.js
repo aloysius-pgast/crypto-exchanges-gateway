@@ -58,28 +58,88 @@ if (!checker.check(config))
 }
 config = checker.getCfg();
 
+// add log if CoinMarketCap is enabled
+if (config.coinmarketcap.enabled)
+{
+    logger.warn("CoinMarketCap API is enabled");
+}
+
 //-- update config based on environment (used when using docker container)
 // check exchanges config
-_.forEach(['binance','bittrex','poloniex'], function(exchange) {
+_.forEach(config.exchanges, function(obj, exchange) {
     let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
     let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
     if (undefined !== key && '' != key && undefined !== secret && '' != secret)
     {
-        logger.warn("Enabling '%s' exchange...", exchange);
         config.exchanges[exchange]['key'] = key;
         config.exchanges[exchange]['secret'] = secret;
     }
 });
-// check pushover config
+// log which exchanges are enabled
+_.forEach(config.exchanges, function(obj, exchange) {
+    if (config.exchanges[exchange]['enabled'])
+    {
+        if ('' != config.exchanges[exchange]['key'] && '' != config.exchanges[exchange]['secret'])
+        {
+            if ('demo' == config.exchanges[exchange]['key'] && 'demo' == config.exchanges[exchange]['secret'])
+            {
+                logger.warn("%s exchange is enabled (public API & trading API)(DEMO)", exchange);
+            }
+            else
+            {
+                logger.warn("%s exchange is enabled (public API & trading API)", exchange);
+            }
+        }
+        else
+        {
+            logger.warn("%s exchange is enabled (public API)", exchange);
+        }
+    }
+});
+
+//-- check ui config
+let enableUi = process.env['cfg.ui.enabled'];
+if (undefined !== enableUi && '' !== enableUi)
+{
+    if (true === enableUi || '1' == enableUi)
+    {
+        config.ui.enabled = true;
+    }
+    else if (false === enableUi || '0' == enableUi)
+    {
+        config.ui.enabled = false;
+    }
+}
+// ensure ui has been built
+if (config.ui.enabled)
+{
+    var uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
+    if (!fs.existsSync(uiBundleFile))
+    {
+        config.ui.enabled = false;
+        logger.warn("UI won't be enabled because it does not seem to have been built");
+    }
+}
+if (config.ui.enabled)
+{
+    logger.warn("UI is enabled");
+}
+
+//-- check pushover config
 let pushoverUser = process.env['cfg.pushover.user'];
 let pushoverToken = process.env['cfg.pushover.token'];
 if (undefined !== pushoverUser && '' != pushoverUser && undefined !== pushoverToken && '' != pushoverToken)
 {
-    logger.warn("Enabling 'PushOver' service...", exchange);
     config.pushover.enabled = true;
     config.pushover.user = pushoverUser;
     config.pushover.token = pushoverToken;
 }
+// add log if push over is enabled
+if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushover.token)
+{
+    logger.warn("PushOver API is enabled");
+}
+
 // check config
 let logLevel = process.env['cfg.logLevel'];
 if (undefined !== logLevel)
@@ -102,6 +162,12 @@ logger.level = config.logLevel;
 // create app
 const bParser = bodyParser.urlencoded({ extended: false })
 const app = express();
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
+    next();
+});
 
 // do we want to trust proxy
 if (config.auth.trustProxy.enabled)

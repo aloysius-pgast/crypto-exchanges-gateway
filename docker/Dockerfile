@@ -5,7 +5,8 @@ ARG TIMESTAMP=0
 RUN echo "$TIMESTAMP" && \
     git clone https://github.com/aloysius-pgast/crypto-exchanges-gateway.git && cd crypto-exchanges-gateway && \
     git checkout master && \
-    npm install && cp docker/config.docker.json config/config.json
+    npm install && cp docker/config.docker.json config/config.json && \
+    cd ui && npm install -g webpack && npm install && npm run build && rm -fr node_modules
 
 FROM node:alpine
 WORKDIR /root/crypto-exchanges-gateway/

@@ -1,17 +1,28 @@
 "use strict";
 const util = require('util');
+const _ = require('lodash');
 const RequestHelper = require('../../request-helper');
 const pairFinder = require('../../pair-finder');
+const serviceRegistry = require('../../service-registry');
+const statistics = require('../../statistics');
+const FakeExchangeClass = require('../../fake-exchange');
 
 module.exports = function(app, bodyParser, config) {
 
-if (!config.exchanges.binance.enabled)
+const exchangeId = 'binance';
+const exchangeName = 'Binance';
+
+if (!config.exchanges[exchangeId].enabled)
 {
     return;
 }
 
+// public features
+let features = ['tickers','orderBooks','pairs','trades'];
+
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(config);
+let fakeExchange = null;
 
 /**
  * Retrieves existing pairs
@@ -21,7 +32,7 @@ const exchange = new ExchangeClass(config);
 let getPairs = function(opt){
     return exchange.pairs(opt);
 }
-pairFinder.register('binance', getPairs);
+pairFinder.register(exchangeId, getPairs);
 
 /**
  * Returns tickers for a list of pairs
@@ -29,7 +40,7 @@ pairFinder.register('binance', getPairs);
  * @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair or no pair)
  * @param {string} pairs pairs to retrieve ticker for (optional)
  */
-app.get('/exchanges/binance/tickers', (req, res) => {
+app.get(`/exchanges/${exchangeId}/tickers`, (req, res) => {
     let opt = {outputFormat:'custom',pairs:[]};
     if (undefined !== req.query.pairs && '' != req.query.pairs)
     {
@@ -49,10 +60,12 @@ app.get('/exchanges/binance/tickers', (req, res) => {
     }
     exchange.tickers(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
             if (undefined === err.msg)
             {
                 res.status(503).send({origin:"remote",error:err});
@@ -70,7 +83,7 @@ app.get('/exchanges/binance/tickers', (req, res) => {
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pair pair to retrieve ticker for
  */
-app.get('/exchanges/binance/tickers/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/tickers/:pair`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if ('exchange' == req.query.outputFormat)
     {
@@ -78,16 +91,19 @@ app.get('/exchanges/binance/tickers/:pair', (req, res) => {
     }
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
     opt.pairs = [req.params.pair];
     exchange.tickers(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTickers', false);
             if (undefined === err.msg)
             {
                 res.status(503).send({origin:"remote",error:err});
@@ -105,7 +121,7 @@ app.get('/exchanges/binance/tickers/:pair', (req, res) => {
  * @param {string} currency : used to list pairs with a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
  * @param {string} baseCurrency : used to list pairs with a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  */
-app.get('/exchanges/binance/pairs', (req, res) => {
+app.get(`/exchanges/${exchangeId}/pairs`, (req, res) => {
     let opt = {};
     if (undefined !== req.query.pair && '' != req.query.pair)
     {
@@ -121,10 +137,12 @@ app.get('/exchanges/binance/pairs', (req, res) => {
     }
     exchange.pairs(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getPairs', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getPairs', false);
             if (undefined === err.msg)
             {
                 res.status(503).send({origin:"remote",error:err});
@@ -143,10 +161,11 @@ app.get('/exchanges/binance/pairs', (req, res) => {
  * @param {string} pair pair to retrieve order book for
  * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100)
  */
-app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/orderBooks/:pair`, (req, res) => {
     let opt = {outputFormat:'custom', limit:100};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
@@ -156,6 +175,7 @@ app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
         let limit = parseInt(req.query.limit);
         if (isNaN(limit) || limit <= 0)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
             res.status(400).send({origin:"gateway",error:util.format("Parameter 'limit' should be an integer > 0 : value = '%s'", req.query.limit)});
             return;
         }
@@ -167,10 +187,12 @@ app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
     }
     exchange.orderBook(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
             if (undefined === err.msg)
             {
                 res.status(503).send({origin:"remote",error:err});
@@ -189,10 +211,11 @@ app.get('/exchanges/binance/orderBooks/:pair', (req, res) => {
  * @param {integer} afterTradeId only retrieve trade with an ID > afterTradeId (optional, will be ignored if outputFormat is set to 'exchange')
  * @param {string} pair pair to retrieve last trades for
  */
-app.get('/exchanges/binance/trades/:pair', (req, res) => {
+app.get(`/exchanges/${exchangeId}/trades/:pair`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
+        statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
         return;
     }
@@ -208,6 +231,7 @@ app.get('/exchanges/binance/trades/:pair', (req, res) => {
             let afterTradeId = parseInt(req.query.afterTradeId);
             if (isNaN(afterTradeId) || afterTradeId <= 0)
             {
+                statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
                 res.status(400).send({origin:"gateway",error:util.format("Parameter 'afterTradeId' should be an integer > 0 : value = '%s'", req.query.afterTradeId)});
                 return;
             }
@@ -216,19 +240,34 @@ app.get('/exchanges/binance/trades/:pair', (req, res) => {
     }
     exchange.trades(opt)
         .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTrades', true);
             res.send(data);
         })
         .catch(function(err)
         {
+            statistics.increaseExchangeStatistic(exchangeId, 'getTrades', false);
             res.status(503).send({origin:"remote",error:err});
         });
 });
 
 //-- below routes require valid key/secret
-if ('' === config.exchanges.binance.key || '' === config.exchanges.binance.secret)
+let demoMode = false;
+if ('' === config.exchanges[exchangeId].key || '' === config.exchanges[exchangeId].secret)
 {
+    // register exchange
+    serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
     return;
 }
+else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchanges[exchangeId].secret)
+{
+    demoMode = true;
+    fakeExchange = new FakeExchangeClass(exchange);
+}
+
+// add private features
+features = _.concat(features, ['openOrders','closedOrders','balances']);
+// register exchange
+serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
 
 /**
  * Returns open orders
@@ -236,7 +275,7 @@ if ('' === config.exchanges.binance.key || '' === config.exchanges.binance.secre
  * @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair or no pair)
  * @param {string} pairs pairs to retrieve open orders for (optional)
  */
-app.get('/exchanges/binance/openOrders', (req, res) => {
+app.get(`/exchanges/${exchangeId}/openOrders`, (req, res) => {
     let opt = {pairs:[]};
     if (undefined !== req.query.pairs && '' != req.query.pairs)
     {
@@ -254,21 +293,31 @@ app.get('/exchanges/binance/openOrders', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.openOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -277,10 +326,11 @@ app.get('/exchanges/binance/openOrders', (req, res) => {
  * @param {string} orderNumber unique identifier of the order to return
  * @param {string} pair pair for this order (optional)
  */
-app.get('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
+app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -289,21 +339,31 @@ app.get('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
     {
         opt.pair = req.query.pair;
     }
-    exchange.openOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.openOrders(opt);
+    }
+    else
+    {
+        p = exchange.openOrders(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -315,7 +375,7 @@ app.get('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
  * @param {float} targetRate rate to use for order
  * @param {float} quantity quantity to buy/sell
  */
-app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
+app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     let opt = {outputFormat:'custom'}
     let value = RequestHelper.getParam(req, 'outputFormat');
     if ('exchange' == value)
@@ -326,11 +386,13 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'orderType');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'orderType'"});
         return;
     }
     if ('buy' != value && 'sell' != value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'orderType' is not valid : value = '%s'", value)});
         return;
     }
@@ -339,6 +401,7 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'pair');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'pair'"});
         return;
     }
@@ -347,12 +410,14 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'targetRate');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'targetRate'"});
         return;
     }
     let targetRate = parseFloat(value);
     if (isNaN(targetRate) || targetRate <= 0)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'targetRate' should be a float > 0 : value = '%s'", value)});
         return;
     }
@@ -361,32 +426,44 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'quantity');
     if (undefined === value || '' == value)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'quantity'"});
         return;
     }
     let quantity = parseFloat(value);
     if (isNaN(quantity) || quantity <= 0)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'quantity' should be a float > 0 : value = '%s'", value)});
         return;
     }
     opt.quantity = value;
     //-- create order
-    exchange.addOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.addOrder(opt);
+    }
+    else
+    {
+        p = exchange.addOrder(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -396,7 +473,7 @@ app.post('/exchanges/binance/openOrders', bodyParser, (req, res) => {
  * @param {string} orderNumber unique identifier of the order to cancel
  * @param {string} pair pair for this order (optional)
  */
-app.delete('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
+app.delete(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if ('exchange' == req.query.outputFormat)
     {
@@ -404,6 +481,7 @@ app.delete('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
     }
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -412,23 +490,32 @@ app.delete('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
     {
         opt.pair = req.query.pair;
     }
-    //-- create order
-    exchange.cancelOrder(opt)
-        .then(function(data) {
-            console.error(data);
-            res.send(data);
-        })
-        .catch(function(err)
+    //-- cancel order
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.cancelOrder(opt);
+    }
+    else
+    {
+        p = exchange.cancelOrder(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -437,7 +524,7 @@ app.delete('/exchanges/binance/openOrders/:orderNumber', (req, res) => {
  * @param {string} opt.outputFormat if value is 'exchange' AND opt.pairs only contain one pair, response returned will be returned untouched (will be forced to 'custom' if we have more than one pair or no pair)
  * @param {string} pairs pairs to retrieve closed orders for (optional, will be ignored if 'outputFormat' is 'exchange')
  */
-app.get('/exchanges/binance/closedOrders', (req, res) => {
+app.get(`/exchanges/${exchangeId}/closedOrders`, (req, res) => {
     let opt = {pairs:[]};
     if (undefined !== req.query.pairs && '' != req.query.pairs)
     {
@@ -455,21 +542,31 @@ app.get('/exchanges/binance/closedOrders', (req, res) => {
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.closedOrders(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -478,10 +575,11 @@ app.get('/exchanges/binance/closedOrders', (req, res) => {
  * @param {string} orderNumber unique identifier of the order to return
  * @param {string} pair pair for this order (optional)
  */
-app.get('/exchanges/binance/closedOrders/:orderNumber', (req, res) => {
+app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -490,47 +588,83 @@ app.get('/exchanges/binance/closedOrders/:orderNumber', (req, res) => {
         opt.pair = req.query.pair;
     }
     opt.orderNumber = req.params.orderNumber;
-    exchange.closedOrder(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.closedOrders(opt);
+    }
+    else
+    {
+        p = exchange.closedOrders(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
- * Retrieves all balances
+ * Retrieves balances
+ *
  */
-app.get('/exchanges/binance/balances', (req, res) => {
+app.get(`/exchanges/${exchangeId}/balances`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if ('exchange' == req.query.outputFormat)
     {
         opt.outputFormat = 'exchange';
     }
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    if ('custom' == opt.outputFormat)
+    {
+        if (undefined !== req.query.currencies && '' != req.query.currencies)
         {
-            if (undefined === err.msg)
+            // support both array and comma-separated string
+            if (Array.isArray(req.query.currencies))
             {
-                res.status(503).send({origin:"remote",error:err});
+                opt.currencies = req.query.currencies;
             }
             else
             {
-                res.status(503).send({origin:"remote",error:err.msg});
+                opt.currencies = req.query.currencies.split(',');
             }
-        });
+        }
+    }
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
+        if (undefined === err.msg)
+        {
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 /**
@@ -539,29 +673,40 @@ app.get('/exchanges/binance/balances', (req, res) => {
  * @param {string} currency currency to retrieve balance for
  *
  */
-app.get('/exchanges/binance/balances/:currency', (req, res) => {
+app.get(`/exchanges/${exchangeId}/balances/:currency`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.currency || '' == req.params.currency)
     {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'currency'"});
         return;
     }
-    opt.currency = req.params.currency;
-    exchange.balances(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
+    opt.currencies = [req.params.currency];
+    let p;
+    if (null !== fakeExchange)
+    {
+        p = fakeExchange.balances(opt);
+    }
+    else
+    {
+        p = exchange.balances(opt);
+    }
+    p.then(function(data) {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', true);
+        res.send(data);
+    })
+    .catch(function(err)
+    {
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
+        if (undefined === err.msg)
         {
-            if (undefined === err.msg)
-            {
-                res.status(503).send({origin:"remote",error:err});
-            }
-            else
-            {
-                res.status(503).send({origin:"remote",error:err.msg});
-            }
-        });
+            res.status(503).send({origin:"remote",error:err});
+        }
+        else
+        {
+            res.status(503).send({origin:"remote",error:err.msg});
+        }
+    });
 });
 
 };
