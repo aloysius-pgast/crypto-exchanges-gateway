@@ -22,7 +22,8 @@ app.get('/ui/config/config.json', (req, res) => {
     let endpoint = util.format('%s://%s', req.protocol, req.headers.host);
     logger.error(req.headers);
     res.send({
-        apiEndpoint:endpoint
+        apiEndpoint:endpoint,
+        headers:JSON.stringify(req.headers)
     });
 });
 
