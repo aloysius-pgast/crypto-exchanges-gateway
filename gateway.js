@@ -116,7 +116,7 @@ if (config.ui.enabled)
     var uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
     if (!fs.existsSync(uiBundleFile))
     {
-        //config.ui.enabled = false;
+        config.ui.enabled = false;
         logger.warn("UI won't be enabled because it does not seem to have been built");
     }
 }
