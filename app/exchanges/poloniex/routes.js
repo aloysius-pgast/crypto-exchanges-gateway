@@ -277,12 +277,12 @@ app.get(`/exchanges/${exchangeId}/openOrders`, (req, res) => {
         p = exchange.openOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -296,7 +296,7 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -311,12 +311,12 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
         p = exchange.openOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -341,13 +341,13 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'orderType');
     if (undefined === value || '' == value)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'orderType'"});
         return;
     }
     if ('buy' != value && 'sell' != value)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'orderType' is not valid : value = '%s'", value)});
         return;
     }
@@ -356,7 +356,7 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'pair');
     if (undefined === value || '' == value)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'pair'"});
         return;
     }
@@ -365,14 +365,14 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'targetRate');
     if (undefined === value || '' == value)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'targetRate'"});
         return;
     }
     let targetRate = parseFloat(value);
     if (isNaN(targetRate) || targetRate <= 0)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'targetRate' should be a float > 0 : value = '%s'", value)});
         return;
     }
@@ -381,14 +381,14 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
     value = RequestHelper.getParam(req, 'quantity');
     if (undefined === value || '' == value)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing query parameter 'quantity'"});
         return;
     }
     let quantity = parseFloat(value);
     if (isNaN(quantity) || quantity <= 0)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'quantity' should be a float > 0 : value = '%s'", value)});
         return;
     }
@@ -405,12 +405,12 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
         p = exchange.addOrder(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'addOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'addOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -429,7 +429,7 @@ app.delete(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     }
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -445,12 +445,12 @@ app.delete(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
         p = exchange.cancelOrder(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'cancelOrder', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'cancelOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -476,7 +476,7 @@ app.get(`/exchanges/${exchangeId}/closedOrders`, (req, res) => {
         let fromTimestamp = parseInt(req.query.fromTimestamp);
         if (isNaN(fromTimestamp) || fromTimestamp <= 0)
         {
-            statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
+            statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
             res.status(400).send({origin:"gateway",error:util.format("Query parameter 'fromTimestamp' should be a Unix timestamp integer >= 0 : value = '%s'", req.query.fromTimestamp)});
             return;
         }
@@ -486,7 +486,7 @@ app.get(`/exchanges/${exchangeId}/closedOrders`, (req, res) => {
             let toTimestamp = parseInt(req.query.toTimestamp);
             if (isNaN(toTimestamp) || toTimestamp <= 0)
             {
-                statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
+                statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
                 res.status(400).send({origin:"gateway",error:util.format("Query parameter 'toTimestamp' should be a Unix timestamp integer >= 0 : value = '%s'", req.query.toTimestamp)});
                 return;
             }
@@ -518,12 +518,12 @@ app.get(`/exchanges/${exchangeId}/closedOrders`, (req, res) => {
         p = exchange.closedOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -539,7 +539,7 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -558,12 +558,12 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
         p = exchange.closedOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -603,12 +603,12 @@ app.get(`/exchanges/${exchangeId}/balances`, (req, res) => {
         p = exchange.balances(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -623,7 +623,7 @@ app.get(`/exchanges/${exchangeId}/balances/:currency`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.currency || '' == req.params.currency)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'currency'"});
         return;
     }
@@ -638,12 +638,12 @@ app.get(`/exchanges/${exchangeId}/balances/:currency`, (req, res) => {
         p = exchange.balances(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fakeExchange' : exchangeId, 'getBalances', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getBalances', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
