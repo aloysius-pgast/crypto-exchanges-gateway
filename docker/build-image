@@ -24,4 +24,4 @@ then
             usage
     esac
 fi
-docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchange-gateway .
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway .
