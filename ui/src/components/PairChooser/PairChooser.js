@@ -140,6 +140,8 @@ _handleSelectFilteredPair(event)
     this.setState((prevState, props) => {
         return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[]};
     }, function(){
+        // update datastore
+        dataStore.setExchangeData(this.props.exchange, 'pair', pair);
         // call event handler if defined
         if (undefined !== this.props.OnSelectPair)
         {
