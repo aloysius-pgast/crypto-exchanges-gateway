@@ -291,8 +291,8 @@ render()
 
     return (
         <div>
-            <InputGroup style={{maxWidth:"400px",marginBottom:'5px'}}>
-              <Input type="text" placeholder="Enter currency or choose with menu" value={this.state.currencyFilter} onChange={this._handleSetCurrencyFilter.bind(this)}/>
+            <InputGroup style={{maxWidth:"250px",marginBottom:'5px'}}>
+              <Input type="text" placeholder="Enter currency or use menu" value={this.state.currencyFilter} onChange={this._handleSetCurrencyFilter.bind(this)}/>
               <button type="button" className="input-group-addon btn btn-link" onClick={this._handleClearCurrencyFilter.bind(this)}>
                   <i className="fa fa-remove" style={{fontSize:'1rem'}}></i>
               </button>
