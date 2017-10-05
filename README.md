@@ -18,6 +18,17 @@ Use it at your own risks and be careful with your money ;)
 
 <img src="doc/ui/img/tickers.png" width="400"/>
 
+See a live demo at https://mpe1.sloppy.zone/ui/
+
+Of course, above demo **does not use any valid _user/token_**. This means the following :
+
+* everything related to _price_ & _order book_ is **populated with real data**
+* the list of _open/completed orders_ is **filled with random data**
+* the list of _balances_ is **filled with random data**
+* _new orders_ **won't be actually executed** ;)
+
+In order to have a full experience, just follow [installation steps](#installation)
+
 ## How to use it
 
 [Install](#installation) it wherever you want and start sending requests from your own program
