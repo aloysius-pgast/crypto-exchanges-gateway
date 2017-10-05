@@ -1,4 +1,11 @@
 import React, { Component } from 'react';
+import {
+  Input,
+  InputGroup,
+  Dropdown,
+  DropdownMenu,
+  DropdownItem,
+} from "reactstrap";
 import dateTimeHelper from '../../lib/DateTimeHelper';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import ComponentLoadedTimestamp from '../../components/ComponentLoadedTimestamp';
@@ -16,7 +23,9 @@ constructor(props)
         pairs:props.pairs,
         market:null,
         marketPairs:null,
-        pair:undefined === this.props.pair ? null : this.props.pair
+        pair:undefined === this.props.pair ? null : this.props.pair,
+        currencyFilter:'',
+        filteredCurrencies:[]
     }
     // check datastore if we don't have a pair in props
     if (null === this.state.pair)
@@ -80,6 +89,32 @@ _handleStarPair(flag)
     });
 }
 
+_handleClearCurrencyFilter(event)
+{
+    this.setState((prevState, props) => {
+        return {currencyFilter:'',filteredCurrencies:[]};
+    });
+}
+
+_handleSetCurrencyFilter(event)
+{
+    let filter = event.target.value.trim().toUpperCase();
+    let list = [];
+    if ('' != filter)
+    {
+        _.forEach(this.state.pairs, (e) => {
+            // found matching pair
+            if (-1 != e.currency.indexOf(filter))
+            {
+                list.push(e.pair);
+            }
+        });
+    }
+    this.setState((prevState, props) => {
+        return {currencyFilter:filter,filteredCurrencies:list};
+    });
+}
+
 _handleSelectMarket(event)
 {
     let market = event.target.value;
@@ -93,6 +128,25 @@ _handleSelectMarket(event)
     }, function(){
         // don't update datastore here
         this.props.OnSelectPair(null);
+    });
+}
+
+_handleSelectFilteredPair(event)
+{
+    let pair = event.target.id;
+    let arr = pair.split('-');
+    let market = arr[0];
+    let marketPairs = this._getMarketPairs(this.state.pairs, market);
+    this.setState((prevState, props) => {
+        return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[]};
+    }, function(){
+        // update datastore
+        dataStore.setExchangeData(this.props.exchange, 'pair', pair);
+        // call event handler if defined
+        if (undefined !== this.props.OnSelectPair)
+        {
+            this.props.OnSelectPair(this.state.pair);
+        }
     });
 }
 
@@ -223,8 +277,29 @@ render()
         )
     }
 
+    const PairsDropDown = () => {
+      return (
+          <Dropdown isOpen={0 != this.state.filteredCurrencies.length} toggle={() => {}}>
+            <DropdownMenu className={0 != this.state.filteredCurrencies.length ? 'show' : ''}>
+              {
+                _.map(this.state.filteredCurrencies).map((item, index) => {
+                  return  <DropdownItem key={index} id={item} onClick={this._handleSelectFilteredPair.bind(this)}>{item}</DropdownItem>
+                })
+              }
+            </DropdownMenu>
+          </Dropdown>
+      )
+    }
+
     return (
         <div>
+            <InputGroup style={{maxWidth:"250px",marginBottom:'5px'}}>
+              <Input type="text" placeholder="Enter currency or use menu" value={this.state.currencyFilter} onChange={this._handleSetCurrencyFilter.bind(this)}/>
+              <button type="button" className="input-group-addon btn btn-link" onClick={this._handleClearCurrencyFilter.bind(this)}>
+                  <i className="fa fa-remove" style={{fontSize:'1rem'}}></i>
+              </button>
+            </InputGroup>
+            <PairsDropDown/>
             <Markets/>
             <MarketPairs/>
         </div>
