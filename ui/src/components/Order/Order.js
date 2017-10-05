@@ -26,10 +26,24 @@ constructor(props)
 {
     super(props);
     this._isMounted = false;
+    let rate;
+    // initialize so that order can be fulfilled directly using market price
+    if ('buy' == this.props.orderType)
+    {
+        rate = this.props.ticker.sell.toFixed(8);
+    }
+    else
+    {
+        rate = this.props.ticker.buy.toFixed(8);
+    }
+    if (null !== this.props.rate)
+    {
+        rate = this.props.rate;
+    }
     this.state = {
         showPriceDropdown:false,
         quantity:{value:'',valid:true,timestamp:null},
-        rate:{value:null === this.props.rate ? '' : this.props.rate,valid:true,timestamp:null},
+        rate:{value:rate,valid:true,timestamp:null},
         total:{value:'',valid:true,timestamp:null},
         order:{
             confirm:false,
