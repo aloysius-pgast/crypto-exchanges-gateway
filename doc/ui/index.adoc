@@ -9,6 +9,7 @@ User interface provides following access to :
 * Open/Completed orders
 * Creation of new orders
 * Balances
+* Market Overview (an overview of all your favourite pairs)
 * Coin Market Cap (top 20 currencies)
 
 .Prices
@@ -30,6 +31,10 @@ image::img/newOrder.png[New Order,400]
 .My Balances
 [caption="",link=img/balances.png]
 image::img/balances.png[My Balances,400]
+
+.Market Overview
+[caption="",link=img/marketOverview.png]
+image::img/marketOverview.png[Market Overview,400]
 
 .Coin Market Cap
 [caption="",link=img/coinMarketCap.png]

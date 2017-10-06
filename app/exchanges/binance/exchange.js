@@ -115,6 +115,7 @@ _tickers(pairs)
                 list[entry.context.pair] = {
                     pair:entry.context.pair,
                     last: parseFloat(entry.value.lastPrice),
+                    priceChangePercent: parseFloat(entry.value.priceChangePercent),
                     sell: parseFloat(entry.value.askPrice),
                     buy: parseFloat(entry.value.bidPrice),
                     high: parseFloat(entry.value.highPrice),
@@ -164,6 +165,7 @@ _tickers(pairs)
 *     "BTC-NEO":{
 *         "pair":"BTC-NEO",
 *         "last":0.00531500,
+*         "priceChangePercent":2.5,
 *         "sell":0.00532000,
 *         "buy":0.00529800,
 *         "high":0.00575600,

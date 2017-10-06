@@ -165,8 +165,8 @@ render()
                     <td>{item.name}</td>
                     <td>{item.symbol}</td>
                     <td className="text-right">{price_usd.toFixed(6)}</td>
-                    <td className="text-right"><span className={className_percent_change_24h}>{percent_change_24h.toFixed(2)} %</span></td>
-                    <td className="text-right"><span className={className_percent_change_7d}>{percent_change_7d.toFixed(2)} %</span></td>
+                    <td className="text-right"><span className={className_percent_change_24h}>{percent_change_24h.toFixed(3)} %</span></td>
+                    <td className="text-right"><span className={className_percent_change_7d}>{percent_change_7d.toFixed(3)} %</span></td>
                     <td className="text-right">{parseInt(volume_24h)}</td>
                 </tr>
               })

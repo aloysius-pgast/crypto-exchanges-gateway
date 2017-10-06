@@ -57,6 +57,7 @@ constructor(config)
 *     "BITCNY-BTC":{
 *         "pair":"BITCNY-BTC",
 *         "last":21802.21999999,
+*         "priceChangePercent":2.5,
 *         "sell":21802.21999999,
 *         "buy":21802.20000021,
 *         "high":23400.00099998,
@@ -102,9 +103,17 @@ tickers(opt)
                     {
                         return;
                     }
+                    let last = parseFloat(entry.Last);
+                    let previousDay = parseFloat(entry.PrevDay);
+                    let percentChange = 0;
+                    if (previousDay > 0)
+                    {
+                        percentChange = ((last/previousDay) - 1) * 100;
+                    }
                     list[entry.MarketName] = {
                         pair:entry.MarketName,
-                        last: parseFloat(entry.Last),
+                        last: last,
+                        priceChangePercent:percentChange,
                         sell: parseFloat(entry.Ask),
                         buy: parseFloat(entry.Bid),
                         high: parseFloat(entry.High),

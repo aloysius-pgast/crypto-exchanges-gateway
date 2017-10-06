@@ -146,6 +146,10 @@ _updateStateFromRoute(props)
                 case 'home':
                     title = 'Home';
                     break;
+                case 'marketoverview':
+                    title = 'Market Overview';
+                    helpId = 'marketOverview';
+                    break;
             }
         }
     }

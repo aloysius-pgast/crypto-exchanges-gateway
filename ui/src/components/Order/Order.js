@@ -26,10 +26,24 @@ constructor(props)
 {
     super(props);
     this._isMounted = false;
+    let rate;
+    // initialize so that order can be fulfilled directly using market price
+    if ('buy' == this.props.orderType)
+    {
+        rate = this.props.ticker.sell.toFixed(8);
+    }
+    else
+    {
+        rate = this.props.ticker.buy.toFixed(8);
+    }
+    if (null !== this.props.rate)
+    {
+        rate = this.props.rate;
+    }
     this.state = {
         showPriceDropdown:false,
         quantity:{value:'',valid:true,timestamp:null},
-        rate:{value:null === this.props.rate ? '' : this.props.rate,valid:true,timestamp:null},
+        rate:{value:rate,valid:true,timestamp:null},
         total:{value:'',valid:true,timestamp:null},
         order:{
             confirm:false,
@@ -115,7 +129,7 @@ _handleSetValue(e)
         {
             let floatValue = parseFloat(value);
             let balance = parseFloat(this._balance);
-            if (value > balance)
+            if (floatValue > balance || 0 == floatValue)
             {
                 valid = false;
             }
@@ -141,6 +155,11 @@ _handleSetMaxTotal(e)
     newState.total.value = this._balance;
     newState.total.timestamp = timestamp;
     newState.total.valid = true;
+    let floatValue = parseFloat(newState.total.value);
+    if (0 == floatValue)
+    {
+        newState.total.valid = false;
+    }
     this._updateState(newState, 'total');
 }
 
@@ -155,6 +174,11 @@ _handleSetMaxQuantity(e)
     newState.quantity.value = this._balance;
     newState.quantity.timestamp = timestamp;
     newState.quantity.valid = true;
+    let floatValue = parseFloat(newState.quantity.value);
+    if (0 == floatValue)
+    {
+        newState.quantity.valid = false;
+    }
     this._updateState(newState, 'quantity');
 }
 
@@ -169,6 +193,16 @@ _updateState(newState, field)
             {
                 newState.total.value = (parseFloat(newState.quantity.value) * parseFloat(newState.rate.value)).toFixed(8);
                 newState.total.valid = true;
+                // check if total is 0 or > balance
+                if ('buy' == this.props.orderType)
+                {
+                    let floatValue = parseFloat(newState.total.value);
+                    let balance = parseFloat(this._balance);
+                    if (0 == floatValue || floatValue > balance)
+                    {
+                        newState.total.valid = false;
+                    }
+                }
             }
         }
     }
@@ -181,10 +215,20 @@ _updateState(newState, field)
             {
                 newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
                 newState.quantity.valid = true;
+                // check if quantity is 0 or > balance
+                if ('sell' == this.props.orderType)
+                {
+                    let floatValue = parseFloat(newState.quantity.value);
+                    let balance = parseFloat(this._balance);
+                    if (0 == floatValue || floatValue > balance)
+                    {
+                        newState.quantity.valid = false;
+                    }
+                }
             }
         }
     }
-    // quantity was updated => recompute total or quantity
+    // rate was updated => recompute total or quantity
     else
     {
         if (newState.rate.valid)
@@ -199,12 +243,32 @@ _updateState(newState, field)
                 {
                     newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
                     newState.quantity.valid = true;
+                    // check if quantity is 0 or > balance
+                    if ('sell' == this.props.orderType)
+                    {
+                        let floatValue = parseFloat(newState.quantity.value);
+                        let balance = parseFloat(this._balance);
+                        if (0 == floatValue || floatValue > balance)
+                        {
+                            newState.quantity.valid = false;
+                        }
+                    }
                 }
                 // recompute total
                 else
                 {
                     newState.total.value = (parseFloat(newState.quantity.value) * parseFloat(newState.rate.value)).toFixed(8);
                     newState.total.valid = true;
+                    // check if total is 0 or > balance
+                    if ('buy' == this.props.orderType)
+                    {
+                        let floatValue = parseFloat(newState.total.value);
+                        let balance = parseFloat(this._balance);
+                        if (0 == floatValue || floatValue > balance)
+                        {
+                            newState.total.valid = false;
+                        }
+                    }
                 }
             }
             // recompute quantity
@@ -212,6 +276,16 @@ _updateState(newState, field)
             {
                 newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
                 newState.quantity.valid = true;
+                // check if quantity is 0 or > balance
+                if ('sell' == this.props.orderType)
+                {
+                    let floatValue = parseFloat(newState.quantity.value);
+                    let balance = parseFloat(this._balance);
+                    if (0 == floatValue || floatValue > balance)
+                    {
+                        newState.quantity.valid = false;
+                    }
+                }
             }
         }
     }
@@ -447,6 +521,12 @@ render()
             <OrderResult/>
         )
     }
+    let balance = parseFloat(this._balance);
+    let balanceClassnames = "float-right";
+    if (0 == balance)
+    {
+        balanceClassnames += " text-danger";
+    }
     return (
         <form noValidate>
         <Row>
@@ -455,7 +535,7 @@ render()
               <CardHeader>
                 <strong>{orderType}</strong>
                 <small> {this.props.currency}</small>
-                <div className="float-right"><small>{this._balance} {this.props.balanceCurrency} AVAIL</small></div>
+                <div className={balanceClassnames}><small>{this._balance} {this.props.balanceCurrency} AVAIL</small></div>
               </CardHeader>
               <CardBlock className="card-body">
                 <Row>
