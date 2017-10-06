@@ -51,12 +51,14 @@ registerServiceRoute(path, service, name, hasHelp)
  *
  * @param {string} path route path
  * @param {string} name route name
+ * @param {boolean} hasHelp indicates whether or not help will be available for this route (optional, default = false)
  */
-registerRoute(path, name)
+registerRoute(path, name, hasHelp)
 {
     this._routes[path] = {
         path:path,
-        name:name
+        name:name,
+        hasHelp:undefined !== hasHelp && hasHelp
     }
 }
 

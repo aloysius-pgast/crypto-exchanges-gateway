@@ -227,6 +227,15 @@ render()
         {
             return null;
         }
+        let className_percent_change = '';
+        if (this.state.data.priceChangePercent < 0)
+        {
+            className_percent_change = 'text-danger';
+        }
+        else if (this.state.data.priceChangePercent > 0)
+        {
+            className_percent_change = 'text-success';
+        }
         return (
             <tr key="1">
               <td className="text-right">{this.state.data.last.toFixed(8)}</td>
@@ -234,6 +243,7 @@ render()
               <td className="text-right">{this.state.data.sell.toFixed(8)}</td>
               <td className="text-right">{this.state.data.high.toFixed(8)}</td>
               <td className="text-right">{this.state.data.low.toFixed(8)}</td>
+              <td className="text-right"><span className={className_percent_change}>{this.state.data.priceChangePercent.toFixed(3)} %</span></td>
               <td className="text-right">{this.state.data.volume.toFixed(8)}</td>
            </tr>
        )
@@ -250,6 +260,7 @@ render()
                 <th className="text-right">ASK</th>
                 <th className="text-right">24H HIGH</th>
                 <th className="text-right">24H LOW</th>
+                <th className="text-right">24H CHANGE</th>
                 <th className="text-right">VOL</th>
               </tr>
             </thead>

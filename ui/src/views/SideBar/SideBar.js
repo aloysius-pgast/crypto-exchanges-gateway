@@ -48,12 +48,23 @@ _defineExchangeEntry(obj, id)
     this._menu.push(entry);
 }
 
+_defineMarketOverviewEntry(obj)
+{
+    this._menu.push(
+        {
+            name: 'Market Overview',
+            url: obj.path,
+            icon: 'fa fa-bitcoin'
+        }
+    );
+}
+
 _defineCoinMarketCapEntry(obj)
 {
     this._menu.push(
         {
             name: 'Coin Market Cap',
-            url: obj['default'].path,
+            url: obj.default.path,
             icon: 'fa fa-bitcoin'
         }
     );
@@ -92,8 +103,9 @@ _defineMenuEntries()
         });
     }
     let servicesRoutes = routeRegistry.getServicesRoutes();
+    let marketOverviewRoute = routeRegistry.getRoute('/services/marketOverview');
     // do we have services ?
-    if (0 != Object.keys(servicesRoutes))
+    if (undefined !== marketOverviewRoute || 0 != Object.keys(servicesRoutes))
     {
         this._menu.push(
             {
@@ -106,6 +118,10 @@ _defineMenuEntries()
                 class: ""             // optional class names space delimited list for title item ex: "text-center"
             },
         );
+        if (undefined !== marketOverviewRoute)
+        {
+            self._defineMarketOverviewEntry(marketOverviewRoute);
+        }
         _.forEach(servicesRoutes, function(obj, id){
             self._defineServiceEntry(obj, id);
         });

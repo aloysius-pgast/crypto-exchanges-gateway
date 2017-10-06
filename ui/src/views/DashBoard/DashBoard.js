@@ -98,7 +98,7 @@ _loadStarredPairs()
         pairs.push(obj);
     });
     this._starredPairs = pairs.sort(function(a,b){
-        return a.timestamp < b.timestamp ? -1 : 1;
+        return a.timestamp > b.timestamp ? -1 : 1;
     });
 }
 
@@ -175,7 +175,7 @@ render()
         return (
             <div>
                 <br/>
-                <h6>Starred pairs</h6>
+                <span style={{fontWeight:'bold'}}>Favourite pairs</span>
                 <ul className="list-group">
                 {starredPairsEntries()}
                 </ul>

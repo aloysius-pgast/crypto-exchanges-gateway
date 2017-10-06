@@ -137,7 +137,6 @@ render()
           <tbody>
             {
               _.map(this.state.data).map((item, index) => {
-                let url = self._baseUrl + item.pair;
                 return <tr key={index}>
                     <td>{dateTimeHelper.formatDateTime(item.closedTimestamp * 1000)}</td>
                     <td>{orderType(item.orderType)}</td>

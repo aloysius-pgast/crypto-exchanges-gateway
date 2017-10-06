@@ -17,6 +17,7 @@ import DashBoard from './views/DashBoard/';
 import TopMenu from './views/TopMenu/';
 
 //-- exchanges views
+import MarketOverview from './views/MarketOverview';
 import Prices from './views/Prices';
 import OrderBooks from './views/OrderBooks';
 import MyOrders from './views/MyOrders';
@@ -129,17 +130,32 @@ _loadRoutes()
             path:path,
             exact:true,
             component:CoinMarketCap
-        })
+        });
+    }
+
+    //-- remaining routes
+    let path;
+
+    // Market Overview (requires local storage)
+    if (window.ctx.hasLocalStorage)
+    {
+        path = '/services/marketOverview';
+        routeRegistry.registerRoute(path, 'marketoverview', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:MarketOverview
+        });
     }
 
     //-- home route is default route
-    let path = '/';
+    path = '/';
     routeRegistry.registerRoute(path, 'home');
     this._routes.push({
         path:path,
         exact:false,
         component:DashBoard
-    })
+    });
 }
 
 componentDidMount()
