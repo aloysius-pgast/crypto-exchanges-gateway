@@ -55,6 +55,10 @@ Result will be a dictionary using pairs as keys
 |float
 |Last trade's price
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
+|float
+|% Change of price in last 24H (0-100)
+
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
 |Lowest sell price
@@ -91,6 +95,7 @@ Example for *GET* _/exchanges/bittrex/tickers_
     "BITCNY-BTC":{
         "pair":"BITCNY-BTC",
         "last":22510,
+        "priceChangePercent":5.4,
         "sell":23392.04999994,
         "buy":22510,
         "high":23400,
@@ -101,6 +106,7 @@ Example for *GET* _/exchanges/bittrex/tickers_
     "BTC-1ST":{
         "pair":"BTC-1ST",
         "last":0.00027,
+        "priceChangePercent":-1.2,
         "sell":0.00027,
         "buy":0.00026844,
         "high":0.00030997,
@@ -155,6 +161,10 @@ Result will be a dictionary containing a single entry
 |float
 |Last trade's price
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
+|float
+|% Change of price in last 24H (0-100)
+
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
 |Lowest sell price
@@ -196,6 +206,7 @@ Example for *GET* _/exchanges/bittrex/tickers/BTC-1ST_
     "BTC-1ST":{
         "pair":"BTC-1ST",
         "last":0.00027,
+        "priceChangePercent":5.4,
         "sell":0.00027,
         "buy":0.00026844,
         "high":0.00030997,

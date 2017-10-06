@@ -60,6 +60,10 @@ Result will be a dictionary using pairs as keys
 |float
 |Last trade's price
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
+|float
+|% Change of price in last 24H (0-100)
+
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
 |Lowest sell price
@@ -96,6 +100,7 @@ Example for *GET* _/exchanges/binance/tickers_
     "USDT-ETH":{
         "pair":"USDT-ETH",
         "last":203.34,
+        "priceChangePercent":2.6,
         "sell":204.99,
         "buy":203.34,
         "high":261.95,
@@ -106,6 +111,7 @@ Example for *GET* _/exchanges/binance/tickers_
     "USDT-BTC":{
         "pair":"USDT-BTC",
         "last":2996.98,
+        "priceChangePercent":5.4,
         "sell":2996.97,
         "buy":2960,
         "high":3739.82,
@@ -159,6 +165,10 @@ Result will be a dictionary containing a single entry
 |float
 |Last trade's price
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
+|float
+|% Change of price in last 24H (0-100)
+
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
 |Lowest sell price
@@ -200,6 +210,7 @@ Example for *GET* _/exchanges/binance/tickers/USDT-BTC
     "USDT-BTC":{
         "pair":"USDT-BTC",
         "last":2996.97,
+        "priceChangePercent":5.4,
         "sell":2996.97,
         "buy":2960,
         "high":3739.82,

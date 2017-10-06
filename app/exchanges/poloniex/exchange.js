@@ -67,6 +67,7 @@ _toExchangePair(pair)
 *     "BTC-BCN":{
 *         "pair":"BTC-BCN",
 *         "last":5.5e-7,
+*         "priceChangePercent":2.390438,
 *         "sell":5.6e-7,
 *         "buy":5.5e-7,
 *         "high":5.8e-7,
@@ -111,6 +112,7 @@ tickers(opt)
                     list[pair] = {
                         pair:pair,
                         last: parseFloat(value.last),
+                        priceChangePercent: parseFloat(value.percentChange) * 100,
                         sell: parseFloat(value.lowestAsk),
                         buy: parseFloat(value.highestBid),
                         high: parseFloat(value.high24hr),
