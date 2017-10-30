@@ -14,6 +14,24 @@ class NewOrder extends Component
 constructor(props) {
    super(props);
    this._isMounted = false;
+   let rate = null;
+   let quantity = null;
+   if (undefined !== this.props.match.params.rate && !isNaN(this.props.match.params.rate))
+   {
+       let floatValue = parseFloat(this.props.match.params.rate);
+       if (0 != floatValue)
+       {
+           rate = floatValue.toFixed(8);
+       }
+   }
+   if (undefined !== this.props.match.params.quantity && !isNaN(this.props.match.params.quantity))
+   {
+       let floatValue = parseFloat(this.props.match.params.quantity);
+       if (0 != floatValue)
+       {
+           quantity = floatValue.toFixed(8);
+       }
+   }
    this.state = {
        exchange:this.props.data.exchange,
        pairs:{
@@ -34,7 +52,8 @@ constructor(props) {
            data:null
        },
        pair:undefined === this.props.match.params.pair ? null : this.props.match.params.pair,
-       rate:undefined === this.props.match.params.rate ? null : this.props.match.params.rate
+       rate:rate,
+       quantity:quantity
    };
    this._handleSelectPair = this._handleSelectPair.bind(this);
    this._handleCloseOrder = this._handleCloseOrder.bind(this);
@@ -182,6 +201,24 @@ componentWillReceiveProps(nextProps)
 {
     let exchange = nextProps.data.exchange;
     this._demoMode = serviceRegistry.checkExchangeDemoMode(exchange);
+    let rate = null;
+    let quantity = null;
+    if (undefined !== nextProps.match.params.rate && !isNaN(nextProps.match.params.rate))
+    {
+        let floatValue = parseFloat(nextProps.match.params.rate);
+        if (0 != floatValue)
+        {
+            rate = floatValue.toFixed(8);
+        }
+    }
+    if (undefined !== nextProps.match.params.quantity && !isNaN(nextProps.match.params.quantity))
+    {
+        let floatValue = parseFloat(nextProps.match.params.quantity);
+        if (0 != floatValue)
+        {
+            quantity = floatValue.toFixed(8);
+        }
+    }
     this.setState(function(prevState, props){
         return {
             exchange:exchange,
@@ -203,7 +240,8 @@ componentWillReceiveProps(nextProps)
                 data:null
             },
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair,
-            rate:undefined === nextProps.match.params.rate ? null : this.props.match.params.rate
+            rate:rate,
+            quantity:quantity
         };
     }, function(){
         this._loadPairs();
@@ -269,7 +307,7 @@ render() {
         let classNames = "float-lg-left mr-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="buy" exchange={this.state.exchange} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="buy" exchange={this.state.exchange} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }
@@ -279,7 +317,7 @@ render() {
         let classNames = "float-lg-left mr-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="sell" exchange={this.state.exchange} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="sell" exchange={this.state.exchange} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }

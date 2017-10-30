@@ -27,6 +27,8 @@ constructor(props)
     super(props);
     this._isMounted = false;
     let rate;
+    let quantity = '';
+    let total = '';
     // initialize so that order can be fulfilled directly using market price
     if ('buy' == this.props.orderType)
     {
@@ -39,12 +41,39 @@ constructor(props)
     if (null !== this.props.rate)
     {
         rate = this.props.rate;
+        // do we have a quantity ?
+        if (null !== this.props.quantity)
+        {
+            let floatRate = parseFloat(rate);
+            let floatQuantity = parseFloat(this.props.quantity);
+            // ensure we have enough balance to buy this quantity
+            if ('buy' == this.props.orderType)
+            {
+                let maxQuantity = this.props.balance / floatRate;
+                if (floatQuantity > maxQuantity)
+                {
+                    floatQuantity = maxQuantity;
+                }
+                quantity = this._formatFloat(floatQuantity);
+                total = this._formatFloat(floatQuantity * floatRate);
+            }
+            // ensure we have enough balance to sell this quantity
+            else
+            {
+                if (floatQuantity > this.props.balance)
+                {
+                    floatQuantity = this.props.balance;
+                }
+                quantity = this._formatFloat(floatQuantity);
+                total = this._formatFloat(floatQuantity * floatRate);
+            }
+        }
     }
     this.state = {
         showPriceDropdown:false,
-        quantity:{value:'',valid:true,timestamp:null},
+        quantity:{value:quantity,valid:true,timestamp:null},
         rate:{value:rate,valid:true,timestamp:null},
-        total:{value:'',valid:true,timestamp:null},
+        total:{value:total,valid:true,timestamp:null},
         order:{
             confirm:false,
             sending:false,
@@ -191,7 +220,7 @@ _updateState(newState, field)
         {
             if ('' != newState.rate.value && newState.rate.valid)
             {
-                newState.total.value = (parseFloat(newState.quantity.value) * parseFloat(newState.rate.value)).toFixed(8);
+                newState.total.value = this._formatFloat(parseFloat(newState.quantity.value) * parseFloat(newState.rate.value));
                 newState.total.valid = true;
                 // check if total is 0 or > balance
                 if ('buy' == this.props.orderType)
@@ -213,7 +242,7 @@ _updateState(newState, field)
         {
             if ('' != newState.rate.value && newState.rate.valid)
             {
-                newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
+                newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
                 newState.quantity.valid = true;
                 // check if quantity is 0 or > balance
                 if ('sell' == this.props.orderType)
@@ -241,7 +270,7 @@ _updateState(newState, field)
                     (null === newState.quantity.timestamp || newState.total.timestamp > newState.quantity.timestamp)
                 )
                 {
-                    newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
+                    newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
                     newState.quantity.valid = true;
                     // check if quantity is 0 or > balance
                     if ('sell' == this.props.orderType)
@@ -257,7 +286,7 @@ _updateState(newState, field)
                 // recompute total
                 else
                 {
-                    newState.total.value = (parseFloat(newState.quantity.value) * parseFloat(newState.rate.value)).toFixed(8);
+                    newState.total.value = this._formatFloat(parseFloat(newState.quantity.value) * parseFloat(newState.rate.value));
                     newState.total.valid = true;
                     // check if total is 0 or > balance
                     if ('buy' == this.props.orderType)
@@ -274,7 +303,7 @@ _updateState(newState, field)
             // recompute quantity
             else if ('' != newState.total.value && newState.total.valid)
             {
-                newState.quantity.value = (parseFloat(newState.total.value) / parseFloat(newState.rate.value)).toFixed(8);
+                newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
                 newState.quantity.valid = true;
                 // check if quantity is 0 or > balance
                 if ('sell' == this.props.orderType)

@@ -122,7 +122,7 @@ _updateStateFromRoute(props)
                 'prices':'Prices',
                 'orderBooks':'Order Books',
                 'myOrders':'My Orders',
-                'newOrder':'New Order',
+                'newOrder':'New Orders',
                 'myBalances':'My Balances'
             }
             if (undefined !== viewNames[route.name])
