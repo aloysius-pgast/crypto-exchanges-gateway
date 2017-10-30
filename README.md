@@ -18,7 +18,7 @@ Use it at your own risks and be careful with your money ;)
 
 <img src="doc/ui/img/tickers.png" width="400"/>
 
-See a live demo at https://mpe1.sloppy.zone/ui/
+See a live demo at https://mpe-demo.crazyme.net/ui/
 
 Of course, above demo **does not use any valid _user/token_**. This means the following :
 
@@ -37,6 +37,8 @@ In order to have a full experience, just follow [installation steps](#installati
 * it can be installed at home, on a [Raspberry Pi](https://www.raspberrypi.org/products/raspberry-pi-zero-w/)
 
 Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
+
+A _Node.js_ is available [here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
 
 ## Available Exchanges
 
@@ -235,7 +237,7 @@ This project was made possible thanks to following projects :
 * [express](https://www.npmjs.com/package/express)
 * [body-parser](https://www.npmjs.com/package/body-parser)
 * [lodash](https://www.npmjs.com/package/lodash)
-* [node.bittrex.api](https://www.npmjs.com/package/node.bittrex.api)
+* [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
 * [binance](https://github.com/aloysius-pgast/binance)
 * [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
