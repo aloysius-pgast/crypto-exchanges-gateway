@@ -30,9 +30,9 @@ app.use(function (req, res, next) {
         if (config.auth.apiKey.key != key)
         {
             logger.warn("Unauthorized access from %s", req.ip)
+            res.status(401).send({origin:"gateway",error:'Unauthorized access'});
+            return;
         }
-        res.status(401).send({origin:"gateway",error:'Unauthorized access'});
-        return;
     }
     next();
 });
