@@ -85,7 +85,7 @@ Result will be a dictionary using pairs as keys
 |Volume (last 24H)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
-|integer
+|float (unix timestamp sec.msec)
 |Unix timestamp
 
 |===
@@ -106,7 +106,7 @@ Example for *GET* _/exchanges/binance/tickers_
         "high":261.95,
         "low":202.05,
         "volume":15633.7278,
-        "timestamp":1505471590
+        "timestamp":1505471590.120
     },
     "USDT-BTC":{
         "pair":"USDT-BTC",
@@ -117,7 +117,7 @@ Example for *GET* _/exchanges/binance/tickers_
         "high":3739.82,
         "low":2915.01,
         "volume":2047.604388,
-        "timestamp":1505471591
+        "timestamp":1505471591.130
     }
 }
 ----
@@ -190,7 +190,7 @@ Result will be a dictionary containing a single entry
 |Volume (last 24H)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
-|integer
+|float (unix timestamp sec.msec)
 |Unix timestamp
 
 |===
@@ -216,7 +216,7 @@ Example for *GET* _/exchanges/binance/tickers/USDT-BTC
         "high":3739.82,
         "low":2915.01,
         "volume":2043.511916,
-        "timestamp":1505471645
+        "timestamp":1505471645.130
     }
 }
 ----

@@ -3,12 +3,14 @@
 const Api = require('poloniex-api-node');
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const AbstractExchangeClass = require('../../abstract-exchange');
 
-class Exchange
+class Exchange extends AbstractExchangeClass
 {
 
 constructor(config)
 {
+    super();
     this._client = new Api(config.exchanges.poloniex.key, config.exchanges.poloniex.secret);
     let wait = parseInt(1000 / config.exchanges.poloniex.throttle.publicApi.maxRequestsPerSecond);
     this._limiterPublic = new Bottleneck(config.exchanges.poloniex.throttle.publicApi.maxRequestsPerSecond, wait);
@@ -118,7 +120,7 @@ tickers(opt)
                         high: parseFloat(value.high24hr),
                         low: parseFloat(value.low24hr),
                         volume: parseFloat(value.quoteVolume),
-                        timestamp: parseInt(new Date().getTime() / 1000.0)
+                        timestamp: parseFloat(new Date().getTime() / 1000.0)
                     }
                 });
                 resolve(list);
@@ -153,13 +155,45 @@ tickers(opt)
  *     },...
  * }
  *
+ * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
+ * @param {boolean} opt.includePairId : if true, pair id will be included (this will bypass cache and cache will not be updated either) (optional, default = false)
  * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
  * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
  * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @return {Promise}
  */
 pairs(opt)
 {
+    let timestamp = parseInt(new Date().getTime() / 1000.0);
+    let updateCache = true;
+    let useCache = false;
+    let includePairId = false;
+    if (undefined !== opt)
+    {
+        if (undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+        {
+            useCache = true;
+        }
+        // don't use cache if user asked for a list currencies / base currencies
+        if (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency)
+        {
+            updateCache = false;
+            useCache = false;
+        }
+        // don't use/update cache if we need to include pair id in result
+        if (undefined !== opt.includePairId && opt.includePairId)
+        {
+            useCache = false;
+            updateCache = true;
+            includePairId = true;
+        }
+    }
+    if (useCache)
+    {
+        return new Promise((resolve, reject) => {
+            resolve(this._cachedPairs.cache);
+        });
+    }
     let self = this;
     return this._limiterPublic.schedule(function(){
         let p = self._client.returnTicker();
@@ -198,7 +232,17 @@ pairs(opt)
                         baseCurrency: arr[0],
                         currency: arr[1]
                     }
+                    if (includePairId)
+                    {
+                        list[pair].id = value.id;
+                    }
                 });
+                if (updateCache)
+                {
+                    self._cachedPairs.cache = list;
+                    self._cachedPairs.lastTimestamp = timestamp;
+                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                }
                 resolve(list);
             }).catch(function(err){
                 reject(err);
@@ -285,30 +329,26 @@ pairs(opt)
  *
  * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
  *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":[
- *         {
- *             "Id":113534543,
- *             "TimeStamp":"2017-09-18T09:24:55.777",
- *             "Quantity":0.01735772,
- *             "Price":0.0732,
- *             "Total":0.00127058,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *          },
- *          {
- *             "Id":113534540,
- *             "TimeStamp":"2017-09-18T09:24:55.37",
- *             "Quantity":0.01003977,
- *             "Price":0.0732,
- *             "Total":0.00073491,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *         },...
- *     ]
- * }
+ * [
+ *     {
+ *         "globalTradeID":249067251,
+ *         "tradeID":9840841,
+ *         "date":"2017-10-30 13:20:05",
+ *         "type":"sell",
+ *         "rate":"6159.99999991",
+ *         "amount":"0.00008117",
+ *         "total":"0.50000719"
+ *     },
+ *     {
+ *         "globalTradeID":249067249,
+ *         "tradeID":9840840,
+ *         "date":"2017-10-30 13:20:05",
+ *         "type":"sell",
+ *         "rate":"6159.99999991",
+ *         "amount":"0.00024351",
+ *         "total":"1.50002159"
+ *     }
+ * ]
  *
  * If opt.outputFormat is 'custom', the result will be as below
  *
@@ -318,6 +358,7 @@ pairs(opt)
  *         "quantity":0.19996545,
  *         "rate":0.07320996,
  *         "price":0.01463946,
+ *         "orderType":"buy",
  *         "timestamp":1505726820
  *     },
  *     {
@@ -325,13 +366,14 @@ pairs(opt)
  *         "quantity":0.14025718,
  *         "rate":0.07320997,
  *         "price":0.01026822,
+ *         "orderType":"sell",
  *         "timestamp":1505726816
  *     }
  * ]
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
  * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @param {string} opt.pair pair to retrieve trades for (X-Y)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
  trades(opt) {
@@ -357,12 +399,18 @@ pairs(opt)
                             return;
                         }
                     }
+                    let orderType = 'sell';
+                    if ('buy' == entry.type)
+                    {
+                        orderType = 'buy';
+                    }
                     list.push({
                         id:entry.tradeID,
                         quantity:parseFloat(entry.amount),
                         rate:parseFloat(entry.rate),
                         price:parseFloat(entry.total),
-                        timestamp:parseInt(new Date(entry.date).getTime() / 1000.0)
+                        orderType:orderType,
+                        timestamp:parseFloat(new Date(entry.date).getTime() / 1000.0)
                     })
                 });
                 resolve(list);
@@ -474,7 +522,7 @@ pairs(opt)
                             targetPrice:parseFloat(entry.total),
                             quantity:parseFloat(entry.startingAmount),
                             remainingQuantity:parseFloat(entry.amount),
-                            openTimestamp:parseInt(new Date(entry.date).getTime() / 1000.0)
+                            openTimestamp:parseFloat(new Date(entry.date).getTime() / 1000.0)
                         }
                         list[o.orderNumber] = o;
                     });
@@ -559,7 +607,7 @@ _formatClosedOrders(openOrders, data, opt)
                 }
             }
             // add/update timestamp
-            let timestamp = parseInt(new Date(entry.date).getTime() / 1000.0);
+            let timestamp = parseFloat(new Date(entry.date).getTime() / 1000.0);
             if (undefined === list[entry.orderNumber].closedTimestamp || timestamp > list[entry.orderNumber].closedTimestamp)
             {
                 list[entry.orderNumber].closedTimestamp = timestamp;

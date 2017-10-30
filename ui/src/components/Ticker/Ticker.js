@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import restClient from '../../lib/RestClient';
 import dateTimeHelper from '../../lib/DateTimeHelper';
+import routeRegistry from '../../lib/RouteRegistry';
 import dataStore from '../../lib/DataStore';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 
@@ -25,7 +26,15 @@ constructor(props)
     {
         this.state.autoRefresh = autoRefresh;
     }
+    this._baseUrl = '#/';
+    this._getBaseUrl();
     this._autoRefreshTimer = null;
+}
+
+_getBaseUrl()
+{
+    let routes = routeRegistry.getExchangesRoutes(this.props.exchange);
+    this._baseUrl = '#' + routes[this.props.exchange]['orderBooks']['path'] + '/';
 }
 
 _handleSetAutoRefresh(event)
@@ -236,11 +245,12 @@ render()
         {
             className_percent_change = 'text-success';
         }
+        let url = this._baseUrl + this.props.pair;
         return (
             <tr key="1">
-              <td className="text-right">{this.state.data.last.toFixed(8)}</td>
-              <td className="text-right">{this.state.data.buy.toFixed(8)}</td>
-              <td className="text-right">{this.state.data.sell.toFixed(8)}</td>
+              <td className="text-right"><a href={url}>{this.state.data.last.toFixed(8)}</a></td>
+              <td className="text-right"><a href={url}>{this.state.data.buy.toFixed(8)}</a></td>
+              <td className="text-right"><a href={url}>{this.state.data.sell.toFixed(8)}</a></td>
               <td className="text-right">{this.state.data.high.toFixed(8)}</td>
               <td className="text-right">{this.state.data.low.toFixed(8)}</td>
               <td className="text-right"><span className={className_percent_change}>{this.state.data.priceChangePercent.toFixed(3)} %</span></td>

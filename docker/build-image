@@ -2,7 +2,7 @@
 function usage()
 {
     echo "Usage $0 <branch>"
-    echo "branch : master|dev (default=master)"
+    echo "branch : master|develop (default=master)"
     exit 1
 }
 DOCKERFILE=Dockerfile

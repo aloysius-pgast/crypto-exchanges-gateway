@@ -80,7 +80,7 @@ Result will be a dictionary using pairs as keys
 |Volume (last 24H)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
-|integer
+|float (unix timestamp sec.msec)
 |Unix timestamp
 
 |===
@@ -101,7 +101,7 @@ Example for *GET* _/exchanges/poloniex/tickers_
         "high":4.7e-7,
         "low":4e-7,
         "volume":387295670.0376498,
-        "timestamp":1502209159
+        "timestamp":1502209159.120
     },
     "BTC-BELA":{
         "pair":"BTC-BELA",
@@ -112,7 +112,7 @@ Example for *GET* _/exchanges/poloniex/tickers_
         "high":0.000065,
         "low":0.00005918,
         "volume":503908.66692232,
-        "timestamp":1502209159
+        "timestamp":1502209159.130
     },
     ...
 }
@@ -186,7 +186,7 @@ Result will be a dictionary containing a single entry
 |Volume (last 24H)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
-|integer
+|float (unix timestamp sec.msec)
 |Unix timestamp
 
 |===
@@ -212,7 +212,7 @@ Example for *GET* _/exchanges/poloniex/tickers/BTC-BELA_
         "high":0.000065,
         "low":0.00005918,
         "volume":503908.66692232,
-        "timestamp":1502209159
+        "timestamp":1502209159.130
     },
     ...
 }

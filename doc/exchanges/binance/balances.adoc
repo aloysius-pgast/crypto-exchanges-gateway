@@ -143,7 +143,7 @@ In case currency does not exists, an empty dictionary will be returned
 
 .Examples
 
-Example for *GET* _/exchanges/binance/pairs/NEO_
+Example for *GET* _/exchanges/binance/balances/NEO_
 
 [source,json]
 ----
@@ -157,7 +157,7 @@ Example for *GET* _/exchanges/binance/pairs/NEO_
 }
 ----
 
-Example for *GET* _/exchanges/binance/pairs/INVALID_
+Example for *GET* _/exchanges/binance/balances/INVALID_
 
 [source,json]
 ----

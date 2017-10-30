@@ -85,6 +85,7 @@ _addExchangeRoutes(obj)
         routeRegistry.registerExchangeRoute(path, obj.id, 'newOrder');
         path += '/:pair?';
         path += '/:rate?';
+        path += '/:quantity?';
         this._routes.push({
             path:path,
             exact:true,

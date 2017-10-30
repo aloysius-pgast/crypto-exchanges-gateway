@@ -14,6 +14,7 @@ constructor()
     // default config
     let cfg = {
         enabled:true,
+        recvWindow:5000,
         key:"",
         secret:"",
         throttle:{
@@ -44,7 +45,20 @@ _check()
     {
         return true;
     }
-
+    //-- check recvWindow
+    if (undefined !== this._config.recvWindow)
+    {
+        let value = parseInt(this._config.recvWindow);
+        if (isNaN(value) || value < 0)
+        {
+            this._invalid({name:'recvWindow',value:this._config.recvWindow});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.recvWindow = value;
+        }
+    }
     //-- check key & secret
     let valid = true;
     if (undefined !== this._config.key)

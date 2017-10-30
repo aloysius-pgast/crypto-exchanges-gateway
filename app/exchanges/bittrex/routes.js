@@ -364,7 +364,7 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'targetRate' should be a float > 0 : value = '%s'", value)});
         return;
     }
-    opt.targetRate = value;
+    opt.targetRate = targetRate;
     //-- quantity
     value = RequestHelper.getParam(req, 'quantity');
     if (undefined === value || '' == value)
@@ -380,7 +380,7 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'quantity' should be a float > 0 : value = '%s'", value)});
         return;
     }
-    opt.quantity = value;
+    opt.quantity = quantity;
     //-- create order
     let p;
     if (null !== fakeExchange)

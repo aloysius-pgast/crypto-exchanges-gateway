@@ -79,8 +79,12 @@ Result will be an array of trade object (*the first one being the newest*)
 |float
 |Total price (_quantity_ * _rate_)
 
+|orderType
+|string (_buy_,_sell_)
+|Whether market maker was _buyer_ or _seller_
+
 |timestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when trade was executed
 
 |===
@@ -97,21 +101,24 @@ Example for *GET* _/exchanges/poloniex/trades/BTC-ETH_
         "quantity":0.10201331,
         "rate":0.07298892,
         "price":0.00744584,
-        "timestamp":1505722177
+        "orderType":"buy",
+        "timestamp":1505722177.120
     },
     {
         "id":34385735,
         "quantity":0.6,
         "rate":0.0729037,
         "price":0.04374222,
-        "timestamp":1505722171
+        "orderType":"sell",
+        "timestamp":1505722171.130
     },
     {
         "id":34385734,
         "quantity":0.02,
         "rate":0.0729926,
         "price":0.00145985,
-        "timestamp":1505722156
+        "orderType":"buy",
+        "timestamp":1505722156.140
     }
 ]
 ----

@@ -139,7 +139,7 @@ render()
         )
     }
     return (
-      <div className="animated fadeIn col-lg-5 p-0">
+      <div className="animated fadeIn col-lg-6 p-0">
         <ComponentLoadedTimestamp timestamp={this.state.loadedTimestamp} err={this.state.err} onManualRefresh={this._handleManualRefresh}/>
         <table className="table table-responsive table-sm" style={{fontSize:'0.80rem'}}>
           <thead className="thead-inverse">
@@ -172,12 +172,12 @@ render()
                     <td>{item.exchangeName}</td>
                     <td><a href={item.pricesUrl}>{item.pair}</a></td>
                     <td className="text-right"><span className={className_percent_change}>{percent_change.toFixed(3)} %</span></td>
-                    <td className="text-right"><a href={item.orderBookUrl}>{item.last.toFixed(6)}</a></td>
-                    <td className="text-right"><a href={item.orderBookUrl}>{item.buy.toFixed(6)}</a></td>
-                    <td className="text-right"><a href={item.orderBookUrl}>{item.sell.toFixed(6)}</a></td>
-                    <td className="text-right">{item.high.toFixed(6)}</td>
-                    <td className="text-right">{item.low.toFixed(6)}</td>
-                    <td className="text-right">{item.volume.toFixed(6)}</td>
+                    <td className="text-right"><a href={item.orderBookUrl}>{item.last.toFixed(8)}</a></td>
+                    <td className="text-right"><a href={item.orderBookUrl}>{item.buy.toFixed(8)}</a></td>
+                    <td className="text-right"><a href={item.orderBookUrl}>{item.sell.toFixed(8)}</a></td>
+                    <td className="text-right">{item.high.toFixed(8)}</td>
+                    <td className="text-right">{item.low.toFixed(8)}</td>
+                    <td className="text-right">{item.volume.toFixed(8)}</td>
                 </tr>
               })
             }

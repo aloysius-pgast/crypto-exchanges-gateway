@@ -1,14 +1,15 @@
 "use strict";
-
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const AbstractExchangeClass = require('../../abstract-exchange');
 
-class Exchange
+class Exchange extends AbstractExchangeClass
 {
 
 constructor(config)
 {
-    this._client = require('node.bittrex.api');
+    super();
+    this._client = require('node-bittrex-api');
     let opt = {
         apikey:config.exchanges.bittrex.key,
         apisecret:config.exchanges.bittrex.secret,
@@ -63,7 +64,7 @@ constructor(config)
 *         "high":23400.00099998,
 *         "low":21000.03,
 *         "volume":2.12833311,
-*         "timestamp":1502120848
+*         "timestamp":1502120848.53
 *      },...
 * }
 *
@@ -119,7 +120,7 @@ tickers(opt)
                         high: parseFloat(entry.High),
                         low: parseFloat(entry.Low),
                         volume: parseFloat(entry.Volume),
-                        timestamp: parseInt(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
                     }
                 });
                 resolve(list);
@@ -141,6 +142,7 @@ tickers(opt)
  *     },...
  * }
  *
+ * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
  * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
  * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
  * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
@@ -148,6 +150,28 @@ tickers(opt)
  */
 pairs(opt)
 {
+    let timestamp = parseInt(new Date().getTime() / 1000.0);
+    let updateCache = true;
+    let useCache = false;
+    if (undefined !== opt)
+    {
+        if (undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+        {
+            useCache = true;
+        }
+        // don't use cache if user asked for a list currencies / base currencies
+        if (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency)
+        {
+            updateCache = false;
+            useCache = false;
+        }
+    }
+    if (useCache)
+    {
+        return new Promise((resolve, reject) => {
+            resolve(this._cachedPairs.cache);
+        });
+    }
     let self = this;
     // we're using low intensity limiter but there is no official answer on this
     return this._limiterLowIntensity.schedule(function(){
@@ -191,6 +215,12 @@ pairs(opt)
                         currency: arr[1]
                     }
                 });
+                if (updateCache)
+                {
+                    self._cachedPairs.cache = list;
+                    self._cachedPairs.lastTimestamp = timestamp;
+                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                }
                 resolve(list);
             });
         });
@@ -333,20 +363,22 @@ pairs(opt)
  *         "quantity":0.19996545,
  *         "rate":0.07320996,
  *         "price":0.01463946,
- *         "timestamp":1505726820
+ *         "orderType":"sell",
+ *         "timestamp":1505726820.53
  *     },
  *     {
  *         "id":113534957,
  *         "quantity":0.14025718,
  *         "rate":0.07320997,
  *         "price":0.01026822,
- *         "timestamp":1505726816
+ *         "orderType":"buy",
+ *         "timestamp":1505726816.57
  *     }
  * ]
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
  * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @param {string} opt.pair pair to retrieve trades for (X-Y)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
  trades(opt) {
@@ -376,12 +408,18 @@ pairs(opt)
                             return;
                         }
                     }
+                    let orderType = 'sell';
+                    if ('BUY' == entry.OrderType)
+                    {
+                        orderType = 'buy';
+                    }
                     list.push({
                         id:entry.Id,
                         quantity:entry.Quantity,
                         rate:entry.Price,
                         price:entry.Total,
-                        timestamp:parseInt(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        orderType:orderType,
+                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
                     })
                 });
                 resolve(list);
@@ -450,7 +488,7 @@ pairs(opt)
  *         "targetRate":0.00248,
  *         "quantity":110.80552162,
  *         "remainingQuantity":110.80552162,
- *         "openTimestamp":1498945578,
+ *         "openTimestamp":1498945578.53,
  *         "targetPrice":0.2747976936176
  *     },
  *     "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
@@ -460,7 +498,7 @@ pairs(opt)
  *         "targetRate":12,
  *         "quantity":2.33488048,
  *         "remainingQuantity":2.33488048,
- *         "openTimestamp":1502095438,
+ *         "openTimestamp":1502095438.57,
  *         "targetPrice":28.01856576
  *     },...
  * }
@@ -525,7 +563,7 @@ pairs(opt)
                          targetRate:parseFloat(entry.Limit),
                          quantity:parseFloat(entry.Quantity),
                          remainingQuantity:parseFloat(entry.QuantityRemaining),
-                         openTimestamp:parseInt(new Date(entry.Opened).getTime() / 1000.0)
+                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0)
                      }
                      // define targetPrice based on quantity & targetRate
                      o.targetPrice = o.quantity * o.targetRate;
@@ -667,7 +705,7 @@ closedOrders(opt)
                         quantity:parseFloat(entry.Quantity),
                         actualRate:parseFloat(entry.PricePerUnit),
                         actualPrice:parseFloat(entry.Price),
-                        closedTimestamp:parseInt(new Date(entry.Closed).getTime() / 1000.0)
+                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0)
                     }
                     list[o.orderNumber] = o;
                 });

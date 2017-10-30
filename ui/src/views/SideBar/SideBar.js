@@ -30,7 +30,7 @@ _defineExchangeEntry(obj, id)
         'prices':'Prices',
         'orderBooks':'Order Books',
         'myOrders':'My Orders',
-        'newOrder':'New Order',
+        'newOrder':'New Orders',
         'myBalances':'My Balances'
     }
     let routeNames = ['prices','orderBooks','myOrders','newOrder','myBalances'];

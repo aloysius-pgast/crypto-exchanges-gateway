@@ -76,7 +76,7 @@ Result will be a dictionary using order number as keys
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -95,7 +95,7 @@ Example for *GET* _/exchanges/bittrex/openOrders_
         "targetRate":0.00248,
         "quantity":110.80552162,
         "remainingQuantity":110.80552162,
-        "openTimestamp":1498945578,
+        "openTimestamp":1498945578.120,
         "targetPrice":0.2747976936176
     },
     "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
@@ -105,7 +105,7 @@ Example for *GET* _/exchanges/bittrex/openOrders_
         "targetRate":12,
         "quantity":2.33488048,
         "remainingQuantity":2.33488048,
-        "openTimestamp":1502095438,
+        "openTimestamp":1502095438.130,
         "targetPrice":28.01856576
     },
     ...
@@ -176,7 +176,7 @@ Result will be a dictionary containing a single entry
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -200,7 +200,7 @@ Example for *GET* _/exchanges/bittrex/openOrders/d3af561a-c3ac-4452-bf0e-a32854b
         "targetRate":12,
         "quantity":2.33488048,
         "remainingQuantity":2.33488048,
-        "openTimestamp":1502095438,
+        "openTimestamp":1502095438.130,
         "targetPrice":28.01856576
     }
 }

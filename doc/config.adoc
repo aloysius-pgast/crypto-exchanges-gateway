@@ -130,6 +130,8 @@ Access will be restricted using the following :
         },
         "bittrex":{
             "enabled":true,
+            /* to account for clock skew */
+            "recvWindow":5000,
             /* API key provided by Bittrex */
             "key":"ABCD",
             /* Secret provided by Bittrex */
