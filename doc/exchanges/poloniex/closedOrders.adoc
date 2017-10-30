@@ -82,7 +82,7 @@ Result will be a dictionary using order number as keys
 |Total price (_quantity_ * _actualPrice_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was closed (ie: last trade performed)
 
 |===
@@ -101,7 +101,7 @@ Example for *GET* _/exchanges/poloniex/closedOrders_
         "quantity":0.7551751469,
         "actualRate":193.5,
         "actualPrice":146.1263909251,
-        "closedTimestamp":1500488953
+        "closedTimestamp":1500488953.120
     },
     "27126940036":{
         "pair":"BTC-AMP",
@@ -110,7 +110,7 @@ Example for *GET* _/exchanges/poloniex/closedOrders_
         "quantity":697.02533491,
         "actualRate":0.00017535,
         "actualPrice":0.12222339,
-        "closedTimestamp":1498939537
+        "closedTimestamp":1498939537.130
     },...
 }
 ----
@@ -192,7 +192,7 @@ Result will be a dictionary containing a single entry
 |Total price (_quantity_ * _actualPrice_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was closed (ie: last trade performed)
 
 |===
@@ -216,7 +216,7 @@ Example for *GET* _/exchanges/poloniex/closedOrders/27126940036_
         "quantity":697.02533491,
         "actualRate":0.00017535,
         "actualPrice":0.12222339,
-        "closedTimestamp":1498939537
+        "closedTimestamp":1498939537.130
     }
 }
 ----

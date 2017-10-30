@@ -72,7 +72,7 @@ Result will be a dictionary using order number as keys
 |Total price (_quantity_ * _actualPrice_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was closed (ie: last trade performed)
 
 |===
@@ -91,7 +91,7 @@ Example for *GET* _/exchanges/bittrex/closedOrders_
         "quantity":5.00033725,
         "actualPrice":100.19204559,
         "actualRate":20.0003706,
-        "closedTimestamp":1500488953
+        "closedTimestamp":1500488953.120
     },
     "62d4368c-4363-4c9e-b992-9852189141eb":{
         "pair":"USDT-ANS",
@@ -100,7 +100,7 @@ Example for *GET* _/exchanges/bittrex/closedOrders_
         "quantity":2.4927,
         "actualPrice":40.72509999,
         "actualRate":16.12999999,
-        "closedTimestamp":1498939537
+        "closedTimestamp":1498939537.130
     },...
 }
 ----
@@ -165,7 +165,7 @@ Result will be a dictionary containing a single entry
 |Total price (_quantity_ * _actualPrice_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was closed (ie: last trade performed)
 
 |===
@@ -189,7 +189,7 @@ Example for *GET* _/exchanges/bittrex/closedOrders/62d4368c-4363-4c9e-b992-98521
         "quantity":2.4927,
         "actualPrice":40.72509999,
         "actualRate":16.12999999,
-        "closedTimestamp":1498939537
+        "closedTimestamp":1498939537.130
     }
 }
 ----

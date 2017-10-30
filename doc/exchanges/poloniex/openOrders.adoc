@@ -76,7 +76,7 @@ Result will be a dictionary using order number as keys
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -96,7 +96,7 @@ Example for *GET* _/exchanges/poloniex/openOrders_
         "remainingQuantity":1004.12793858,
         "targetRate":0.00021042,
         "targetPrice":0.2112886,
-        "openTimestamp":1499350174
+        "openTimestamp":1499350174.120
     },
     ...
 }
@@ -166,7 +166,7 @@ Result will be a dictionary containing a single entry
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -191,7 +191,7 @@ Example for *GET* _/exchanges/poloniex/openOrders/27126940036_
         "remainingQuantity":1004.12793858,
         "targetRate":0.00021042,
         "targetPrice":0.2112886,
-        "openTimestamp":1499350174
+        "openTimestamp":1499350174.120
     }
 }
 ----

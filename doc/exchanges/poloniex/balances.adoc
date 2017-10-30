@@ -142,7 +142,7 @@ In case currency does not exists, an empty dictionary will be returned
 
 .Examples
 
-Example for *GET* _/exchanges/poloniex/pairs/AMP_
+Example for *GET* _/exchanges/poloniex/balances/AMP_
 
 [source,json]
 ----
@@ -156,7 +156,7 @@ Example for *GET* _/exchanges/poloniex/pairs/AMP_
 }
 ----
 
-Example for *GET* _/exchanges/poloniex/pairs/INVALID_
+Example for *GET* _/exchanges/poloniex/balances/INVALID_
 
 [source,json]
 ----

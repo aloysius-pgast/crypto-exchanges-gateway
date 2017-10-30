@@ -1,33 +1,28 @@
 "use strict";
-
 const Api = require('binance');
 const PromiseHelper = require('../../promise-helper');
 const Bottleneck = require('bottleneck');
 const util = require('util');
 const logger = require('winston');
 const _ = require('lodash');
+const AbstractExchangeClass = require('../../abstract-exchange');
 
-class Exchange
+class Exchange extends AbstractExchangeClass
 {
 
 constructor(config)
 {
+    super();
     let opt = {
         key:config.exchanges.binance.key,
         secret:config.exchanges.binance.secret,
+        recvWindow:config.exchanges.binance.recvWindow,
         timeout:15000,
         disableBeautification:true
     };
     this._restClient = new Api.BinanceRest(opt);
     let wait = parseInt(1000 / config.exchanges.binance.throttle.global.maxRequestsPerSecond);
     this._limiterGlobal = new Bottleneck(config.exchanges.binance.throttle.global.maxRequestsPerSecond, wait);
-    this._cachedPairs = {
-        lastTimestamp:0,
-        nextTimestamp:0,
-        // cache result for 300s
-        cachePeriod:300,
-        cache:{}
-    };
     // how many cached orders should we keep ?
     this._cachedOrdersMaxSize = 500;
     // list of order number => {pair:"X-Y", state:"open|closed", timestamp:int}
@@ -121,7 +116,7 @@ _tickers(pairs)
                     high: parseFloat(entry.value.highPrice),
                     low: parseFloat(entry.value.lowPrice),
                     volume: parseFloat(entry.value.volume),
-                    timestamp: parseInt(entry.value.closeTime / 1000.0)
+                    timestamp: parseFloat(entry.value.closeTime / 1000.0)
                 }
             });
             resolve(list);
@@ -171,7 +166,7 @@ _tickers(pairs)
 *         "high":0.00575600,
 *         "low":0.00519800,
 *         "volume":274380.34,
-*         "timestamp":1502120848
+*         "timestamp":1502120848.34
 *      },...
 * }
 *
@@ -230,16 +225,29 @@ tickers(opt)
  */
 pairs(opt)
 {
-    let self = this;
     let timestamp = parseInt(new Date().getTime() / 1000.0);
-    let checkCurrencies = undefined !== opt && (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency);
-    // only use cache if currency/baseCurrency are not defined
-    if (!checkCurrencies && undefined !== opt && undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+    let updateCache = true;
+    let useCache = false;
+    if (undefined !== opt)
+    {
+        if (undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+        {
+            useCache = true;
+        }
+        // don't use cache if user asked for a list currencies / base currencies
+        if (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency)
+        {
+            updateCache = false;
+            useCache = false;
+        }
+    }
+    if (useCache)
     {
         return new Promise((resolve, reject) => {
-            resolve(self._cachedPairs.cache);
+            resolve(this._cachedPairs.cache);
         });
     }
+    let self = this;
     return this._limiterGlobal.schedule(function(){
         let p = self._restClient.allBookTickers();
         return new Promise((resolve, reject) => {
@@ -273,32 +281,28 @@ pairs(opt)
                         currency = entry.symbol.substr(0, entry.symbol.length - 3);
                     }
                     let pair = baseCurrency + '-' + currency;
-                    // check if we're interested in such pair / currency / base currency
-                    if (checkCurrencies)
+                    if (undefined !== opt.pair)
                     {
-                        if (undefined !== opt.pair)
+                        // ignore this pair
+                        if (opt.pair != pair)
                         {
-                            // ignore this pair
-                            if (opt.pair != pair)
-                            {
-                                return;
-                            }
+                            return;
                         }
-                        else if (undefined !== opt.currency)
+                    }
+                    else if (undefined !== opt.currency)
+                    {
+                        // ignore this pair
+                        if (opt.currency != currency)
                         {
-                            // ignore this pair
-                            if (opt.currency != currency)
-                            {
-                                return;
-                            }
+                            return;
                         }
-                        else if (undefined !== opt.baseCurrency)
+                    }
+                    else if (undefined !== opt.baseCurrency)
+                    {
+                        // ignore this pair
+                        if (opt.baseCurrency != baseCurrency)
                         {
-                            // ignore this pair
-                            if (opt.baseCurrency != baseCurrency)
-                            {
-                                return;
-                            }
+                            return;
                         }
                     }
                     list[pair] = {
@@ -307,9 +311,12 @@ pairs(opt)
                         currency: currency
                     }
                 });
-                self._cachedPairs.cache = list;
-                self._cachedPairs.lastTimestamp = timestamp;
-                self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                if (updateCache)
+                {
+                    self._cachedPairs.cache = list;
+                    self._cachedPairs.lastTimestamp = timestamp;
+                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                }
                 resolve(list);
             }).catch(function(err){
                 reject(err.msg);
@@ -355,6 +362,7 @@ pairs(opt)
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
  * @param {string} opt.pair pair to retrieve order book for
  * @param {integer} opt.limit how many entries to retrieve from order book (max = 100)
+ * @param {boolean} opt.includeLastUpdateId whether or not 'lastUpdateId' field should be present in result (optional, default = false) (will be ignored if outputFormat is 'exchange')
  * @return {Promise} format depends on parameter opt.outputFormat
  */
  orderBook(opt) {
@@ -383,6 +391,10 @@ pairs(opt)
                             quantity:parseFloat(arr[1])
                         }
                     })
+                }
+                if (true === opt.includeLastUpdateId)
+                {
+                    result.lastUpdateId = data.lastUpdateId;
                 }
                 resolve(result);
             }).catch(function(err){
@@ -428,20 +440,22 @@ pairs(opt)
  *         "quantity":0.95,
  *         "rate":0.072699,
  *         "price":0.06906405,
- *         "timestamp":1505731777
+ *         "orderType":"sell",
+ *         "timestamp":1505731777.52
  *     },
  *     {
  *         "id":1132932,
  *         "quantity":1,
  *         "rate":0.072602,
  *         "price":0.072602,
- *         "timestamp":1505731693
+ *         "orderType":"buy",
+ *         "timestamp":1505731693.57
  *     }
  * ]
  *
  * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
  * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * @param {string} opt.pair pair to retrieve trades for (X-Y)
  * @return {Promise} format depends on parameter opt.outputFormat
  */
  trades(opt) {
@@ -467,12 +481,18 @@ pairs(opt)
                     let quantity = parseFloat(entry.q);
                     let rate = parseFloat(entry.p);
                     let price = quantity * rate;
+                    let orderType = 'sell';
+                    if (entry.m)
+                    {
+                        orderType = 'buy';
+                    }
                     list.unshift({
                         id:entry.a,
                         quantity:quantity,
                         rate:rate,
                         price:price,
-                        timestamp:parseInt(entry.T / 1000.0)
+                        orderType:orderType,
+                        timestamp:parseFloat(entry.T / 1000.0)
                     })
                 });
                 resolve(list);
@@ -550,7 +570,7 @@ _formatOpenOrders(data)
             orderNumber:entry.clientOrderId,
             targetRate:parseFloat(entry.price),
             quantity:parseFloat(entry.origQty),
-            openTimestamp:parseInt(entry.time / 1000)
+            openTimestamp:parseFloat(entry.time / 1000.0)
         }
         order.targetPrice = order.targetRate * order.quantity;
         order.remainingQuantity = order.quantity - parseFloat(entry.executedQty);
@@ -779,7 +799,7 @@ _formatClosedOrders(data)
             orderNumber:entry.clientOrderId,
             actualRate:parseFloat(entry.price),
             quantity:parseFloat(entry.executedQty),
-            closedTimestamp:parseInt(entry.time / 1000)
+            closedTimestamp:parseFloat(entry.time / 1000.0)
         }
         order.actualPrice = order.actualRate * order.quantity;
         list[order.orderNumber] = order;

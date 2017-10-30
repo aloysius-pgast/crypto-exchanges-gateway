@@ -81,7 +81,7 @@ Result will be a dictionary using order number as keys
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -99,7 +99,7 @@ Example for *GET* _/exchanges/binance/openOrders_
         "orderNumber":"Xfs4XfHeXqHYycNB4s2PoT",
         "targetRate":0.0095,
         "quantity":25,
-        "openTimestamp":1503564675,
+        "openTimestamp":1503564675.120,
         "targetPrice":0.2375,
         "remainingQuantity":25
     },
@@ -109,7 +109,7 @@ Example for *GET* _/exchanges/binance/openOrders_
         "orderNumber":"Di3s3bLi0v3pjLaXgYnRHE",
         "targetRate":0.004,
         "quantity":3.236,
-        "openTimestamp":1505415638,
+        "openTimestamp":1505415638.130,
         "targetPrice":0.012944,
         "remainingQuantity":3.236
     },...
@@ -202,7 +202,7 @@ Result will be a dictionary containing a single entry
 |Expected total price (_quantity_ * _targetRate_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
-|integer (unix timestamp)
+|float (unix timestamp sec.msec)
 |Unix timestamp when order was open
 
 |===
@@ -224,7 +224,7 @@ Example for *GET* _/exchanges/binance/openOrders/Di3s3bLi0v3pjLaXgYnRHE_
     "orderNumber":"Di3s3bLi0v3pjLaXgYnRHE",
     "targetRate":0.004,
     "quantity":3.236,
-    "openTimestamp":1505415638,
+    "openTimestamp":1505415638.130,
     "targetPrice":0.012944,
     "remainingQuantity":3.236
 }

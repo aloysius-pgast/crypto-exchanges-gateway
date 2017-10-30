@@ -160,9 +160,10 @@ app.get(`/exchanges/${exchangeId}/pairs`, (req, res) => {
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
  * @param {string} pair pair to retrieve order book for
  * @param {integer} limit how many entries to retrieve (optional, default = 100, max = 100)
+ * @param {boolean} includeLastUpdateId (optional, default = false) (internal use)
  */
 app.get(`/exchanges/${exchangeId}/orderBooks/:pair`, (req, res) => {
-    let opt = {outputFormat:'custom', limit:100};
+    let opt = {outputFormat:'custom', limit:100, includeLastUpdateId:false};
     if (undefined === req.params.pair || '' == req.params.pair)
     {
         statistics.increaseExchangeStatistic(exchangeId, 'getOrderBooks', false);
@@ -184,6 +185,13 @@ app.get(`/exchanges/${exchangeId}/orderBooks/:pair`, (req, res) => {
     if ('exchange' == req.query.outputFormat)
     {
         opt.outputFormat = 'exchange';
+    }
+    if (undefined !== req.query.includeLastUpdateId)
+    {
+        if ('true' === req.query.includeLastUpdateId || '1' === req.query.includeLastUpdateId)
+        {
+            opt.includeLastUpdateId = true;
+        }
     }
     exchange.orderBook(opt)
         .then(function(data) {
@@ -421,7 +429,7 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'targetRate' should be a float > 0 : value = '%s'", value)});
         return;
     }
-    opt.targetRate = value;
+    opt.targetRate = targetRate;
     //-- quantity
     value = RequestHelper.getParam(req, 'quantity');
     if (undefined === value || '' == value)
@@ -437,7 +445,7 @@ app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
         res.status(400).send({origin:"gateway",error:util.format("Query parameter 'quantity' should be a float > 0 : value = '%s'", value)});
         return;
     }
-    opt.quantity = value;
+    opt.quantity = quantity;
     //-- create order
     let p;
     if (null !== fakeExchange)
