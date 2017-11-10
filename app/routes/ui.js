@@ -14,6 +14,10 @@ if (!config.ui.enabled)
     return;
 }
 
+app.get('/', (req, res) => {
+    res.redirect('/ui');
+});
+
 /**
  * Retrieve server uptime in seconds
  */

@@ -11,5 +11,13 @@ RUN echo "$TIMESTAMP" && \
 FROM node:alpine
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=builder /root/crypto-exchanges-gateway .
+
+ENV cfg.exchanges.poloniex.key
+ENV cfg.exchanges.poloniex.secret
+ENV cfg.exchanges.bittrex.key
+ENV cfg.exchanges.bittrex.secret
+ENV cfg.exchanges.binance.key
+ENV cfg.exchanges.binance.secret
+
 EXPOSE 8000
 CMD ["node", "./gateway.js"]

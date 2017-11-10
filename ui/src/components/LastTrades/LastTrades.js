@@ -114,12 +114,18 @@ render()
                     <td>&nbsp;</td>
                 </tr>
             }
-            let url = self._baseUrl + self.props.pair + '/' + item.rate;
+            let rateUrl = self._baseUrl + self.props.pair + '/' + item.rate;
+            let priceUrl = rateUrl + '/' + item.quantity;
+            let classNamesRate = "text-success";
+            if ('sell' == item.orderType)
+            {
+                classNamesRate = "text-danger";
+            }
             return <tr key={index}>
                 <td>{dateTimeHelper.formatDateTime(item.timestamp * 1000)}</td>
-                <td className="text-right"><a href={url}>{item.rate.toFixed(8)}</a></td>
+                <td className="text-right"><a className={classNamesRate} href={rateUrl}>{item.rate.toFixed(8)}</a></td>
                 <td className="text-right">{item.quantity.toFixed(8)}</td>
-                <td className="text-right">{item.price.toFixed(8)}</td>
+                <td className="text-right"><a href={priceUrl}>{item.price.toFixed(8)}</a></td>
             </tr>
         });
     };
