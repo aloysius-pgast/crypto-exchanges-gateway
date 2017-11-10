@@ -14,7 +14,7 @@ fi
 if ! [ -z "$1" ]
 then
     case $1 in
-        dev)
+        develop)
             DOCKERFILE=Dockerfile.dev
             ;;
         master)
