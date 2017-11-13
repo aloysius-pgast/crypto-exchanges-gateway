@@ -12,6 +12,7 @@ FROM node:alpine
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=builder /root/crypto-exchanges-gateway .
 
+ENV cfg.auth.apikey ""
 ENV cfg.exchanges.poloniex.key ""
 ENV cfg.exchanges.poloniex.secret ""
 ENV cfg.exchanges.bittrex.key ""
