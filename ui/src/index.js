@@ -100,10 +100,9 @@ config.load().then(function(result){
         // invalid api key
         if (undefined !== err.response && 401 == err.response.status)
         {
-            console.log('enter api key');
+            ReactDOM.render((
+              <Auth/>
+            ), document.getElementById('root'));
         }
-        ReactDOM.render((
-          <Auth/>
-        ), document.getElementById('root'));
     });
 });

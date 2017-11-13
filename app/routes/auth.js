@@ -34,6 +34,21 @@ app.use(function (req, res, next) {
         let key = req.headers.apikey;
         if (config.auth.apiKey.key != key)
         {
+            // allow access to UI so that we can display authentication form
+            if (config.ui.enabled)
+            {
+                if ('/' == req.path || 0 === req.path.indexOf('/ui'))
+                {
+                    next();
+                    return;
+                }
+            }
+            // don't log favicon
+            if ('/favicon.ico' == req.path)
+            {
+                next();
+                return;
+            }
             logger.warn("Unauthorized access from %s", req.ip)
             res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             return;
