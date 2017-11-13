@@ -23,6 +23,11 @@ if (config.auth.ipFilter.enabled)
 // handle authentication
 app.use(function (req, res, next) {
 
+    if ('OPTIONS' == req.method)
+    {
+        res.status(200).end();
+        return;
+    }
     // check apiKey
     if (config.auth.apiKey.enabled)
     {
