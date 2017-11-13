@@ -140,6 +140,18 @@ if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushov
     logger.warn("PushOver API is enabled");
 }
 
+//-- check api key
+let apiKey = process.env['cfg.auth.apikey'];
+if (undefined !== apiKey && '' != apiKey)
+{
+    config.auth.apiKey.enabled = true;
+    config.auth.apiKey.key = apiKey;
+}
+if (config.auth.apiKey.enabled && '' != config.auth.apiKey.key)
+{
+    logger.warn("API Key is enabled");
+}
+
 // check config
 let logLevel = process.env['cfg.logLevel'];
 if (undefined !== logLevel)
@@ -165,6 +177,7 @@ const app = express();
 
 app.use(function(req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "apikey");
     res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
     next();
 });
@@ -187,4 +200,11 @@ if ('*' != config.listen.ipaddr)
 }
 http.listen(config.listen.port, ipaddr, function(){
     logger.warn("We're alive on %s:%s", config.listen.ipaddr, config.listen.port);
+}).on('error', function(err){
+    if (undefined !== err.code && 'EADDRINUSE' == err.code)
+    {
+        logger.error("Address %s:%s is already in use", err.address, err.port);
+        process.exit(1);
+    }
+    throw err;
 });

@@ -11,6 +11,7 @@ constructor()
             exchanges:{}
         }
     }
+    this._apiKey = null;
 }
 
 initialize(endpoint)
@@ -18,6 +19,10 @@ initialize(endpoint)
     this._apiEndpoint = endpoint;
 }
 
+setApiKey(apiKey)
+{
+    this._apiKey = apiKey;
+}
 /**
  * @param {string} exchange exchange identifier
  * @param {string} key to check
@@ -119,7 +124,12 @@ _sendRequest(method, url, params, cb)
 {
     let p = {
         method:method,
-        url:url
+        url:url,
+        headers:{}
+    }
+    if (null !== this._apiKey)
+    {
+        p.headers['apikey'] = this._apiKey;
     }
     let callback;
     if (undefined !== params)
