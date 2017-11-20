@@ -18,7 +18,7 @@ constructor(props)
     this._baseCurrency = arr[0];
     this._currency = arr[1];
     this._data = [];
-    this._baseUrl = '#/';
+    this._baseUrl = null;
     this._handleManualRefresh = this._handleManualRefresh.bind(this);
     this._getBaseUrl();
     this._splitData();
@@ -32,7 +32,10 @@ constructor(props)
 _getBaseUrl()
 {
     let routes = routeRegistry.getExchangesRoutes(this.props.exchange);
-    this._baseUrl = '#' + routes[this.props.exchange]['newOrder']['path'] + '/';
+    if (undefined !== routes[this.props.exchange]['newOrder'])
+    {
+        this._baseUrl = '#' + routes[this.props.exchange]['newOrder']['path'] + '/';
+    }
 }
 
 /**
@@ -114,19 +117,32 @@ render()
                     <td>&nbsp;</td>
                 </tr>
             }
-            let rateUrl = self._baseUrl + self.props.pair + '/' + item.rate;
-            let priceUrl = rateUrl + '/' + item.quantity;
             let classNamesRate = "text-success";
             if ('sell' == item.orderType)
             {
                 classNamesRate = "text-danger";
             }
-            return <tr key={index}>
-                <td>{dateTimeHelper.formatDateTime(item.timestamp * 1000)}</td>
-                <td className="text-right"><a className={classNamesRate} href={rateUrl}>{item.rate.toFixed(8)}</a></td>
-                <td className="text-right">{item.quantity.toFixed(8)}</td>
-                <td className="text-right"><a href={priceUrl}>{item.price.toFixed(8)}</a></td>
-            </tr>
+            // no link to newOrder if we don't have api key & secret
+            if (null !== self._baseUrl)
+            {
+                let rateUrl = self._baseUrl + self.props.pair + '/' + item.rate;
+                let priceUrl = rateUrl + '/' + item.quantity;
+                return <tr key={index}>
+                    <td>{dateTimeHelper.formatDateTime(item.timestamp * 1000)}</td>
+                    <td className="text-right"><a className={classNamesRate} href={rateUrl}>{item.rate.toFixed(8)}</a></td>
+                    <td className="text-right">{item.quantity.toFixed(8)}</td>
+                    <td className="text-right"><a href={priceUrl}>{item.price.toFixed(8)}</a></td>
+                </tr>
+            }
+            else
+            {
+                return <tr key={index}>
+                    <td>{dateTimeHelper.formatDateTime(item.timestamp * 1000)}</td>
+                    <td className="text-right"><span className={classNamesRate}>{item.rate.toFixed(8)}</span></td>
+                    <td className="text-right">{item.quantity.toFixed(8)}</td>
+                    <td className="text-right">{item.price.toFixed(8)}</td>
+                </tr>
+            }
         });
     };
 

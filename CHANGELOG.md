@@ -1,5 +1,8 @@
 # Change Log
 
+## [v1.2.1]
+* Fix errors in UI when exchanges' _api keys_ & _secrets_ are not defined
+
 ## [v1.2.0]
 * Use _float_ instead of _integer_ for timestamp related information (_tickers_, _openOrders_, _closedOrders_)
 * Add order type (_buy_ or _sell_) in _trades_ API
