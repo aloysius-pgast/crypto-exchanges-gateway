@@ -18,10 +18,10 @@ if (!config.exchanges[exchangeId].enabled)
 }
 
 // public features
-let features = ['tickers','orderBooks','pairs','trades'];
+let features = ['tickers','orderBooks','pairs','trades', 'wsTickers', 'wsOrderBooks', 'wsTrades'];
 
 const ExchangeClass = require('./exchange');
-const exchange = new ExchangeClass(config);
+const exchange = new ExchangeClass(exchangeId, exchangeName, config);
 let fakeExchange = null;
 
 /**
@@ -221,12 +221,30 @@ app.get(`/exchanges/${exchangeId}/trades/:pair`, (req, res) => {
         });
 });
 
+/**
+ * Returns existing subscriptions for current exchange
+ */
+app.get(`/exchanges/${exchangeId}/subscriptions`, (req, res) => {
+    let manager = exchange.getSubscriptionManager();
+    let list = manager.getSubscriptions();
+    res.send(list);
+});
+
+/**
+ * Returns established stream connections to exchange
+ */
+app.get(`/exchanges/${exchangeId}/connections`, (req, res) => {
+    let manager = exchange.getSubscriptionManager();
+    let list = manager.getConnections();
+    res.send(list);
+});
+
 //-- below routes require valid key/secret
 let demoMode = false;
 if ('' === config.exchanges[exchangeId].key || '' === config.exchanges[exchangeId].secret)
 {
     // register exchange
-    serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
+    serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
     return;
 }
 else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchanges[exchangeId].secret)
@@ -238,7 +256,7 @@ else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchange
 // add private features
 features = _.concat(features, ['openOrders','closedOrders','balances']);
 // register exchange
-serviceRegistry.registerExchange(exchangeId, exchangeName, features, demoMode);
+serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
 
 /**
  * Returns open orders

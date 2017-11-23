@@ -6,8 +6,12 @@ include::ui/index.adoc[leveloffset=1]
 
 include::server.adoc[leveloffset=1]
 
+include::ws/index.adoc[leveloffset=1]
+
 include::coinmarketcap/index.adoc[leveloffset=1]
 
 include::pushover/index.adoc[leveloffset=1]
 
 include::exchanges/index.adoc[leveloffset=1]
+
+include::ws/index.adic[leveloffset=1]

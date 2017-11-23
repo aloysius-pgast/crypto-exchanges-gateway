@@ -1,0 +1,7 @@
+= Websocket
+
+Following features are supported on _websocket_
+
+* tickers : supported by periodically querying REST API
+* order books
+* trades

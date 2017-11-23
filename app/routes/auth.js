@@ -4,7 +4,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const ipfilter = require('express-ipfilter').IpFilter;
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, config, isWs) {
 
 // do we need to filter ip ?
 if (config.auth.ipFilter.enabled)
@@ -23,7 +23,7 @@ if (config.auth.ipFilter.enabled)
 // handle authentication
 app.use(function (req, res, next) {
 
-    if ('OPTIONS' == req.method)
+    if (!isWs && 'OPTIONS' == req.method)
     {
         res.status(200).end();
         return;
@@ -34,23 +34,31 @@ app.use(function (req, res, next) {
         let key = req.headers.apikey;
         if (config.auth.apiKey.key != key)
         {
-            // allow access to UI so that we can display authentication form
-            if (config.ui.enabled)
+            if (isWs)
             {
-                if ('/' == req.path || 0 === req.path.indexOf('/ui'))
+                logger.warn("Unauthorized WS access from %s", req.ip)
+                res.status(401).end();
+            }
+            else
+            {
+                // allow access to UI so that we can display authentication form
+                if (config.ui.enabled)
+                {
+                    if ('/' == req.path || 0 === req.path.indexOf('/ui'))
+                    {
+                        next();
+                        return;
+                    }
+                }
+                // don't log favicon
+                if ('/favicon.ico' == req.path)
                 {
                     next();
                     return;
                 }
+                logger.warn("Unauthorized HTTP access from %s", req.ip)
+                res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             }
-            // don't log favicon
-            if ('/favicon.ico' == req.path)
-            {
-                next();
-                return;
-            }
-            logger.warn("Unauthorized access from %s", req.ip)
-            res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             return;
         }
     }

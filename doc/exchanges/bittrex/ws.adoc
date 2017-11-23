@@ -1,0 +1,7 @@
+= Websocket
+
+Following features are supported on _websocket_
+
+* tickers
+* order books
+* trades

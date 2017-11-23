@@ -2,13 +2,21 @@
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
 const AbstractExchangeClass = require('../../abstract-exchange');
+const SubscriptionManagerClass = require('./subscription-manager');
 
 class Exchange extends AbstractExchangeClass
 {
 
-constructor(config)
-{
-    super();
+/**
+ * Constructor
+ *
+ * @param {string} exchangeId exchange identifier (ex: bittrex)
+ * @param {string} exchangeName exchange name (ex: Bittrex)
+ * @param {object} config full config object
+ */
+ constructor(exchangeId, exchangeName, config)
+ {
+    super(exchangeId, exchangeName);
     this._client = require('node-bittrex-api');
     let opt = {
         apikey:config.exchanges.bittrex.key,
@@ -21,6 +29,8 @@ constructor(config)
     this._limiterLowIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.lowIntensity.minPeriod * 1000);
     this._limiterMediumIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.mediumIntensity.minPeriod * 1000);
     this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);
+    let subscriptionManager = new SubscriptionManagerClass(this, config);
+    this._setSubscriptionManager(subscriptionManager);
 }
 
 /**

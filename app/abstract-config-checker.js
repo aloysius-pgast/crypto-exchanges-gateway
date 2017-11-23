@@ -71,7 +71,8 @@ _isValidPort(value)
 
 _missing(param)
 {
-    let msg = util.format("Missing config parameter '%s'", param);
+    let name = this._resolveParamName(param);
+    let msg = util.format("Missing config parameter '%s'", name);
     this._err(msg);
 }
 

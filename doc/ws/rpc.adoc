@@ -1,0 +1,832 @@
+= RPC protocol
+
+== Examples
+
+See link:../../../examples/ws[here]
+
+== Connection
+
+For each WS connection, gateway will send following message as initial message
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|hello
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sid
+|string
+|Session id
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}isNew
+|boolean
+|Whether or not session is a new one
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "hello":{
+        "sid":"12345",
+        "isNew":false
+    }
+}
+----
+
+== Call a method
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|m
+|string
+|Method name
+
+|p
+|object
+|Parameters dictionary
+
+|i
+|integer
+|Request id (use to match reply)
+
+|===
+
+[NOTE]
+====
+If _i_ property is not set, no reply or error will be returned by gateway
+====
+
+.Examples
+
+[source,json]
+----
+{
+    "m":"subscribeToOrderBooks",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC","USDT-NEO"]
+    },
+    "i":1
+}
+----
+
+== Result for a successful method call
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|i
+|integer
+|Request id (ie: as provided when calling method)
+
+|r
+|object,array,scalar
+|Result (type depends on method)
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+== Error for an unsuccessful method call
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|i
+|integer
+|Request id (ie: as provided when calling method)
+
+|e
+|object
+|Error object
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}t
+|string
+|Error type (_internal_error_,_invalid_request_,_invalid_params_,_invalid_method_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}d
+|object,array,scalar
+|Extra error data (_optional_) (type depends on method)
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "e":{
+        "t":"invalid_params",
+        "m":"'dummy' exchange is not supported"
+    },
+    "i":2
+}
+----
+
+== Notifications
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type
+
+|d
+|object
+|Notification data
+
+|===
+
+[NOTE]
+====
+See link:notifications.adoc[Notifications documentation] for a list of possible notifications
+====
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"trades",
+    "d":{
+        "pair":"USDT-BTC",
+        "data":[
+            {
+                "quantity":0.04692557,
+                "rate":8274.8261,
+                "price":388.300931393377,
+                "orderType":"sell",
+                "timestamp":1511392363.357
+            }
+        ],
+        "exchange":"bittrex"
+    }
+}
+----
+
+== Supported methods
+
+=== getPairs
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|===
+
+==== Result
+
+Result will be a dictionary using pairs as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_pair_
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_ (same as _pair_ key)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|string
+|Base currency (part _X_ in pair _X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency (part _Y_ in pair _X-Y_)
+
+|===
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"getPairs",
+    "p":{
+        "exchange":"bittrex"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":{
+        "BTC-1ST":{
+            "pair":"BTC-1ST",
+            "baseCurrency":"BTC",
+            "currency":"1ST"
+        },
+        "BTC-2GIVE":{
+            "pair":"BTC-2GIVE",
+            "baseCurrency":"BTC",
+            "currency":"2GIVE"
+        },
+        ...
+        "USDT-BTG":{
+            "pair":"USDT-BTG",
+            "baseCurrency":"USDT",
+            "currency":"BTG"
+        }
+    }
+}
+----
+
+=== subscribeToTickers
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to subscribe to (_X-Y_)
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|reset
+|boolean
+|false
+|If _true_, previous subscriptions will be discarded
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"subscribeToTickers",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"],
+        "reset":false
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromTickers
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to unsubscribe from (_X-Y_)
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromTickers",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"]
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromAllTickers
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromAllTickers",
+    "p":{
+        "exchange":"bittrex"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== subscribeToOrderBooks
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to subscribe to (_X-Y_)
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|reset
+|boolean
+|false
+|If _true_, previous subscriptions will be discarded
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"subscribeToOrderBooks",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"],
+        "reset":false
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromOrderBooks
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to unsubscribe from (_X-Y_)
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromOrderBooks",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"]
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromAllOrderBooks
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromAllOrderBooks",
+    "p":{
+        "exchange":"bittrex"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== resyncOrderBooks
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to resync order books for (_X-Y_)
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"resyncOrderBooks",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"]
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== subscribeToTrades
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to subscribe to (_X-Y_)
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|reset
+|boolean
+|false
+|If _true_, previous subscriptions will be discarded
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"subscribeToTrades",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"],
+        "reset":false
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromTrades
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to unsubscribe from (_X-Y_)
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromTrades",
+    "p":{
+        "exchange":"bittrex",
+        "pairs":["USDT-BTC"]
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromAllTrades
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromAllTrades",
+    "p":{
+        "exchange":"bittrex"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----

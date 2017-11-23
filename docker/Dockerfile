@@ -21,4 +21,5 @@ ENV cfg.exchanges.binance.key ""
 ENV cfg.exchanges.binance.secret ""
 
 EXPOSE 8000
+EXPOSE 8001
 CMD ["node", "./gateway.js"]

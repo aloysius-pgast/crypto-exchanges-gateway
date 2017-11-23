@@ -3,6 +3,10 @@
         "ipaddr":"*",
         "port":8000
     },
+    "listenWs":{
+        "ipaddr":"*",
+        "port":8001
+    },
     "ui":{
         "enabled":true
     },

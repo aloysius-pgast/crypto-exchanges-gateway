@@ -8,6 +8,24 @@ This project cannot be considered in any way as trading advice.
 
 Use it at your own risks and be careful with your money ;)
 
+## Faq
+
+* Does it support real-time data ?
+
+Yes, gateway provides a WS endpoint
+
+* What about _ccxt_ ?
+
+_ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. It is probably something I will try to integrate at some point (to help adding more exchanges). While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
+
+* Where is your service hosted ?
+
+This is a self-hosted service. You need to install it on your own server
+
+* I saw you are accepting donations. What extra service will I get for a donation ?
+
+Besides the privilege to go to bed, knowing that you did the right thing ? Not much
+
 ## What it does
 
 * Provides a unified REST API to various exchanges (can be used to automate trading or build bots)
@@ -15,6 +33,7 @@ Use it at your own risks and be careful with your money ;)
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
+* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc))
 
 <img src="doc/ui/img/tickers.png" width="400"/>
 
@@ -38,7 +57,7 @@ In order to have a full experience, just follow [installation steps](#installati
 
 Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
 
-A _Node.js_ is available [here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
+A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
 
 ## Available Exchanges
 
@@ -59,11 +78,14 @@ Following API are currently supported :
 * List closed orders
 * Retrieve balances
 
-See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each API
+See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
+
+See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the _websocket protocol_ supported (similar to _JSON-RPC_)
 
 ## Limitations
 
-Margin trading is not supported (and is unlikely to be)
+* Margin trading is not supported (and is unlikely to be)
+* _Stop loss_ & _trailing stop loss_ are not supported for the moment (although you can expect support in the future !)
 
 ## Other services
 
@@ -201,6 +223,8 @@ docker run --rm -p 8000:8000 --name ceg apendergast/crypto-exchanges-gateway
 
 You should then be able to access service on http://127.0.0.1:8000
 
+WS endpoint will be available on _ws://127.0.0.1:8001_
+
 * Check which exchanges are enabled
 
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
@@ -245,6 +269,9 @@ This project was made possible thanks to following projects :
 * [winston](https://www.npmjs.com/package/winston) (for logging)
 * [chump](https://www.npmjs.com/package/chump) (for PushOver)
 * [uuid](https://www.npmjs.com/package/uuid)
+* [ws](https://www.npmjs.com/package/ws)
+* [express-ws](https://www.npmjs.com/package/express-ws)
+* [sqlite3](https://www.npmjs.com/package/sqlite3)
 
 ## Donate
 

@@ -2,8 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const express = require('express');
+const http = require('http');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
+const storage = require('./app/storage');
 const _ = require('lodash');
 const logger = require('winston');
 
@@ -171,40 +173,105 @@ if (undefined !== logLevel)
 // update log level
 logger.level = config.logLevel;
 
-// create app
-const bParser = bodyParser.urlencoded({ extended: false })
-const app = express();
+//-- HTTP server
+var startHttp = function(){
+    const bParser = bodyParser.urlencoded({ extended: false })
+    const app = express();
+    const server = http.Server(app);
+    server.on('error', function(err){
+        if (undefined !== err.code && 'EADDRINUSE' == err.code)
+        {
+            logger.error("Address %s:%s is already in use", err.address, err.port);
+            process.exit(1);
+        }
+        throw err;
+    });
 
-app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "apikey");
-    res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
-    next();
+    app.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Headers", "apikey");
+        res.header("Access-Control-Allow-Methods", "GET,POST,DELETE,PUT,OPTIONS");
+        next();
+    });
+
+    // do we want to trust proxy
+    if (config.auth.trustProxy.enabled)
+    {
+        app.set('trust proxy', config.auth.trustProxy.proxies);
+    }
+
+    // load routes
+    require('./app/routes/http')(app, bParser, config);
+
+    // start server
+    var ipaddr = '0.0.0.0';
+    if ('*' != config.listen.ipaddr)
+    {
+        ipaddr = config.listen.ipaddr;
+    }
+    return function(){
+        server.listen(config.listen.port, ipaddr, function(){
+            logger.warn("HTTP server is alive on %s:%s", config.listen.ipaddr, config.listen.port);
+        });
+    }
+}();
+
+//-- WS server
+var startWs = function()
+{
+    const app = express();
+    const server = http.Server(app);
+    server.on('error', function(err){
+        if (undefined !== err.code && 'EADDRINUSE' == err.code)
+        {
+            logger.error("Address %s:%s is already in use", err.address, err.port);
+            process.exit(1);
+        }
+        throw err;
+    });
+    const expressWs = require('express-ws')(app, server, {
+        wsOptions:{}
+    });
+
+    // do we want to trust proxy
+    if (config.auth.trustProxy.enabled)
+    {
+        app.set('trust proxy', config.auth.trustProxy.proxies);
+    }
+
+    // load routes
+    require('./app/routes/ws')(app, config);
+
+    // start server
+    var ipaddr = '0.0.0.0';
+    if ('*' != config.listenWs.ipaddr)
+    {
+        ipaddr = config.listenWs.ipaddr;
+    }
+    return function(){
+        server.listen(config.listenWs.port, ipaddr, function(){
+            logger.warn("WS server is alive on %s:%s", config.listenWs.ipaddr, config.listenWs.port);
+        });
+    }
+}();
+
+// trap ctrl-c to close database properly
+process.on('SIGINT', function() {
+    storage.close();
+    process.exit();
 });
 
-// do we want to trust proxy
-if (config.auth.trustProxy.enabled)
-{
-    app.set('trust proxy', config.auth.trustProxy.proxies);
-}
-
-// load routes
-require('./app/routes')(app, bParser, config);
-
-// start app
-const http = require('http').Server(app);
-var ipaddr = '0.0.0.0';
-if ('*' != config.listen.ipaddr)
-{
-    ipaddr = config.listen.ipaddr;
-}
-http.listen(config.listen.port, ipaddr, function(){
-    logger.warn("We're alive on %s:%s", config.listen.ipaddr, config.listen.port);
-}).on('error', function(err){
-    if (undefined !== err.code && 'EADDRINUSE' == err.code)
-    {
-        logger.error("Address %s:%s is already in use", err.address, err.port);
+//-- check storage
+storage.checkDatabase().then(() => {
+    // load data from storage
+    storage.loadData().then(() => {
+        logger.info("Data loaded successfully");
+        //-- start both servers
+        startHttp();
+        startWs();
+    }).catch(() => {
         process.exit(1);
-    }
-    throw err;
+    });
+}).catch (() => {
+    process.exit(1);
 });

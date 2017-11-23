@@ -6,13 +6,21 @@ const util = require('util');
 const logger = require('winston');
 const _ = require('lodash');
 const AbstractExchangeClass = require('../../abstract-exchange');
+const SubscriptionManagerClass = require('./subscription-manager');
 
 class Exchange extends AbstractExchangeClass
 {
 
-constructor(config)
+/**
+ * Constructor
+ *
+ * @param {string} exchangeId exchange identifier (ex: bittrex)
+ * @param {string} exchangeName exchange name (ex: Bittrex)
+ * @param {object} config full config object
+ */
+constructor(exchangeId, exchangeName, config)
 {
-    super();
+    super(exchangeId, exchangeName);
     let opt = {
         key:config.exchanges.binance.key,
         secret:config.exchanges.binance.secret,
@@ -27,6 +35,8 @@ constructor(config)
     this._cachedOrdersMaxSize = 500;
     // list of order number => {pair:"X-Y", state:"open|closed", timestamp:int}
     this._cachedOrders = {};
+    let subscriptionManager = new SubscriptionManagerClass(this, config);
+    this._setSubscriptionManager(subscriptionManager);
 }
 
 /**

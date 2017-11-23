@@ -14,6 +14,10 @@ constructor()
             ipaddr:'*',
             port:8000
         },
+        listenWs:{
+            ipaddr:'*',
+            port:8001
+        },
         logLevel:'warn',
         auth:{
             trustProxy:false,
@@ -56,6 +60,19 @@ _check()
     if (!this._checkListen())
     {
         valid = false;
+    }
+    if (!this._checkListenWs())
+    {
+        valid = false;
+    }
+    // ensure we don't try to run http & ws on same endpoint
+    if (this._finalConfig.listen.port == this._finalConfig.listenWs.port)
+    {
+        if ('*' == this._finalConfig.listen.ipaddr || '*' == this.finalConfig.listenWs.ipaddr || this._finalConfig.listen.ipaddr == this.finalConfig.listenWs.ipaddr)
+        {
+            this._err("Cannot run both http and websocket on same ip/port combination");
+            valid = false;
+        }
     }
     if (!this._checkLogLevel())
     {
@@ -167,36 +184,75 @@ _checkExchanges()
     {
         this._config.exchanges = this._defaultConfig.exchanges;
     }
-    // try to load all config-checker.js file in exchanges directory
+    // try to load all config-checker.js file in exchanges directory (except for dummy exchange which will be handled separately)
     let exchangesDir = path.join(__dirname, 'exchanges');
-    _.forEach(fs.readdirSync(exchangesDir), (e) => {
-        let file = path.join(exchangesDir, e, 'config-checker.js');
+    _.forEach(fs.readdirSync(exchangesDir), (exchangeId) => {
+        if ('dummy' == exchangeId)
+        {
+            return;
+        }
+        let file = path.join(exchangesDir, exchangeId, 'config-checker.js');
         if (fs.existsSync(file))
         {
-            let name = path.basename(e);
             const checkerClass = require(file);
             let checker = new checkerClass();
             let config = {};
-            if (undefined !== this._config.exchanges[name])
+            if (undefined !== this._config.exchanges[exchangeId])
             {
-                config = this._config.exchanges[name];
+                config = this._config.exchanges[exchangeId];
             }
             if (!checker.check(config))
             {
                 // mark config as invalid
                 valid = false;
-                let self = this;
                 // copy errors
+                let self = this;
                 _.forEach(checker.getErrors(), function(err){
                     self._err(err);
                 });
             }
             else
             {
-                this._finalConfig.exchanges[name] = checker.getCfg();
+                this._finalConfig.exchanges[exchangeId] = checker.getCfg();
             }
         }
     });
+    // check if we have dummy exchanges enabled
+    let dummyExchanges = [];
+    _.forEach(this._config.exchanges, (entry, id) => {
+        if (undefined === entry.dummy || false === entry.dummy)
+        {
+            return;
+        }
+        if (true === entry.enabled)
+        {
+            entry.id = id;
+            dummyExchanges.push(entry);
+        }
+    });
+    if (0 != dummyExchanges.length)
+    {
+        let file = path.join(exchangesDir, 'dummy', 'config-checker.js');
+        const checkerClass = require(file);
+        _.forEach(dummyExchanges, (entry) => {
+            let config = entry;
+            let checker = new checkerClass(entry.id);
+            if (!checker.check(config))
+            {
+                // mark config as invalid
+                valid = false;
+                // copy errors
+                let self = this;
+                _.forEach(checker.getErrors(), function(err){
+                    self._err(err);
+                });
+            }
+            else
+            {
+                this._finalConfig.exchanges[entry.id] = checker.getCfg();
+            }
+        });
+    }
     return valid;
 }
 
@@ -345,6 +401,45 @@ _checkListen()
         if (valid)
         {
             this._finalConfig.listen.ipaddr = this._config.listen.ipaddr;
+        }
+    }
+    return valid;
+}
+
+_checkListenWs()
+{
+    if (undefined === this._config.listenWs)
+    {
+        return true;
+    }
+    let valid = true;
+    // check port
+    if (undefined !== this._config.listenWs.port)
+    {
+        if (!this._isValidPort(this._config.listenWs.port))
+        {
+            this._invalid({name:'listenWs[port]',value:this._config.listenWs.port});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.listenWs.port = parseInt(this._config.listenWs.port);
+        }
+    }
+    // check ip address
+    if (undefined !== this._config.listenWs.ipaddr)
+    {
+        if ('*' != this._config.listenWs.ipaddr)
+        {
+            if (!this._isValidIpaddr(this._config.listenWs.ipaddr))
+            {
+                this._invalid({name:'listenWs[ipaddr]',value:this._config.listenWs.ipaddr});
+                valid = false;
+            }
+        }
+        if (valid)
+        {
+            this._finalConfig.listenWs.ipaddr = this._config.listenWs.ipaddr;
         }
     }
     return valid;
