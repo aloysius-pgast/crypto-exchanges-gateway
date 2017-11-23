@@ -2,7 +2,7 @@
 
 == Examples
 
-See link:../../../examples/ws[here]
+See link:../../../../examples/ws[here]
 
 == Connection
 
