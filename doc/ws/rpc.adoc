@@ -2,7 +2,7 @@
 
 == Examples
 
-See link:../../../../examples/ws[here]
+See https://github.com/aloysius-pgast/crypto-exchanges-gateway/tree/develop/examples/ws[here]
 
 == Connection
 
