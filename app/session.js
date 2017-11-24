@@ -1526,7 +1526,19 @@ _handleGetPairs(obj, ws)
         return;
     }
     let self = this;
-    obj._exchange.instance.pairs({useCache:true}).then(function(data){
+    let opt = {useCache:true};
+    if (undefined !== obj.p.filter)
+    {
+        if (undefined !== obj.p.filter.currency && '' != obj.p.filter.currency)
+        {
+            opt.currency = obj.p.filter.currency
+        }
+        else if (undefined !== obj.p.filter.baseCurrency && '' != obj.p.filter.baseCurrency)
+        {
+            opt.baseCurrency = obj.p.filter.baseCurrency;
+        }
+    }
+    obj._exchange.instance.pairs(opt).then(function(data){
         RpcHelper.replySuccess(ws, obj, data)
     }).catch (function(err){
         RpcHelper.replyErrorInternal(ws, obj, undefined, err);

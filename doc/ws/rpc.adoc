@@ -4,6 +4,8 @@
 
 See https://github.com/aloysius-pgast/crypto-exchanges-gateway/tree/develop/examples/ws[here]
 
+An npm package is available https://www.npmjs.com/package/crypto-exchanges-ws-client[here]
+
 == Connection
 
 For each WS connection, gateway will send following message as initial message
@@ -209,6 +211,33 @@ See link:notifications.adoc[Notifications documentation] for a list of possible 
 |exchange
 |string
 |Exchange identifier
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|filter
+|object
+|
+|Used to list pairs matching a given currency or base currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|
+|Used to list only pairs matching a given currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|string
+|
+|Used to list only pairs matching a given base currency (will be ignored if _filter.currency_ is set)
 
 |===
 
