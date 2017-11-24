@@ -25,6 +25,7 @@ logger.configure({
 });
 // default log level is warn
 logger.level = 'warn';
+logger.warn("Starting...");
 // function to check if level is enabled
 logger.isLevel = function(level)
 {

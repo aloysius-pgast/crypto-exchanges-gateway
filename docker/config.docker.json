@@ -10,7 +10,7 @@
     "ui":{
         "enabled":true
     },
-    "logLevel":"warn",
+    "logLevel":"info",
     "coinmarketcap":{
         "enabled":true
     },
