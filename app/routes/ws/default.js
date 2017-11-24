@@ -11,6 +11,11 @@ const logger = require('winston');
 module.exports = function(app, config) {
 
 app.use(function (req, res) {
+    if ('OPTIONS' == req.method)
+    {
+        res.status(200).end();
+        return;
+    }
     let u = url.parse(req.url);
     // remove .websocket
     let pathname = u.pathname.replace('.websocket', '');
