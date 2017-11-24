@@ -1,6 +1,6 @@
 FROM node:alpine as builder
 WORKDIR /root/
-RUN apk add --update bash git
+RUN apk add --update bash git python
 ARG TIMESTAMP=0
 RUN echo "$TIMESTAMP" && \
     git clone https://github.com/aloysius-pgast/crypto-exchanges-gateway.git && cd crypto-exchanges-gateway && \
