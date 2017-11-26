@@ -70,7 +70,10 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         },
         "bittrex":{
@@ -85,7 +88,10 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         },
         "poloniex":{
@@ -100,7 +106,10 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         }
     },
