@@ -207,6 +207,8 @@ You should see JSON content such as below in case order is valid :
 
 ## Docker
 
+See this [video](https://youtu.be/SQf3diruc8w) to know how to be ready to trade in less then 3 minutes using Docker & Kitematic
+
 A docker image is available at https://hub.docker.com/r/apendergast/crypto-exchanges-gateway/
 
 * Pull image
@@ -218,7 +220,7 @@ docker pull apendergast/crypto-exchanges-gateway
 * Run image
 
 ```
-docker run --rm -p 8000:8000 --name ceg apendergast/crypto-exchanges-gateway
+docker run --rm -p 8000:8000 -p 8001:8001 --name ceg apendergast/crypto-exchanges-gateway
 ```
 
 You should then be able to access service on http://127.0.0.1:8000
@@ -252,7 +254,7 @@ _Examples_ :
 Run container with Bittrex user/key environment variables
 
 ```
-docker run --rm -p 8000:8000 --name ceg -e cfg.exchanges.bittrex.key='abcdefghijkl' -e cfg.exchanges.bittrex.secret='123456789' apendergast/crypto-exchanges-gateway
+docker run --rm -p 8000:8000 -p 8001:8001 --name ceg -e cfg.exchanges.bittrex.key='abcdefghijkl' -e cfg.exchanges.bittrex.secret='123456789' apendergast/crypto-exchanges-gateway
 ```
 
 ## Dependencies

@@ -6,6 +6,7 @@ function usage()
     exit 1
 }
 DOCKERFILE=Dockerfile
+TAG=latest
 TIMESTAMP=`date +"%Y%m%d%H%M%S"`
 if [ "$1" == '-h' ] || [ "$1" == '--help' ]
 then
@@ -16,6 +17,7 @@ then
     case $1 in
         develop)
             DOCKERFILE=Dockerfile.dev
+            TAG=dev
             ;;
         master)
             DOCKERFILE=Dockerfile
@@ -24,4 +26,4 @@ then
             usage
     esac
 fi
-docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway .
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .
