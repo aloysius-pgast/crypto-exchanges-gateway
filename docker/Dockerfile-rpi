@@ -1,0 +1,26 @@
+FROM multiarch/alpine:aarch64-latest-stable as builder
+RUN apk --update add bash git python build-base nodejs nodejs-npm
+WORKDIR /root/
+ARG TIMESTAMP=0
+RUN echo "$TIMESTAMP" && \
+    git clone https://github.com/aloysius-pgast/crypto-exchanges-gateway.git && cd crypto-exchanges-gateway && \
+    git checkout master && \
+    npm install && cp docker/config.docker.json config/config.json && \
+    cd ui && npm install -g webpack && npm install && npm run build && rm -fr node_modules
+
+FROM multiarch/alpine:aarch64-latest-stable
+RUN apk --update add nodejs
+WORKDIR /root/crypto-exchanges-gateway/
+COPY --from=builder /root/crypto-exchanges-gateway .
+
+ENV cfg.auth.apikey ""
+ENV cfg.exchanges.poloniex.key ""
+ENV cfg.exchanges.poloniex.secret ""
+ENV cfg.exchanges.bittrex.key ""
+ENV cfg.exchanges.bittrex.secret ""
+ENV cfg.exchanges.binance.key ""
+ENV cfg.exchanges.binance.secret ""
+
+EXPOSE 8000
+EXPOSE 8001
+CMD ["node", "./gateway.js"]

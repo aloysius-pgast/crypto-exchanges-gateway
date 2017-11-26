@@ -1,0 +1,29 @@
+#!/bin/bash
+function usage()
+{
+    echo "Usage $0 <branch>"
+    echo "branch : master|develop (default=master)"
+    exit 1
+}
+DOCKERFILE=Dockerfile-rpi
+TAG=rpi-latest
+TIMESTAMP=`date +"%Y%m%d%H%M%S"`
+if [ "$1" == '-h' ] || [ "$1" == '--help' ]
+then
+    usage
+fi
+if ! [ -z "$1" ]
+then
+    case $1 in
+        develop)
+            DOCKERFILE=Dockerfile-rpi.dev
+            TAG=rpi-dev
+            ;;
+        master)
+            DOCKERFILE=Dockerfile-rpi
+            ;;
+        *)
+            usage
+    esac
+fi
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .
