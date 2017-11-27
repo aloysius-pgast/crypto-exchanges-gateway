@@ -1,29 +1,50 @@
 #!/bin/bash
 function usage()
 {
-    echo "Usage $0 <branch>"
+    echo "Usage $0 <branch> [--force]"
     echo "branch : master|develop (default=master)"
+    echo "--force : used to run script even if detected arch is not armv compatible"
     exit 1
 }
-DOCKERFILE=Dockerfile-rpi
-TAG=rpi-latest
-TIMESTAMP=`date +"%Y%m%d%H%M%S"`
 if [ "$1" == '-h' ] || [ "$1" == '--help' ]
 then
     usage
 fi
-if ! [ -z "$1" ]
+FORCED=0
+BRANCH=master
+if [ "$1" == "--force" ]
 then
-    case $1 in
-        develop)
-            DOCKERFILE=Dockerfile-rpi.dev
-            TAG=rpi-dev
-            ;;
-        master)
-            DOCKERFILE=Dockerfile-rpi
-            ;;
-        *)
-            usage
-    esac
+    FORCED=1
+    if ! [ -z "$2" ]
+    then
+        BRANCH=$2
+    fi
+elif [ "$2" == "--force" ]
+then
+    FORCED=1
+    BRANCH=$1
 fi
+ARCH=`uname -a | awk '{print $13}'`
+if ! [ "$ARCH" == "armv*" ]
+then
+    if [ "$FORCED" -ne 1 ]
+    then
+        echo "Script should be run on an armv architecture. Use --force if you know what you're doing."
+        exit 1
+    fi
+fi
+DOCKERFILE=Dockerfile-rpi
+TAG=rpi-latest
+TIMESTAMP=`date +"%Y%m%d%H%M%S"`
+case $BRANCH in
+    develop)
+        DOCKERFILE=Dockerfile-rpi.dev
+        TAG=rpi-dev
+        ;;
+    master)
+        DOCKERFILE=Dockerfile-rpi
+        ;;
+    *)
+        usage
+esac
 docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .

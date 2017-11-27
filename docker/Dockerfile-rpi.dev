@@ -1,4 +1,4 @@
-FROM multiarch/alpine:aarch64-latest-stable as builder
+FROM multiarch/alpine:armhf-latest-stable as builder
 RUN apk --update add bash git python build-base nodejs nodejs-npm
 WORKDIR /root/
 ARG TIMESTAMP=0
@@ -8,7 +8,7 @@ RUN echo "$TIMESTAMP" && \
     npm install && cp docker/config.docker.json config/config.json && \
     cd ui && npm install -g webpack && npm install && npm run build && rm -fr node_modules
 
-FROM multiarch/alpine:aarch64-latest-stable
+FROM multiarch/alpine:armhf-latest-stable
 RUN apk --update add nodejs
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=builder /root/crypto-exchanges-gateway .
