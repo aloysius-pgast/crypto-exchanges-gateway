@@ -1,6 +1,6 @@
 FROM resin/armhf-alpine:latest as builder
 ARG CROSSBUILD=1
-RUN [ "/bin/bash", "-c", "if [ $CROSSBUILD -eq 1 ] ; then cross-build-start ; fi" ]
+RUN [ "/bin/bash", "-c", "if [ $CROSSBUILD -eq 1 ] ; then echo "Using cross-build" ; cross-build-start ; fi" ]
 RUN apk --update add git python build-base nodejs nodejs-npm
 WORKDIR /root/
 ARG TIMESTAMP=0
