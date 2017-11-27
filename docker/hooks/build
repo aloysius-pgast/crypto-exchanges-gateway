@@ -1,0 +1,13 @@
+#!/bin/bash
+DOCKERFILE=Dockerfile
+if [ "$DOCKER_TAG" == "dev" ]
+then
+    Dockerfile=Dockerfile.dev
+elif [ "$DOCKER_TAG" == "rpi" ]
+then
+    Dockerfile=Dockerfile-rpi
+elif [ "$DOCKER_TAG" == "rpi-dev" ]
+then
+    Dockerfile=Dockerfile-rpi.dev
+fi
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg CROSSBUILD=1 -t IMAGE_NAME .

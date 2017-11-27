@@ -1,6 +1,6 @@
 FROM resin/armhf-alpine:latest as builder
 ARG CROSSBUILD=1
-RUN [ "/bin/bash", "-Ec", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-start' ; cross-build-start ; fi" ]
+RUN [ "/bin/bash", "-c", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-start' ; cross-build-start ; fi" ]
 RUN apk --update add git python build-base nodejs nodejs-npm
 WORKDIR /root/
 ARG TIMESTAMP=0
@@ -9,11 +9,11 @@ RUN echo "$TIMESTAMP" && \
     git checkout master && \
     npm install --unsafe-perm && cp docker/config.docker.json config/config.json && \
     cd ui && npm install -g webpack && npm install && npm run build && rm -fr node_modules
-RUN [ "/bin/bash",  "-Ec", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-end' ; cross-build-end ; fi" ]
+RUN [ "/bin/bash",  "-c", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-end' ; cross-build-end ; fi" ]
 
 FROM resin/armhf-alpine:latest
 ARG CROSSBUILD=1
-RUN [ "/bin/bash",  "-Ec", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-start' ; cross-build-start ; fi" ]
+RUN [ "/bin/bash",  "-c", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-start' ; cross-build-start ; fi" ]
 RUN apk --update add nodejs
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=builder /root/crypto-exchanges-gateway .
@@ -29,4 +29,4 @@ ENV cfg.exchanges.binance.secret ""
 EXPOSE 8000
 EXPOSE 8001
 CMD ["node", "./gateway.js"]
-RUN [ "/bin/bash",  "-Ec", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-end' ; cross-build-end ; fi" ]
+RUN [ "/bin/bash",  "-c", "if [ $CROSSBUILD -eq 1 ] ; then echo 'Calling cross-build-end' ; cross-build-end ; fi" ]
