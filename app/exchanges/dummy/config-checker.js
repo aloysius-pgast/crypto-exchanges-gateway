@@ -13,7 +13,9 @@ class ConfigChecker extends AbstractConfigCheckerClass
 constructor(id)
 {
     // default config
-    let cfg = {}
+    let cfg = {
+        feesPercent:0
+    }
     super(cfg, `exchanges[${id}]`);
 }
 
@@ -35,7 +37,9 @@ _check()
         this._missing('baseWsUri');
         return false;
     }
-    this._finalConfig = this._config;
+    _.forEach(this._config, (value, key) => {
+        this._finalConfig[key] = value;
+    });
     return valid;
 }
 

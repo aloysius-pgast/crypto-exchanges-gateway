@@ -42,7 +42,8 @@ app.get('/server/services', (req, res) => {
             name:entry.name,
             features:entry.features,
             demo:entry.demo,
-            dummy:entry.dummy
+            dummy:entry.dummy,
+            feesPercent:config.exchanges[id].feesPercent
         }
     });
     _.forEach(services.others, (entry, id) => {

@@ -23,9 +23,12 @@ elif [ "$2" == "--force" ]
 then
     FORCED=1
     BRANCH=$1
+elif ! [ -z "$1" ]
+then
+    BRANCH=$1
 fi
 ARCH=`uname -a | awk '{print $13}'`
-if ! [ "$ARCH" == "armv*" ]
+if ! [[ "$ARCH" == armv* ]]
 then
     if [ "$FORCED" -ne 1 ]
     then
@@ -47,4 +50,4 @@ case $BRANCH in
     *)
         usage
 esac
-docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .
+docker build -f $DOCKERFILE --cpuset-cpus=0 --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .

@@ -1,4 +1,5 @@
-FROM multiarch/alpine:armhf-latest-stable as builder
+FROM resin/armhf-alpine:latest as builder
+RUN [ "cross-build-start" ]
 RUN apk --update add bash git python build-base nodejs nodejs-npm
 WORKDIR /root/
 ARG TIMESTAMP=0
@@ -7,8 +8,10 @@ RUN echo "$TIMESTAMP" && \
     git checkout master && \
     npm install && cp docker/config.docker.json config/config.json && \
     cd ui && npm install -g webpack && npm install && npm run build && rm -fr node_modules
+RUN [ "cross-build-end" ]
 
-FROM multiarch/alpine:armhf-latest-stable
+FROM resin/armhf-alpine:latest
+RUN [ "cross-build-start" ]
 RUN apk --update add nodejs
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=builder /root/crypto-exchanges-gateway .
@@ -24,3 +27,4 @@ ENV cfg.exchanges.binance.secret ""
 EXPOSE 8000
 EXPOSE 8001
 CMD ["node", "./gateway.js"]
+RUN [ "cross-build-end" ]
