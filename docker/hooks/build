@@ -10,4 +10,4 @@ elif [ "$DOCKER_TAG" == "rpi-dev" ]
 then
     Dockerfile=Dockerfile-rpi.dev
 fi
-docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg CROSSBUILD=1 -t IMAGE_NAME .
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg CROSSBUILD=1 -t $IMAGE_NAME .
