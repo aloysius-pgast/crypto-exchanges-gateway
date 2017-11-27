@@ -11,6 +11,7 @@ then
     usage
 fi
 FORCED=0
+CROSSBUILD=0
 BRANCH=master
 if [ "$1" == "--force" ]
 then
@@ -30,6 +31,7 @@ fi
 ARCH=`uname -a | awk '{print $13}'`
 if ! [[ "$ARCH" == armv* ]]
 then
+    CROSSBUILD=1
     if [ "$FORCED" -ne 1 ]
     then
         echo "Script should be run on an armv architecture. Use --force if you know what you're doing."
@@ -50,4 +52,4 @@ case $BRANCH in
     *)
         usage
 esac
-docker build -f $DOCKERFILE --cpuset-cpus=0 --force-rm=true --rm=true --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .
+docker build -f $DOCKERFILE --cpuset-cpus=0 --force-rm=true --rm=true --build-arg CROSSBUILD=$CROSSBUILD --build-arg TIMESTAMP=$TIMESTAMP -t apendergast/crypto-exchanges-gateway:$TAG .
