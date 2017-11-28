@@ -1,19 +1,22 @@
-FROM apendergast/ceg-docker-base:gateway-latest as gateway
-FROM apendergast/ceg-docker-base:ui-latest as ui
+FROM apendergast/ceg-docker-base:rpi-gateway-latest as gateway
+FROM apendergast/ceg-docker-base:rpi-ui-latest as ui
 COPY --from=gateway /root/dummy /root/dummy
+RUN [ "cross-build-start" ]
 WORKDIR /root/
 ARG GIT_BRANCH=master
 ARG TIMESTAMP=0
 # build gateway
 RUN echo "$TIMESTAMP" && git clone https://github.com/aloysius-pgast/crypto-exchanges-gateway.git && cd crypto-exchanges-gateway && \
     git checkout $GIT_BRANCH && \
-    cp -R /root/dummy/gateway/node_modules . && npm install --unsafe-perm && \
+    cp -R /root/dummy/gateway/node_modules . && npm install --unsafe-perm -ddd && \
     cp docker/config.docker.json config/config.json
 # build ui
 RUN cd crypto-exchanges-gateway/ui && \
-    cp -R /root/dummy/ui/node_modules . && npm install --unsafe-perm && npm run build && rm -fr node_modules
+    cp -R /root/dummy/ui/node_modules . && npm install --unsafe-perm -ddd && npm run build && rm -fr node_modules
+RUN [ "cross-build-end" ]
 
-FROM alpine:edge
+FROM resin/armhf-alpine:edge
+RUN [ "cross-build-start" ]
 RUN apk --update add nodejs
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=ui /root/crypto-exchanges-gateway .
@@ -29,3 +32,4 @@ ENV cfg.exchanges.binance.secret ""
 EXPOSE 8000
 EXPOSE 8001
 CMD ["node", "./gateway.js"]
+RUN [ "cross-build-end" ]
