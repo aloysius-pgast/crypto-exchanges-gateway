@@ -13,8 +13,7 @@ RUN echo "$TIMESTAMP" && git clone https://github.com/aloysius-pgast/crypto-exch
 RUN cd crypto-exchanges-gateway/ui && \
     cp -R /root/dummy/ui/node_modules . && npm install --unsafe-perm && npm run build && rm -fr node_modules
 
-FROM alpine:edge
-RUN apk --update add nodejs
+FROM apendergast/alpine-node:runtime-latest
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=ui /root/crypto-exchanges-gateway .
 
