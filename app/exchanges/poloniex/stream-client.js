@@ -2,6 +2,7 @@
 const _ = require('lodash');
 const debug = require('debug')('CEG:ExchangeStreamClient:Poloniex');
 const logger = require('winston');
+const Big = require('big.js');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
 
 const WS_URI = 'wss://api2.poloniex.com';
@@ -338,7 +339,7 @@ _processTrades(pair, trades)
             rate:parseFloat(trade[3]),
             timestamp:trade[5]
         }
-        obj.price = obj.quantity * obj.rate;
+        obj.price = parseFloat(new Big(obj.quantity).times(obj.rate));
         evt.data.push(obj);
     });
     this.emit('trades', evt);

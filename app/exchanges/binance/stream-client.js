@@ -2,6 +2,7 @@
 const _ = require('lodash');
 const debug = require('debug')('CEG:ExchangeStreamClient:Binance');
 const logger = require('winston');
+const Big = require('big.js');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
 
 class StreamClient extends AbstractExchangeStreamClientClass
@@ -175,7 +176,7 @@ _processTrades(data)
     let pair = this._toCustomPair(data.s);
     let quantity = parseFloat(data.q);
     let rate = parseFloat(data.p);
-    let price = quantity * rate;
+    let price = parseFloat(new Big(quantity).times(rate));
     let orderType = 'sell';
     if (data.m)
     {
