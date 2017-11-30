@@ -287,7 +287,7 @@ _generateOpenOrders(pairs, opt)
         }
         let quantity = this._generateQuantity();
         let rate = this._generateRate();
-        let price = parseFloat(new Big(quantity).times(rate));
+        let price = parseFloat(new Big(quantity).times(rate).toFixed(8));
         list[n] = {
             pair:pair,
             orderType:this._generateOrderType(),
@@ -322,7 +322,7 @@ _generateClosedOrders(pairs, opt)
         }
         let quantity = this._generateQuantity();
         let rate = this._generateRate();
-        let price = parseFloat(new Big(quantity).times(rate));
+        let price = parseFloat(new Big(quantity).times(rate).toFixed(8));
         list[n] = {
             pair:pair,
             orderType:this._generateOrderType(),
@@ -428,7 +428,7 @@ _generateTimestamp()
 
 _generateQuantity()
 {
-    return this._generateFloat(fakeData.quantity.min, fakeData.quantity.max);
+    return parseFloat(this._generateFloat(fakeData.quantity.min, fakeData.quantity.max).toFixed(8));
 }
 
 _generateRemainingQuantity(quantity)
@@ -439,12 +439,12 @@ _generateRemainingQuantity(quantity)
     {
         return quantity;
     }
-    return this._generateFloat(quantity * 0.85, quantity);
+    return parseFloat(this._generateFloat(quantity * 0.85, quantity).toFixed(8));
 }
 
 _generateRate()
 {
-    return this._generateFloat(fakeData.rate.min, fakeData.rate.max);
+    return parseFloat(this._generateFloat(fakeData.rate.min, fakeData.rate.max).toFixed(8));
 }
 
 _generateOrderType()
