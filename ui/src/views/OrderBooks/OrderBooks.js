@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Big from 'big.js';
 import restClient from '../../lib/RestClient';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import PairChooser from '../../components/PairChooser';
@@ -143,17 +144,19 @@ _loadOrderBook()
         let timestamp = new Date().getTime();
         self.setState((prevState, props) => {
             // update price & sum
-            let sum = 0;
+            let sum = new Big(0);
             _.forEach(data.buy, (item, index) => {
-                item.price = item.rate * item.quantity;
-                sum += item.price;
-                item.sum = sum;
+                item.price = new Big(item.rate).times(item.quantity);
+                sum = sum.plus(item.price);
+                item.sum = sum.toFixed(8);
+                item.price = item.price.toFixed(8)
             });
-            sum = 0;
+            sum = new Big(0);
             _.forEach(data.sell, (item, index) => {
-                item.price = item.rate * item.quantity;
-                sum += item.price;
-                item.sum = sum;
+                item.price = new Big(item.rate).times(item.quantity);
+                sum = sum.plus(item.price);
+                item.sum = sum.toFixed(8);
+                item.price = item.price.toFixed(8)
             });
             return {orderBook:{loaded:true, isFirstLoad:prevState.orderBook.isFirstLoad, isRefreshing:false, err:null, data: data, loadedTimestamp:timestamp}};
         });

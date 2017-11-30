@@ -2,6 +2,7 @@
 const Api = require('poloniex-api-node');
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 

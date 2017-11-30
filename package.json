@@ -11,6 +11,7 @@
     "url": "https://github.com/aloysius-pgast/crypto-exchanges-gateway.git"
   },
   "dependencies": {
+    "big.js": "^5.0.3",
     "binance": "https://github.com/aloysius-pgast/binance#master",
     "bittrex-signalr-client": "https://github.com/aloysius-pgast/bittrex-signalr-client#master",
     "body-parser": "^1.17.2",

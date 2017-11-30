@@ -5,6 +5,7 @@ const Bottleneck = require('bottleneck');
 const util = require('util');
 const logger = require('winston');
 const _ = require('lodash');
+const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
@@ -490,7 +491,7 @@ pairs(opt)
                 _.forEach(data, function(entry){
                     let quantity = parseFloat(entry.q);
                     let rate = parseFloat(entry.p);
-                    let price = quantity * rate;
+                    let price = parseFloat(new Big(quantity).times(rate));
                     let orderType = 'sell';
                     if (entry.m)
                     {
@@ -582,7 +583,7 @@ _formatOpenOrders(data)
             quantity:parseFloat(entry.origQty),
             openTimestamp:parseFloat(entry.time / 1000.0)
         }
-        order.targetPrice = order.targetRate * order.quantity;
+        order.targetPrice = parseFloat(new Big(order.targetRate).times(order.quantity));
         order.remainingQuantity = order.quantity - parseFloat(entry.executedQty);
         list[order.orderNumber] = order;
     });
@@ -811,7 +812,7 @@ _formatClosedOrders(data)
             quantity:parseFloat(entry.executedQty),
             closedTimestamp:parseFloat(entry.time / 1000.0)
         }
-        order.actualPrice = order.actualRate * order.quantity;
+        order.actualPrice = parseFloat(new Big(order.actualRate).times(order.quantity));
         list[order.orderNumber] = order;
     });
     return list;

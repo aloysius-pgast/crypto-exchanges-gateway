@@ -1,5 +1,6 @@
 "use strict";
 const _ = require('lodash');
+const Big = require('big.js');
 const HttpClient = require('crypto-exchanges-http-client');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');

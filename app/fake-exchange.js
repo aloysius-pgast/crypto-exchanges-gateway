@@ -1,6 +1,7 @@
 "use strict";
 const uuidGenerator = require('uuid/v4');
 const _ = require('lodash');
+const Big = require('big.js');
 const logger = require('winston');
 
 //-- fake data configuration
@@ -286,7 +287,7 @@ _generateOpenOrders(pairs, opt)
         }
         let quantity = this._generateQuantity();
         let rate = this._generateRate();
-        let price = quantity * rate;
+        let price = parseFloat(new Big(quantity).times(rate));
         list[n] = {
             pair:pair,
             orderType:this._generateOrderType(),
@@ -321,7 +322,7 @@ _generateClosedOrders(pairs, opt)
         }
         let quantity = this._generateQuantity();
         let rate = this._generateRate();
-        let price = quantity * rate;
+        let price = parseFloat(new Big(quantity).times(rate));
         list[n] = {
             pair:pair,
             orderType:this._generateOrderType(),

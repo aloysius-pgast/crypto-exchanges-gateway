@@ -274,6 +274,7 @@ This project was made possible thanks to following projects :
 * [ws](https://www.npmjs.com/package/ws)
 * [express-ws](https://www.npmjs.com/package/express-ws)
 * [sqlite3](https://www.npmjs.com/package/sqlite3)
+* [big.js](https://www.npmjs.com/package/big.js)
 
 ## Donate
 

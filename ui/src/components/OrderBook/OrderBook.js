@@ -129,8 +129,8 @@ render()
                 return <tr key={index}>
                     <td className="text-right"><a className={classNamesRate} href={rateUrl}>{item.rate.toFixed(8)}</a></td>
                     <td className="text-right">{item.quantity.toFixed(8)}</td>
-                    <td className="text-right"><a href={priceUrl}>{item.price.toFixed(8)}</a></td>
-                    <td className="text-right">{item.sum.toFixed(8)}</td>
+                    <td className="text-right"><a href={priceUrl}>{item.price}</a></td>
+                    <td className="text-right">{item.sum}</td>
                 </tr>
             }
             else
@@ -138,8 +138,8 @@ render()
                 return <tr key={index}>
                     <td className="text-right"><span className={classNamesRate}>{item.rate.toFixed(8)}</span></td>
                     <td className="text-right">{item.quantity.toFixed(8)}</td>
-                    <td className="text-right">{item.price.toFixed(8)}</td>
-                    <td className="text-right">{item.sum.toFixed(8)}</td>
+                    <td className="text-right">{item.price}</td>
+                    <td className="text-right">{item.sum}</td>
                 </tr>
             }
         });

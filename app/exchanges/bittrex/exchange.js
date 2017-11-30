@@ -1,6 +1,7 @@
 "use strict";
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
@@ -576,7 +577,7 @@ pairs(opt)
                          openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0)
                      }
                      // define targetPrice based on quantity & targetRate
-                     o.targetPrice = o.quantity * o.targetRate;
+                     o.targetPrice = parseFloat(new Big(o.quantity).times(o.targetRate));
                      list[o.orderNumber] = o;
                  });
                  resolve(list);
