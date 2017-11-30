@@ -78,7 +78,7 @@ if (null !== value)
 config.load().then(function(result){
 
     // initialize rest client
-    restClient.initialize(config.config.apiEndpoint);
+    restClient.initialize(config.config.restEndpoint);
     restClient.setApiKey(apiKey);
 
     // check apiKey

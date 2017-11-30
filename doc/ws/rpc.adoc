@@ -859,3 +859,64 @@ _Reply_
     "r":true
 }
 ----
+
+=== unsubscribe
+
+Used to cancel all subscriptions for a given exchange or all exchanges
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|exchange
+|string
+|
+|Exchange identifier (if not defined, subscriptions will be cancelled for all exchanges)
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribe",
+    "p":{
+        "exchange":"bittrex"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----

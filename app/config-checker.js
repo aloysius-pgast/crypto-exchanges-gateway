@@ -403,6 +403,19 @@ _checkListen()
             this._finalConfig.listen.ipaddr = this._config.listen.ipaddr;
         }
     }
+    //-- check if we have an external endpoint set (in case app is running behing proxy)
+    if (undefined !== this._config.listen.externalEndpoint && '' !== this._config.listen.externalEndpoint)
+    {
+        if (!this._config.listen.externalEndpoint.startsWith('http://') && !this._config.listen.externalEndpoint.startsWith('https://'))
+        {
+            this._invalid({name:'listen[externalEndpoint]',value:this._config.listen.externalEndpoint});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.listen.externalEndpoint = this._config.listen.externalEndpoint;
+        }
+    }
     return valid;
 }
 
@@ -440,6 +453,19 @@ _checkListenWs()
         if (valid)
         {
             this._finalConfig.listenWs.ipaddr = this._config.listenWs.ipaddr;
+        }
+    }
+    //-- check if we have an external endpoint set (in case app is running behing proxy)
+    if (undefined !== this._config.listenWs.externalEndpoint && '' !== this._config.listenWs.externalEndpoint)
+    {
+        if (!this._config.listenWs.externalEndpoint.startsWith('ws://') && !this._config.listenWs.externalEndpoint.startsWith('wss://'))
+        {
+            this._invalid({name:'listenWs[externalEndpoint]',value:this._config.listenWs.externalEndpoint});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.listenWs.externalEndpoint = this._config.listenWs.externalEndpoint;
         }
     }
     return valid;

@@ -28,10 +28,28 @@ app.get('/ui/config/config.json', (req, res) => {
     {
         proto = req.headers['x-forwarded-proto'];
     }
-    let endpoint = util.format('%s://%s', proto, req.headers.host);
-    res.send({
-        apiEndpoint:endpoint
-    });
+    let cfg = {
+        restEndpoint:util.format('%s://%s', proto, req.headers.host)
+    };
+    let host_port = req.headers.host.split(':');
+    if ('http' == proto)
+    {
+        cfg.wsEndpoint = util.format('ws://%s:%d', host_port[0], config.listenWs.port);
+    }
+    else
+    {
+        cfg.wsEndpoint = util.format('wss://%s:%d', host_port[0], config.listenWs.port);
+    }
+    // check if we have externalEndpoints in config file
+    if (undefined !== config.listen.externalEndpoint)
+    {
+        cfg.restEndpoint = config.listen.externalEndpoint;
+    }
+    if (undefined !== config.listenWs.externalEndpoint)
+    {
+        cfg.wsEndpoint = config.listenWs.externalEndpoint;
+    }
+    res.send(cfg);
 });
 
 app.use('/ui', express.static('ui/dist'));

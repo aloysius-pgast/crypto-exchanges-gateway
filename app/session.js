@@ -594,6 +594,8 @@ _processMessage(ws, msg)
                 return this._handleUnsubscribeFromTrades(obj, ws);
             case 'unsubscribefromalltrades':
                 return this._handleUnsubscribeFromAllTrades(obj, ws);
+            case 'unsubscribe':
+                return this._handleUnsubscribe(obj, ws);
             default:
                 let msg = `RPC method '${obj.m}' does not exist`
                 logger.warn(msg);
@@ -1691,6 +1693,24 @@ _handleUnsubscribeFromAllTrades(obj, ws)
         return;
     }
     this.unsubscribeFromAllTrades(obj.p.exchange);
+    RpcHelper.replySuccess(ws, obj, true);
+}
+
+// unsubscribe from all entities (for a given exchange or all exchanges)
+_handleUnsubscribe(obj, ws)
+{
+    if (undefined !== obj.p.exchange)
+    {
+        if (!this._checkExchange(obj, ws))
+        {
+            return;
+        }
+        this.unsubscribe({remove:true,exchangeId:obj.p.exchange});
+        RpcHelper.replySuccess(ws, obj, true);
+        return;
+    }
+    // unsubscribe for all exchanges
+    this.unsubscribe({remove:true});
     RpcHelper.replySuccess(ws, obj, true);
 }
 

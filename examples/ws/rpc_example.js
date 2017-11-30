@@ -15,6 +15,16 @@ ws.on('open', function(){
     ws.send(JSON.stringify({m:'subscribeToOrderBooks',p:{exchange:'bittrex',pairs:['USDT-NEO']}}));
     // subscribe to BTC-NEO trades on Binance
     ws.send(JSON.stringify({m:'subscribeToTrades',p:{exchange:'binance',pairs:['BTC-NEO']}}));
+    // after 30s cancel all subscriptions on binance exchange
+    setTimeout(function(){
+        console.log("--- Unsubscribing from Binance ---");
+        ws.send(JSON.stringify({m:'unsubscribe',p:{exchange:'binance'}}));
+    }, 30000);
+    // after 60s cancel all subscriptions on all exchanges
+    setTimeout(function(){
+        console.log("--- Unsubscribing from all exchanges ---");
+        ws.send(JSON.stringify({m:'unsubscribe',p:{}}));
+    }, 60000);
 });
 
 ws.on('message', function(m){
