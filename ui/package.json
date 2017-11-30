@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "big.js": "^5.0.3",
     "bootstrap": "^4.0.0-beta",
     "font-awesome": "^4.7.0",
     "history": "^4.7.2",

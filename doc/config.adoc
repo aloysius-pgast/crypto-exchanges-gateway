@@ -128,6 +128,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Poloniex */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.25,
             /* rate limiting to comply with Poloniex */
             "throttle":{
                 "publicApi":{
@@ -146,6 +148,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Bittrex */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.25,
             /* rate limiting to comply with Bittrex */
             "throttle":{
                 "lowIntensity":{
@@ -168,6 +172,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Binance */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.10,
             /* rate limiting to comply with Binance */
             "throttle":{
                 "global":{

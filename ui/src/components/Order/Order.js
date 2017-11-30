@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import restClient from '../../lib/RestClient';
-
+import Big from 'big.js';
 import {
   Row,
   Col,
@@ -26,54 +26,92 @@ constructor(props)
 {
     super(props);
     this._isMounted = false;
-    let rate;
-    let quantity = '';
-    let total = '';
+    let rate = {
+        floatValue:0.0,
+        value:''
+    }
+    let quantity = {
+        floatValue:0.0,
+        value:'',
+    };
+    let total = {
+        floatValue:0.0,
+        value:''
+    }
+    let rawTotal = {
+        floatValue:0.0,
+        value:''
+    }
+    let fees = {
+        floatValue:0.0,
+        value:''
+    }
+    this._balance = {
+        floatValue:new Big(this.props.balance)
+    }
+    this._balance.value = this._formatFloat(this._balance.floatValue);
+    this._feesPercent = new Big(this.props.feesPercent).div(100.0);
+    this._feesFactor = new Big(1).plus(this._feesPercent);
     // initialize so that order can be fulfilled directly using market price
     if ('buy' == this.props.orderType)
     {
-        rate = this.props.ticker.sell.toFixed(8);
+        rate.floatValue = new Big(this.props.ticker.sell);
+        rate.value = this._formatFloat(rate.floatValue);
     }
     else
     {
-        rate = this.props.ticker.buy.toFixed(8);
+        rate.floatValue = new Big(this.props.ticker.buy);
+        rate.value = this._formatFloat(rate.floatValue);
     }
     if (null !== this.props.rate)
     {
-        rate = this.props.rate;
+        rate.floatValue = new Big(this.props.rate);
+        rate.value = this._formatFloat(rate.floatValue);
         // do we have a quantity ?
         if (null !== this.props.quantity)
         {
-            let floatRate = parseFloat(rate);
-            let floatQuantity = parseFloat(this.props.quantity);
+            quantity.floatValue = new Big(this.props.quantity);
+            quantity.value = this._formatFloat(quantity.floatValue);
             // ensure we have enough balance to buy this quantity
             if ('buy' == this.props.orderType)
             {
-                let maxQuantity = this.props.balance / floatRate;
-                if (floatQuantity > maxQuantity)
+                let maxQuantity = this._balance.floatValue.div(this._feesFactor).div(rate.floatValue);
+                if (quantity.floatValue.gt(maxQuantity))
                 {
-                    floatQuantity = maxQuantity;
+                    quantity.floatValue = maxQuantity;
                 }
-                quantity = this._formatFloat(floatQuantity);
-                total = this._formatFloat(floatQuantity * floatRate);
+                rawTotal.floatValue = quantity.floatValue.times(rate.floatValue);
+                total.floatValue = rawTotal.floatValue.times(this._feesFactor);
+                quantity.value = this._formatFloat(quantity.floatValue);
+                rawTotal.value = this._formatFloat(rawTotal.floatValue);
+                total.value = this._formatFloat(total.floatValue);
+                fees.floatValue = total.floatValue.minus(rawTotal.floatValue);
+                fees.value = this._formatFloat(fees.floatValue);
             }
             // ensure we have enough balance to sell this quantity
             else
             {
-                if (floatQuantity > this.props.balance)
+                if (quantity.floatValue.gt(this._balance.floatValue))
                 {
-                    floatQuantity = this.props.balance;
+                    quantity.floatValue = this._balance.floatValue;
                 }
-                quantity = this._formatFloat(floatQuantity);
-                total = this._formatFloat(floatQuantity * floatRate);
+                rawTotal.floatValue = quantity.floatValue.times(rate.floatValue);
+                fees.floatValue = rawTotal.floatValue.times(this._feesPercent);
+                total.floatValue = rawTotal.floatValue.minus(fees.floatValue);
+                quantity.value = this._formatFloat(quantity.floatValue);
+                rawTotal.value = this._formatFloat(rawTotal.floatValue);
+                fees.value = this._formatFloat(fees.floatValue);
+                total.value = this._formatFloat(total.floatValue);
             }
         }
     }
     this.state = {
         showPriceDropdown:false,
-        quantity:{value:quantity,valid:true,timestamp:null},
-        rate:{value:rate,valid:true,timestamp:null},
-        total:{value:total,valid:true,timestamp:null},
+        quantity:{value:quantity.value,floatValue:quantity.floatValue,valid:true,timestamp:null},
+        rate:{value:rate.value,floatValue:rate.floatValue,valid:true,timestamp:null},
+        total:{value:total.value,floatValue:total.floatValue,valid:true,timestamp:null},
+        fees:{value:fees.value,floatValue:fees.floatValue},
+        rawTotal:{value:rawTotal.value,floatValue:rawTotal.floatValue},
         order:{
             confirm:false,
             sending:false,
@@ -82,7 +120,6 @@ constructor(props)
             orderNumber:null
         }
     }
-    this._balance = this._formatFloat(this.props.balance);
     this._handleSetRate = this._handleSetRate.bind(this);
     this._handleSetValue = this._handleSetValue.bind(this);
     this._handleSetMaxQuantity = this._handleSetMaxQuantity.bind(this);
@@ -93,41 +130,73 @@ constructor(props)
     this._handleCloseOrder = this._handleCloseOrder.bind(this);
 }
 
+_getRoundedFloat(value)
+{
+    let type = typeof value;
+    let roundedValue;
+    if ('string' == type)
+    {
+        let floatValue = parseFloat(value);
+        roundedValue = parseFloat(floatValue.toFixed(8));
+        // ensure we don't round value up
+        if (roundedValue > floatValue)
+        {
+            roundedValue = roundedValue - 0.00000001;
+        }
+    }
+    else if ('number' == type)
+    {
+        roundedValue = parseFloat(value.toFixed(8));
+        // ensure we don't round value up
+        if (roundedValue > value)
+        {
+            roundedValue = roundedValue - 0.00000001;
+        }
+    }
+    // probably a big number
+    else
+    {
+        roundedValue = parseFloat(value.toFixed(8));
+        if (value.lt(roundedValue))
+        {
+            roundedValue = roundedValue - 0.00000001;
+        }
+    }
+    return roundedValue;
+}
+
 _formatFloat(value)
 {
-    let roundedValue = parseFloat(value.toFixed(8));
-    // ensure we don't round value up
-    if (roundedValue > value)
-    {
-        roundedValue = roundedValue - 0.00000001;
-    }
-    return roundedValue.toFixed(8);
+    return this._getRoundedFloat(value).toFixed(8);
 }
 
 _handleSetRate(e)
 {
-    let value;
+    let floatValue;
     switch (e.target.id)
     {
         case 'last':
-            value = this.props.ticker.last.toFixed(8);
+            floatValue = this.props.ticker.last;
             break;
         case 'bid':
-            value = this.props.ticker.buy.toFixed(8);
+            floatValue = this.props.ticker.buy;
             break;
         case 'ask':
-            value = this.props.ticker.sell.toFixed(8);
+            floatValue = this.props.ticker.sell;
             break;
     }
-    if (undefined !== value)
+    if (undefined !== floatValue)
     {
         let timestamp = new Date().getTime();
         let newState = {
             quantity:this.state.quantity,
             rate:this.state.rate,
-            total:this.state.total
+            total:this.state.total,
+            rawTotal:this.state.rawTotal,
+            fees:this.state.fees
         }
-        newState.rate.value = value;
+        newState.rate.floatValue = floatValue;
+        newState.rate.value = this._formatFloat(floatValue);
         newState.rate.valid = true;
         newState.rate.timestamp = timestamp;
         this._updateState(newState, 'rate');
@@ -140,32 +209,38 @@ _handleSetValue(e)
     let newState = {
         quantity:this.state.quantity,
         rate:this.state.rate,
-        total:this.state.total
+        total:this.state.total,
+        rawTotal:this.state.rawTotal,
+        fees:this.state.fees
     }
     let value = e.target.value.trim()
+    newState[e.target.id].value = value;
+    newState[e.target.id].valid = true;
     if ('' == value || isNaN(value))
     {
-        newState[e.target.id].value = value;
         newState[e.target.id].valid = false;
     }
     else
     {
-        // control quantity/total to ensure we have enough to fullfil request
-        let valid = true;
-        if (('buy' == this.props.orderType && 'total' == e.target.id) ||
-            ('sell' == this.props.orderType && 'quantity' == e.target.id)
-        )
+        newState[e.target.id].floatValue = new Big(value);
+        if (newState[e.target.id].floatValue.eq(0))
         {
-            let floatValue = parseFloat(value);
-            let balance = parseFloat(this._balance);
-            if (floatValue > balance || 0 == floatValue)
+            newState[e.target.id].valid = false;
+        }
+        else
+        {
+            // control quantity/total to ensure we have enough to fullfil request
+            if (('buy' == this.props.orderType && 'total' == e.target.id) ||
+                ('sell' == this.props.orderType && 'quantity' == e.target.id))
             {
-                valid = false;
+                if (newState[e.target.id].floatValue.gt(this._balance.floatValue))
+                {
+                    newState[e.target.id].valid = false;
+                }
             }
         }
         newState[e.target.id].value = value;
-        newState[e.target.id].valid = valid;
-        if (valid)
+        if (newState[e.target.id].valid)
         {
             newState[e.target.id].timestamp = timestamp;
         }
@@ -179,13 +254,15 @@ _handleSetMaxTotal(e)
     let newState = {
         quantity:this.state.quantity,
         rate:this.state.rate,
-        total:this.state.total
+        total:this.state.total,
+        rawTotal:this.state.rawTotal,
+        fees:this.state.fees
     }
-    newState.total.value = this._balance;
+    newState.total.floatValue = this._balance.floatValue;
+    newState.total.value = this._balance.value;
     newState.total.timestamp = timestamp;
     newState.total.valid = true;
-    let floatValue = parseFloat(newState.total.value);
-    if (0 == floatValue)
+    if (newState.total.floatValue.eq(0))
     {
         newState.total.valid = false;
     }
@@ -198,13 +275,15 @@ _handleSetMaxQuantity(e)
     let newState = {
         quantity:this.state.quantity,
         rate:this.state.rate,
-        total:this.state.total
+        total:this.state.total,
+        rawTotal:this.state.rawTotal,
+        fees:this.state.fees
     }
-    newState.quantity.value = this._balance;
+    newState.quantity.floatValue = this._balance.floatValue;
+    newState.quantity.value = this._balance.value;
     newState.quantity.timestamp = timestamp;
     newState.quantity.valid = true;
-    let floatValue = parseFloat(newState.quantity.value);
-    if (0 == floatValue)
+    if (newState.quantity.floatValue.eq(0))
     {
         newState.quantity.valid = false;
     }
@@ -220,18 +299,25 @@ _updateState(newState, field)
         {
             if ('' != newState.rate.value && newState.rate.valid)
             {
-                newState.total.value = this._formatFloat(parseFloat(newState.quantity.value) * parseFloat(newState.rate.value));
+                newState.rawTotal.floatValue = newState.quantity.floatValue.times(newState.rate.floatValue);
                 newState.total.valid = true;
-                // check if total is 0 or > balance
+                newState.fees.floatValue = newState.rawTotal.floatValue.times(this._feesPercent);
                 if ('buy' == this.props.orderType)
                 {
-                    let floatValue = parseFloat(newState.total.value);
-                    let balance = parseFloat(this._balance);
-                    if (0 == floatValue || floatValue > balance)
+                    newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
+                    // check if total is 0 or > balance
+                    if (newState.total.floatValue.eq(0) || newState.total.floatValue.gt(this._balance.floatValue))
                     {
                         newState.total.valid = false;
                     }
                 }
+                else
+                {
+                    newState.total.floatValue = newState.rawTotal.floatValue.minus(newState.fees.floatValue);
+                }
+                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+                newState.total.value = this._formatFloat(newState.total.floatValue);
+                newState.fees.value = this._formatFloat(newState.fees.floatValue);
             }
         }
     }
@@ -242,18 +328,28 @@ _updateState(newState, field)
         {
             if ('' != newState.rate.value && newState.rate.valid)
             {
-                newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
-                newState.quantity.valid = true;
-                // check if quantity is 0 or > balance
-                if ('sell' == this.props.orderType)
+                if ('buy' == this.props.orderType)
                 {
-                    let floatValue = parseFloat(newState.quantity.value);
-                    let balance = parseFloat(this._balance);
-                    if (0 == floatValue || floatValue > balance)
+                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._feesFactor);
+                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                    newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
+                    newState.quantity.valid = true;
+                }
+                else
+                {
+                    newState.rawTotal.floatValue = newState.total.floatValue.times(this._feesFactor);
+                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                    newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
+                    newState.quantity.valid = true;
+                    // check if quantity is 0 or > balance
+                    if (newState.quantity.floatValue.eq(0) || newState.quantity.floatValue.gt(this._balance.floatValue))
                     {
                         newState.quantity.valid = false;
                     }
                 }
+                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+                newState.quantity.value = this._formatFloat(newState.quantity.floatValue);
+                newState.fees.value = this._formatFloat(newState.fees.floatValue);
             }
         }
     }
@@ -270,51 +366,78 @@ _updateState(newState, field)
                     (null === newState.quantity.timestamp || newState.total.timestamp > newState.quantity.timestamp)
                 )
                 {
-                    newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
-                    newState.quantity.valid = true;
-                    // check if quantity is 0 or > balance
-                    if ('sell' == this.props.orderType)
+                    if ('buy' == this.props.orderType)
                     {
-                        let floatValue = parseFloat(newState.quantity.value);
-                        let balance = parseFloat(this._balance);
-                        if (0 == floatValue || floatValue > balance)
+                        newState.rawTotal.floatValue = newState.total.floatValue.div(this._feesFactor);
+                        newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                        newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
+                        newState.quantity.valid = true;
+                    }
+                    else
+                    {
+                        newState.rawTotal.floatValue = newState.total.floatValue.times(this._feesFactor);
+                        newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                        newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
+                        newState.quantity.valid = true;
+                        // check if quantity is 0 or > balance
+                        if (newState.quantity.floatValue.eq(0) || newState.quantity.floatValue.gt(this._balance.floatValue))
                         {
                             newState.quantity.valid = false;
                         }
                     }
+                    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+                    newState.quantity.value = this._formatFloat(newState.quantity.floatValue);
+                    newState.fees.value = this._formatFloat(newState.fees.floatValue);
                 }
                 // recompute total
                 else
                 {
-                    newState.total.value = this._formatFloat(parseFloat(newState.quantity.value) * parseFloat(newState.rate.value));
+                    newState.rawTotal.floatValue = newState.quantity.floatValue.times(newState.rate.floatValue);
                     newState.total.valid = true;
-                    // check if total is 0 or > balance
+                    newState.fees.floatValue = newState.rawTotal.floatValue.times(this._feesPercent);
                     if ('buy' == this.props.orderType)
                     {
-                        let floatValue = parseFloat(newState.total.value);
-                        let balance = parseFloat(this._balance);
-                        if (0 == floatValue || floatValue > balance)
+                        newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
+                        // check if total is 0 or > balance
+                        if (newState.total.floatValue.eq(0) || newState.total.floatValue.gt(this._balance.floatValue))
                         {
                             newState.total.valid = false;
                         }
                     }
+                    else
+                    {
+                        newState.total.floatValue = newState.rawTotal.floatValue.minus(newState.fees.floatValue);
+                    }
+                    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+                    newState.total.value = this._formatFloat(newState.total.floatValue);
+                    newState.fees.value = this._formatFloat(newState.fees.floatValue);
                 }
             }
             // recompute quantity
             else if ('' != newState.total.value && newState.total.valid)
             {
-                newState.quantity.value = this._formatFloat(parseFloat(newState.total.value) / parseFloat(newState.rate.value));
-                newState.quantity.valid = true;
-                // check if quantity is 0 or > balance
-                if ('sell' == this.props.orderType)
+                if ('buy' == this.props.orderType)
                 {
-                    let floatValue = parseFloat(newState.quantity.value);
-                    let balance = parseFloat(this._balance);
-                    if (0 == floatValue || floatValue > balance)
+                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._feesFactor);
+                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                    newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
+                    newState.quantity.valid = true;
+                }
+                else
+                {
+                    newState.rawTotal.floatValue = newState.total.floatValue.times(this._feesFactor);
+                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+                    newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
+                    newState.quantity.valid = true;
+                    // check if quantity is 0 or > balance
+                    if (newState.quantity.floatValue.eq(0) || newState.quantity.floatValue.gt(this._balance.floatValue))
                     {
                         newState.quantity.valid = false;
                     }
                 }
+                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+                newState.quantity.value = this._formatFloat(newState.quantity.floatValue);
+                newState.fees.value = this._formatFloat(newState.fees.floatValue);
             }
         }
     }
@@ -508,7 +631,7 @@ render()
                       <CardHeader>
                         <strong>{orderType}</strong>
                         <small> {this.props.currency}</small>
-                        <div className="float-right"><small>{this._balance} {this.props.balanceCurrency} AVAIL</small></div>
+                        <div className="float-right"><small>{this._balance.value} {this.props.balanceCurrency} AVAIL</small></div>
                       </CardHeader>
                       <CardBlock className="card-body">
                         <Row>
@@ -550,11 +673,48 @@ render()
             <OrderResult/>
         )
     }
-    let balance = parseFloat(this._balance);
     let balanceClassnames = "float-right";
-    if (0 == balance)
+    if (this._balance.floatValue.eq(0))
     {
         balanceClassnames += " text-danger";
+    }
+
+    const Fees = () => {
+      return (
+        <Row>
+          <Col>
+            <FormGroup>
+              <Label htmlFor="fees">E<small>STIMATED FEES ({this.props.feesPercent.toFixed(2)}%)</small></Label>
+              <InputGroup>
+                <Input disabled={true} type="text" id="fees" placeholder="Estimated fees" value={this.state.fees.value}/>
+                <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
+              </InputGroup>
+            </FormGroup>
+          </Col>
+        </Row>
+      )
+    }
+
+    const RawTotal = () => {
+      return (
+        <Row>
+          <Col>
+            <FormGroup>
+              <Label htmlFor="rawTotal">T<small>OTAL</small></Label>
+              <InputGroup>
+                <Input disabled={true} type="text" id="rawTotal" placeholder="Total" value={this.state.rawTotal.value}/>
+                <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
+              </InputGroup>
+            </FormGroup>
+          </Col>
+        </Row>
+      )
+    }
+
+    let totalInfo = 'INCLUDING FEES';
+    if ('sell' == this.props.orderType)
+    {
+        totalInfo = 'AFTER SUBSTRACTING FEE';
     }
     return (
         <form noValidate>
@@ -564,7 +724,7 @@ render()
               <CardHeader>
                 <strong>{orderType}</strong>
                 <small> {this.props.currency}</small>
-                <div className={balanceClassnames}><small>{this._balance} {this.props.balanceCurrency} AVAIL</small></div>
+                <div className={balanceClassnames}><small>{this._balance.value} {this.props.balanceCurrency} AVAIL</small></div>
               </CardHeader>
               <CardBlock className="card-body">
                 <Row>
@@ -606,13 +766,15 @@ render()
                     </FormGroup>
                   </Col>
                 </Row>
+                <RawTotal/>
+                <Fees/>
                 <Row>
                   <Col>
                     <FormGroup>
-                      <Label htmlFor="total">T<small>OTAL</small></Label>
+                      <Label htmlFor="total">T<small>OTAL ({totalInfo})</small></Label>
                       <InputGroup>
                         <MaxTotalButton/>
-                        <Input className={!this.state.total.valid ? 'is-invalid' : ''} type="text" id="total" placeholder="Estimated total" value={this.state.total.value} onChange={this._handleSetValue}/>
+                        <Input className={!this.state.total.valid ? 'is-invalid' : ''} type="text" id="total" value={this.state.total.value} onChange={this._handleSetValue}/>
                         <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
                       </InputGroup>
                       <div className="invalid-feedback" style={{display:!this.state.total.valid ? 'inline' : 'none'}}>
