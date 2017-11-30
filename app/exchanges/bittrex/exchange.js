@@ -709,11 +709,12 @@ closedOrders(opt)
                         default:
                             return;
                     }
+                    let quantity = parseFloat(entry.Quantity) - parseFloat(entry.QuantityRemaining);
                     let o = {
                         pair:entry.Exchange,
                         orderNumber:entry.OrderUuid,
                         orderType:orderType,
-                        quantity:parseFloat(entry.Quantity),
+                        quantity:quantity,
                         actualRate:parseFloat(entry.PricePerUnit),
                         actualPrice:parseFloat(entry.Price),
                         closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0)
