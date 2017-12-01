@@ -12,6 +12,12 @@ static parse(ws, msg)
     {
         return null;
     }
+    // reply to custom ping requests
+    if ('_ping_' == msg)
+    {
+        ws.send('_pong_');
+        return null;
+    }
     let obj;
     try
     {
