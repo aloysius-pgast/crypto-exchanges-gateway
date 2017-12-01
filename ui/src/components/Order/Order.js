@@ -610,7 +610,7 @@ render()
                     <Row>
                       <Col>
                         <div className="float-right">
-                          <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>OSE</small></button>
+                          <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>LOSE</small></button>
                         </div>
                       </Col>
                     </Row>
@@ -714,7 +714,7 @@ render()
     let totalInfo = 'INCLUDING FEES';
     if ('sell' == this.props.orderType)
     {
-        totalInfo = 'AFTER SUBSTRACTING FEE';
+        totalInfo = 'AFTER SUBSTRACTING FEES';
     }
     return (
         <form noValidate>
