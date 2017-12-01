@@ -394,38 +394,6 @@ updateOrderBooksSubscriptions(sessionId, subscribe, unsubscribe, resync, connect
     }
 }
 
-resyncOrderBooks(pairs)
-{
-    let changes = {
-        resync:[]
-    }
-    let updated = false;
-    let pairDict = {};
-    // check if we have subscriptions
-    _.forEach(pairs, (p) => {
-        if (undefined !== pairDict[p])
-        {
-            return;
-        }
-        pairDict[p] = true;
-        // ignore if we don't have any subscription for this pair
-        if (undefined === this._subscriptions.orderBooks.pairs[p])
-        {
-            return;
-        }
-        changes.resync.push({entity:'orderBook', pair:p});
-        updated = true;
-    });
-    if (updated)
-    {
-        if (debug.enabled)
-        {
-            this._debugChanges(changes);
-        }
-        this._processChanges(changes, {});
-    }
-}
-
 /**
  * Initialize trades subscriptions for a given pair
  *

@@ -90,7 +90,7 @@ restore(obj)
     this._timeout = obj.timeout;
     let store = false;
     _.forEach(obj.subscriptions, (subscriptions, exchangeId) => {
-        let exchange = this._getExchange(exchangeId);
+        let exchange = this._getExchange(exchangeId, false);
         if (null === exchange)
         {
             logger.warn("Exchange '%s' is not supported anymore. Subscriptions for this exchange will be ignored", exchangeId);
@@ -383,6 +383,12 @@ registerSocket(ws, path)
 
     this._sockets[ws._socketId] = ws;
     this._socketsCount = Object.keys(this._sockets).length;
+    // add listeners back if we only have one socket
+    if (1 == this._socketsCount)
+    {
+        this._addListeners();
+    }
+
     let self = this;
 
     // define a timer to detect disconnection
@@ -411,7 +417,7 @@ registerSocket(ws, path)
 
     // ping / pong
     ws.on('pong', function(){
-        console.log(`Got pong from ${this._clientIpaddr}`);
+        //console.log(`Got pong from ${this._clientIpaddr}`);
         this._isAlive = true;
     });
 
@@ -481,12 +487,14 @@ _unregisterSocket(ws)
         {
             debug(`Session '${this._sid}' will be destroyed immediately`);
         }
+        this._removeListeners();
         this.destroy();
         return;
     }
     // no more sockets ?
     if (0 == this._socketsCount)
     {
+        this._removeListeners();
         // cancel subscriptions on exchange (they will be automatically recreated on next connection)
         this.unsubscribe();
         // only if session is supposed to expire
@@ -497,14 +505,13 @@ _unregisterSocket(ws)
                 clearTimeout(this._expiryTimer);
             }
             let timestamp = (new Date().getTime()) / 1000.0;
-            this._expiresAt = timestamp + this._timeout * 1000;
             let self = this;
             if (debug.enabled)
             {
                 debug(`Session '${this._sid}' will be destroyed in ${this._timeout}s`)
             }
             // start timer
-            this._expiryTimer = this._startExpiryTimer(this._timeout);
+            this._expiryTimer = this._startExpiryTimer();
         }
     }
 }
@@ -527,6 +534,8 @@ _startExpiryTimer()
         this._expiryTimer = null;
         return;
     }
+    let timestamp = (new Date().getTime()) / 1000.0;
+    this._expiresAt = timestamp + this._timeout * 1000;
     this._expiryTimer = setTimeout(function(){
         if (debug.enabled)
         {
@@ -557,7 +566,6 @@ _forwardEvent(name, evt)
 destroy()
 {
     this._destroyed = true;
-    this._removeListeners();
     this.unsubscribe();
     // close sockets
     _.forEach(this._sockets, (ws, id) => {
@@ -746,8 +754,11 @@ _checkExchangeAndPairs(obj, ws, features)
 
 /**
  * Returns an object describing exchange subscriptions
+ *
+ * @param {string} exchangeId exchange identifier
+ * @param {boolean} addListeners whether or not listeners should be added
  */
-_getExchange(exchangeId)
+_getExchange(exchangeId, addListeners)
 {
     // initialize subscriptions for this exchange
     if (undefined === this._exchanges[exchangeId])
@@ -791,7 +802,10 @@ _getExchange(exchangeId)
             }
             self._forwardEvent.call(self, 'ticker', evt);
         };
-        manager.addListener('ticker', exchange.listeners['ticker']);
+        if (addListeners)
+        {
+            manager.addListener('ticker', exchange.listeners['ticker']);
+        }
 
         // orderBook callback
         exchange.listeners['orderBook'] = function(evt){
@@ -811,7 +825,10 @@ _getExchange(exchangeId)
             }
             self._forwardEvent.call(self, 'orderBook', evt);
         };
-        manager.addListener('orderBook', exchange.listeners['orderBook']);
+        if (addListeners)
+        {
+            manager.addListener('orderBook', exchange.listeners['orderBook']);
+        }
 
         // orderBookUpdate callback
         exchange.listeners['orderBookUpdate'] = function(evt){
@@ -831,7 +848,10 @@ _getExchange(exchangeId)
             }
             self._forwardEvent.call(self, 'orderBookUpdate', evt);
         };
-        manager.addListener('orderBookUpdate', exchange.listeners['orderBookUpdate']);
+        if (addListeners)
+        {
+            manager.addListener('orderBookUpdate', exchange.listeners['orderBookUpdate']);
+        }
 
         // trades callback
         exchange.listeners['trades'] = function(evt){
@@ -846,8 +866,10 @@ _getExchange(exchangeId)
             }
             self._forwardEvent.call(self, 'trades', evt);
         };
-        manager.addListener('trades', exchange.listeners['trades']);
-
+        if (addListeners)
+        {
+            manager.addListener('trades', exchange.listeners['trades']);
+        }
         this._exchanges[exchangeId] = exchange;
     }
     return this._exchanges[exchangeId];
@@ -861,6 +883,18 @@ _removeListeners()
     _.forEach(this._exchanges, (exchange, id) => {
         _.forEach(exchange.listeners, (cb, eventName) => {
             exchange.manager.removeListener(eventName, cb);
+        })
+    });
+}
+
+/**
+ * Add listeners, for all exchanges
+ */
+_addListeners()
+{
+    _.forEach(this._exchanges, (exchange, id) => {
+        _.forEach(exchange.listeners, (cb, eventName) => {
+            exchange.manager.addListener(eventName, cb);
         })
     });
 }
@@ -1003,7 +1037,7 @@ subscribeToTickers(exchangeId, pairs, reset, connect)
     {
         connect = true;
     }
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         subscribe:[],
@@ -1091,7 +1125,7 @@ subscribeToTickers(exchangeId, pairs, reset, connect)
  */
  unsubscribeFromTickers(exchangeId, pairs)
  {
-     let exchange = this._getExchange(exchangeId);
+     let exchange = this._getExchange(exchangeId, true);
      let timestamp = (new Date().getTime()) / 1000.0;
      let changes = {
          unsubscribe:[]
@@ -1132,7 +1166,7 @@ subscribeToTickers(exchangeId, pairs, reset, connect)
  */
 unsubscribeFromAllTickers(exchangeId)
 {
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let pairs = Object.keys(exchange.subscriptions.tickers.pairs);
     this.unsubscribeFromTickers(exchangeId, pairs);
 }
@@ -1161,7 +1195,7 @@ subscribeToOrderBooks(exchangeId, pairs, reset, connect)
     {
         connect = true;
     }
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         subscribe:[],
@@ -1296,7 +1330,7 @@ subscribeToOrderBooks(exchangeId, pairs, reset, connect)
  */
 unsubscribeFromOrderBooks(exchangeId, pairs)
 {
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         unsubscribe:[]
@@ -1337,14 +1371,28 @@ unsubscribeFromOrderBooks(exchangeId, pairs)
  */
 unsubscribeFromAllOrderBooks(exchangeId)
 {
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let pairs = Object.keys(exchange.subscriptions.orderBooks.pairs);
     this.unsubscribeFromOrderBooks(exchangeId, pairs);
 }
 
-resyncOrderBooks(exchangeId, pairs)
+/*
+* @param {string} exchangeId exchange id (method assumes exchange exists, pairs & necessary features are supported)
+* @param {array} pairs array of pairs (X-Y) or objects {pair:string,resync:boolean} to subscribe to
+* @param {boolean} connect whether or not connection with exchange should be established if necessary (optional, default = true)
+*/
+resyncOrderBooks(exchangeId, pairs, connect)
 {
-    let exchange = this._getExchange(exchangeId);
+    if (undefined === connect)
+    {
+        connect = true;
+    }
+    // ensure connection is made if we have at least one connected client
+    if (!connect && 0 != this._socketsCount)
+    {
+        connect = true;
+    }
+    let exchange = this._getExchange(exchangeId, true);
     let changes = {
         resync:[]
     }
@@ -1374,7 +1422,7 @@ resyncOrderBooks(exchangeId, pairs)
         // do nothing if we don't have any socket
         if (0 != this._socketsCount)
         {
-            exchange.manager.resyncOrderBooks(changes.resync);
+            exchange.manager.updateOrderBooksSubscriptions(this._sid, [], [], changes.resync, connect);
         }
     }
 }
@@ -1403,7 +1451,7 @@ subscribeToTrades(exchangeId, pairs, reset, connect)
     {
         connect = true;
     }
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         subscribe:[],
@@ -1490,7 +1538,7 @@ subscribeToTrades(exchangeId, pairs, reset, connect)
  */
 unsubscribeFromTrades(exchangeId, pairs)
 {
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         unsubscribe:[]
@@ -1535,7 +1583,7 @@ unsubscribeFromTrades(exchangeId, pairs)
  */
 unsubscribeFromAllTrades(exchangeId)
 {
-    let exchange = this._getExchange(exchangeId);
+    let exchange = this._getExchange(exchangeId, true);
     let pairs = Object.keys(exchange.subscriptions.trades.pairs);
     this.unsubscribeFromTrades(exchangeId, pairs);
 }

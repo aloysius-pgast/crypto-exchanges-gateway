@@ -481,7 +481,7 @@ app.patch('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) 
         res.send({});
         return;
     }
-    session.resyncOrderBooks(req.params.exchange, [req.params.pair]);
+    session.resyncOrderBooks(req.params.exchange, [req.params.pair], false);
     res.send({});
 });
 

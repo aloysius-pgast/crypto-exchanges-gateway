@@ -277,6 +277,7 @@ _processChanges(changes, opt)
             }
         });
     }
+
     // do we need to disconnect client ?
     if (!this.hasSubscriptions())
     {
