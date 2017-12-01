@@ -228,7 +228,7 @@ enableExpiry(timeout)
         timeout = this._timeout;
     }
     let store = false;
-    if (this._expires && timeout != this._timeout)
+    if (this._expires && timeout == this._timeout)
     {
         // nothing to do
         return true;
