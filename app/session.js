@@ -387,6 +387,7 @@ registerSocket(ws, path)
 
     // define a timer to detect disconnection
     ws._isAlive = false;
+    ws._ignoreCloseEvent = false;
     const timer = setInterval(function() {
         if (WebSocket.OPEN != ws.readyState)
         {
@@ -399,6 +400,7 @@ registerSocket(ws, path)
             {
                 logger.debug("Got timeout for WS %s/%d", self._sid, ws._socketId);
             }
+            ws._ignoreCloseEvent = true;
             clearTimeout(timer);
             ws.terminate();
             return;
@@ -409,6 +411,7 @@ registerSocket(ws, path)
 
     // ping / pong
     ws.on('pong', function(){
+        console.log(`Got pong from ${this._clientIpaddr}`);
         this._isAlive = true;
     });
 
@@ -418,6 +421,13 @@ registerSocket(ws, path)
 
     // handle disconnection
     ws.on('close', function(code, reason){
+        if (!this._ignoreCloseEvent)
+        {
+            if ('debug' == logger.level)
+            {
+                logger.debug("WS client %s/%d disconnected", self._sid, this._socketId);
+            }
+        }
         self._unregisterSocket.call(self, this);
     });
 
@@ -505,6 +515,17 @@ _startExpiryTimer()
     if (null !== this._expiryTimer)
     {
         clearTimeout(this._expiryTimer);
+    }
+    // destroy session directly
+    if (0 == this._timeout)
+    {
+        if (debug.enabled)
+        {
+            debug(`Session '${this._sid}' will be destroyed now`);
+        }
+        this.destroy();
+        this._expiryTimer = null;
+        return;
     }
     this._expiryTimer = setTimeout(function(){
         if (debug.enabled)

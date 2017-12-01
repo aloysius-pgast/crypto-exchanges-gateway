@@ -122,7 +122,7 @@ app.ws('/', function(ws, req) {
                 if (undefined !== req.query.timeout && '' !== req.query.timeout)
                 {
                     opt.timeout = parseInt(req.query.timeout);
-                    if (isNaN(opt.timeout) || opt.timeout <= 0)
+                    if (isNaN(opt.timeout) || opt.timeout < 0)
                     {
                         logger.warn("Received invalid integer value for parameter 'timeout' : client = '%s', expires = '%s'", ws._clientIpaddr, req.query.timeout);
                         ws.terminate();

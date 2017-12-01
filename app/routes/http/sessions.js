@@ -164,9 +164,9 @@ app.post(`/sessions/:sid`, bodyParser, (req, res) => {
         if (undefined !== value && '' !== value)
         {
             opt.timeout = parseInt(value);
-            if (isNaN(opt.timeout) || opt.timeout <= 0)
+            if (isNaN(opt.timeout) || opt.timeout < 0)
             {
-                res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer > 0"});
+                res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer >= 0"});
                 return;
             }
         }
@@ -251,9 +251,9 @@ app.patch(`/sessions/:sid/expiry`, bodyParser, (req, res) => {
     if (undefined !== value && '' !== value)
     {
         value = parseInt(value);
-        if (isNaN(value) || value <= 0)
+        if (isNaN(value) || value < 0)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer > 0"});
+            res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer >= 0"});
             return;
         }
         timeout = value;
