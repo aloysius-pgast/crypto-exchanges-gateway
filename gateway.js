@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const util = require('util');
 const express = require('express');
+const compression = require('compression');
 const http = require('http');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
@@ -187,7 +188,7 @@ var startHttp = function(){
         }
         throw err;
     });
-
+    app.use(compression());
     app.use(function(req, res, next) {
         res.header("Access-Control-Allow-Origin", "*");
         res.header("Access-Control-Allow-Headers", "apikey");
