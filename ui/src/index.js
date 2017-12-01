@@ -14,9 +14,10 @@ import '../scss/style.scss'
 import App from './App';
 import Auth from './views/Auth';
 
-// Config
+// Config & http/ws clients
 import config from './lib/Config';
 import restClient from './lib/RestClient';
+import wsClient from './lib/WsClient';
 import serviceRegistry from './lib/ServiceRegistry';
 
 window.ctx = {hasLocalStorage:true};
@@ -83,17 +84,21 @@ config.load().then(function(result){
 
     // check apiKey
     restClient.getServerStatus().then(function(result){
-    // load available services
-    serviceRegistry.load().then(function(result){
-        // we're all setup now
-        const history = createBrowserHistory();
+        // initialize ws client
+        wsClient.initialize(config.config.wsEndpoint);
+        wsClient.setApiKey(apiKey);
 
-        ReactDOM.render((
-          <HashRouter history={history}>
-            <Switch>
-              <Route path="/" component={App}/>
-            </Switch>
-          </HashRouter>
+        // load available services
+        serviceRegistry.load().then(function(result){
+            // we're all setup now
+            const history = createBrowserHistory();
+
+            ReactDOM.render((
+                <HashRouter history={history}>
+                    <Switch>
+                        <Route path="/" component={App}/>
+                    </Switch>
+                </HashRouter>
             ), document.getElementById('root'));
         });
     }).catch (function(err){
