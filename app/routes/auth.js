@@ -31,34 +31,46 @@ app.use(function (req, res, next) {
     // check apiKey
     if (config.auth.apiKey.enabled)
     {
-        let key = req.headers.apikey;
-        if (config.auth.apiKey.key != key)
+        if (isWs)
         {
-            if (isWs)
+            let key = req.headers.apikey;
+            // check if we have a query parameter (browser does not allow to set custom headers)
+            if (undefined === key)
+            {
+                if (undefined !== req.query && undefined !== req.query.apiKey)
+                {
+                    key = req.query.apiKey;
+                }
+            }
+            if (config.auth.apiKey.key != key)
             {
                 logger.warn("Unauthorized WS access from %s", req.ip)
                 res.status(401).end();
+                return;
             }
-            else
+            next();
+            return;
+        }
+        let key = req.headers.apikey;
+        if (config.auth.apiKey.key != key)
+        {
+            // allow access to UI so that we can display authentication form
+            if (config.ui.enabled)
             {
-                // allow access to UI so that we can display authentication form
-                if (config.ui.enabled)
-                {
-                    if ('/' == req.path || 0 === req.path.indexOf('/ui'))
-                    {
-                        next();
-                        return;
-                    }
-                }
-                // don't log favicon
-                if ('/favicon.ico' == req.path)
+                if ('/' == req.path || 0 === req.path.indexOf('/ui'))
                 {
                     next();
                     return;
                 }
-                logger.warn("Unauthorized HTTP access from %s", req.ip)
-                res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             }
+            // don't log favicon
+            if ('/favicon.ico' == req.path)
+            {
+                next();
+                return;
+            }
+            logger.warn("Unauthorized HTTP access from %s", req.ip)
+            res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             return;
         }
     }
