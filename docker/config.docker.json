@@ -1,11 +1,13 @@
 {
     "listen":{
         "ipaddr":"*",
-        "port":8000
+        "port":8000,
+        "externalEndpoint":""
     },
     "listenWs":{
         "ipaddr":"*",
-        "port":8001
+        "port":8001,
+        "externalEndpoint":""
     },
     "ui":{
         "enabled":true

@@ -21,6 +21,8 @@ WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=ui /root/crypto-exchanges-gateway .
 
 ENV cfg.auth.apikey ""
+ENV cfg.listen.externalEndpoint ""
+ENV cfg.listenWs.externalEndpoint ""
 ENV cfg.exchanges.poloniex.key ""
 ENV cfg.exchanges.poloniex.secret ""
 ENV cfg.exchanges.bittrex.key ""

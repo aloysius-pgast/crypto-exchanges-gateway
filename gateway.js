@@ -175,6 +175,16 @@ if (undefined !== logLevel)
 // update log level
 logger.level = config.logLevel;
 
+// check external endpoints
+if (undefined !== process.env['cfg.listen.externalEndpoint'] && '' != process.env['cfg.listen.externalEndpoint'])
+{
+    config.listen.externalEndpoint = process.env['cfg.listen.externalEndpoint'];
+}
+if (undefined !== process.env['cfg.listenWs.externalEndpoint'] && '' != process.env['cfg.listenWs.externalEndpoint'])
+{
+    config.listenWs.externalEndpoint = process.env['cfg.listenWs.externalEndpoint'];
+}
+
 //-- HTTP server
 var startHttp = function(){
     const bParser = bodyParser.urlencoded({ extended: false })

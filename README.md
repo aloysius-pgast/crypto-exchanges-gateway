@@ -238,6 +238,8 @@ Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON conte
 By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
 
 * cfg.logLevel : log level
+* cfg.listen.externalEndpoint : used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy
+* cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.pushover.user : PushOver user key

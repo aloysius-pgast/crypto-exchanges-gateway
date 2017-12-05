@@ -69,12 +69,16 @@ Access will be restricted using the following :
     "listen":{
         /* listen to all ip addresses */
         "ipaddr":"*",
-        "port":8000
+        "port":8000,
+        /* used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy */
+        "externalEndpoint":""
     },
     "listenWs":{
         /* only bind to localhost */
         "ipaddr":"127.0.0.1",
-        "port":8001
+        "port":8001,
+        /* used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy */
+        "externalEndpoint":""
     },
     "ui":{
         /* enable ui : ui should be built first */
