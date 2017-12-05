@@ -33,6 +33,7 @@
   },
   "dependencies": {
     "axios": "^0.16.2",
+    "big.js": "^5.0.3",
     "bootstrap": "^4.0.0-beta",
     "font-awesome": "^4.7.0",
     "history": "^4.7.2",
@@ -43,7 +44,8 @@
     "react-markdown": "^2.5.0",
     "react-router-dom": "^4.2.2",
     "reactstrap": "^4.8.0",
-    "simple-line-icons": "^2.4.1"
+    "simple-line-icons": "^2.4.1",
+    "wolfy87-eventemitter": "^5.2.4"
   },
   "scripts": {
     "dev": "webpack -d --progress --watch",

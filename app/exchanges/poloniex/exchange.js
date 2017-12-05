@@ -1,21 +1,31 @@
 "use strict";
-
 const Api = require('poloniex-api-node');
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
+const SubscriptionManagerClass = require('./subscription-manager');
 
 class Exchange extends AbstractExchangeClass
 {
 
-constructor(config)
+/**
+ * Constructor
+ *
+ * @param {string} exchangeId exchange identifier (ex: bittrex)
+ * @param {string} exchangeName exchange name (ex: Bittrex)
+ * @param {object} config full config object
+ */
+constructor(exchangeId, exchangeName, config)
 {
-    super();
+    super(exchangeId, exchangeName);
     this._client = new Api(config.exchanges.poloniex.key, config.exchanges.poloniex.secret);
     let wait = parseInt(1000 / config.exchanges.poloniex.throttle.publicApi.maxRequestsPerSecond);
     this._limiterPublic = new Bottleneck(config.exchanges.poloniex.throttle.publicApi.maxRequestsPerSecond, wait);
     wait = parseInt(1000 / config.exchanges.poloniex.throttle.tradingApi.maxRequestsPerSecond);
     this._limiterTrading = new Bottleneck(config.exchanges.poloniex.throttle.tradingApi.maxRequestsPerSecond, wait);
+    let subscriptionManager = new SubscriptionManagerClass(this, config);
+    this._setSubscriptionManager(subscriptionManager);
 }
 
 /**

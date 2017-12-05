@@ -130,6 +130,21 @@ checkExchangeDemoMode(id)
 }
 
 /**
+ * Returns % fees (0,100) for a given exchange
+ *
+ * @param {string} id exchange id
+ * @return {float} fees
+ */
+getFees(id)
+{
+    if (undefined === this._services.exchanges[id])
+    {
+        return 0.0;
+    }
+    return this._services.exchanges[id].feesPercent;
+}
+
+/**
  * Checks whether or not an exchange is available and provide requested features
  *
  * @param {string} id exchange id

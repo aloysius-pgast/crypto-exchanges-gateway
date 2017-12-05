@@ -1,14 +1,23 @@
 "use strict";
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
+const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
+const SubscriptionManagerClass = require('./subscription-manager');
 
 class Exchange extends AbstractExchangeClass
 {
 
-constructor(config)
-{
-    super();
+/**
+ * Constructor
+ *
+ * @param {string} exchangeId exchange identifier (ex: bittrex)
+ * @param {string} exchangeName exchange name (ex: Bittrex)
+ * @param {object} config full config object
+ */
+ constructor(exchangeId, exchangeName, config)
+ {
+    super(exchangeId, exchangeName);
     this._client = require('node-bittrex-api');
     let opt = {
         apikey:config.exchanges.bittrex.key,
@@ -21,6 +30,9 @@ constructor(config)
     this._limiterLowIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.lowIntensity.minPeriod * 1000);
     this._limiterMediumIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.mediumIntensity.minPeriod * 1000);
     this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);
+    let subscriptionManager = new SubscriptionManagerClass(this, config);
+    this._setSubscriptionManager(subscriptionManager);
+    this._timeOffset = new Date().getTimezoneOffset() * -60;
 }
 
 /**
@@ -120,7 +132,7 @@ tickers(opt)
                         high: parseFloat(entry.High),
                         low: parseFloat(entry.Low),
                         volume: parseFloat(entry.Volume),
-                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
                     }
                 });
                 resolve(list);
@@ -419,7 +431,7 @@ pairs(opt)
                         rate:entry.Price,
                         price:entry.Total,
                         orderType:orderType,
-                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
                     })
                 });
                 resolve(list);
@@ -563,10 +575,10 @@ pairs(opt)
                          targetRate:parseFloat(entry.Limit),
                          quantity:parseFloat(entry.Quantity),
                          remainingQuantity:parseFloat(entry.QuantityRemaining),
-                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0)
+                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0) + self._timeOffset
                      }
                      // define targetPrice based on quantity & targetRate
-                     o.targetPrice = o.quantity * o.targetRate;
+                     o.targetPrice = parseFloat(new Big(o.quantity).times(o.targetRate));
                      list[o.orderNumber] = o;
                  });
                  resolve(list);
@@ -698,14 +710,15 @@ closedOrders(opt)
                         default:
                             return;
                     }
+                    let quantity = parseFloat(entry.Quantity) - parseFloat(entry.QuantityRemaining);
                     let o = {
                         pair:entry.Exchange,
                         orderNumber:entry.OrderUuid,
                         orderType:orderType,
-                        quantity:parseFloat(entry.Quantity),
+                        quantity:quantity,
                         actualRate:parseFloat(entry.PricePerUnit),
                         actualPrice:parseFloat(entry.Price),
-                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0)
+                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0) + self._timeOffset
                     }
                     list[o.orderNumber] = o;
                 });

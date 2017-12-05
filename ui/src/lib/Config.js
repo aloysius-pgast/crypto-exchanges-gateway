@@ -6,9 +6,19 @@ class Config
 
 constructor()
 {
-    let apiEndpoint = window.location.protocol + '://' + window.location.hostname + ':' + window.location.port + '/';
+    let restEndpoint = window.location.protocol + '://' + window.location.hostname + ':' + window.location.port + '/';
+    let wsEndpoint;
+    if ('http' ==  window.location.protocol)
+    {
+        wsEndpoint = 'ws://' + window.location.hostname + ':8001/';
+    }
+    else
+    {
+        wsEndpoint = 'wss://' + window.location.hostname + ':8001/';        
+    }
     this.config = {
-        apiEndpoint:apiEndpoint
+        restEndpoint:restEndpoint,
+        wsEndpoint:wsEndpoint
     };
 }
 
@@ -32,10 +42,15 @@ load()
 
 _finalizeConfig()
 {
-    // add trailing '/' to apiEndpoint
-    if ('/' != this.config.apiEndpoint.substr(-1))
+    // add trailing '/' to restEndpoint
+    if ('/' != this.config.restEndpoint.substr(-1))
     {
-        this.config.apiEndpoint += '/';
+        this.config.restEndpoint += '/';
+    }
+    // add trailing '/' to wsEndpoint
+    if ('/' != this.config.wsEndpoint.substr(-1))
+    {
+        this.config.wsEndpoint += '/';
     }
 }
 

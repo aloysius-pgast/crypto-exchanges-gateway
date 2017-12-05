@@ -1,5 +1,11 @@
 # Change Log
 
+## [v1.3.0]
+* Support for real-time data over websocket (new config parameter _listenWs_ is necessary) :
+  * Support for tickers retrieval
+  * Support for order books retrieval (full & update)
+  * Support for trades retrieval
+
 ## [v1.2.1]
 * Fix errors in UI when exchanges' _api keys_ & _secrets_ are not defined
 

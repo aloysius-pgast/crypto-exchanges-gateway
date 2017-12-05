@@ -1,0 +1,81 @@
+= Pairs
+
+== Retrieve all pairs
+
+*GET* _/exchanges/{exchangeId}/pairs_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string
+|
+|Used to retrieve a single pair (ex: _BTC-ETH_)
+
+|currency
+|string
+|
+|Used to only retrieve pairs having a given _currency_ (ex: _ETH_ in _BTC-ETH_ pair) (will be ignored if _pair_ is set)
+
+|baseCurrency
+|string
+|
+|Used to only retrieve pairs having a given _base currency_ (ex: _BTC_ in _BTC-ETH_ pair) (will be ignored if _pair_ or _currency_ are set)
+
+|===
+
+=== Result
+
+Result will be a dictionary using pairs as keys (even if only one pair was requested)
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_pair_
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_ (same as _pair_ key)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|string
+|Base currency (part _X_ in pair _X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency (part _Y_ in pair _X-Y_)
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/pairs_
+
+[source,json]
+----
+{
+    "BITCNY-BTC":{
+        "pair":"BITCNY-BTC",
+        "baseCurrency":"BITCNY",
+        "currency":"BTC"
+    },
+    "BTC-1ST":{
+        "pair":"BTC-1ST",
+        "baseCurrency":"BTC",
+        "currency":"1ST"
+    },
+    ...
+}
+----

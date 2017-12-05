@@ -58,6 +58,7 @@ constructor(props) {
    this._handleSelectPair = this._handleSelectPair.bind(this);
    this._handleCloseOrder = this._handleCloseOrder.bind(this);
    this._demoMode = false;
+   this._feesPercent = serviceRegistry.getFees(this.props.data.exchange)
 }
 
 _handleSelectPair(pair)
@@ -201,6 +202,7 @@ componentWillReceiveProps(nextProps)
 {
     let exchange = nextProps.data.exchange;
     this._demoMode = serviceRegistry.checkExchangeDemoMode(exchange);
+    this._feesPercent = serviceRegistry.getFees(exchange);
     let rate = null;
     let quantity = null;
     if (undefined !== nextProps.match.params.rate && !isNaN(nextProps.match.params.rate))
@@ -264,6 +266,7 @@ componentDidMount()
     this._isMounted = true;
     let exchange = this.props.data.exchange;
     this._demoMode = serviceRegistry.checkExchangeDemoMode(exchange);
+    this._feesPercent = serviceRegistry.getFees(exchange);
     this._loadPairs();
     // do we already have a pair ? => load ticker & balance
     if (null !== this.state.pair)
@@ -304,20 +307,20 @@ render() {
 
     const BuyOrderComponent = () => {
         let arr = this.state.pair.split('-');
-        let classNames = "float-lg-left mr-5";
+        let classNames = "float-lg-left mr-sm-auto mr-md-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="buy" exchange={this.state.exchange} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="buy" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }
 
     const SellOrderComponent = () => {
         let arr = this.state.pair.split('-');
-        let classNames = "float-lg-left mr-5";
+        let classNames = "float-lg-left mr-sm-auto mr-md-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="sell" exchange={this.state.exchange} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="sell" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }

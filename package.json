@@ -11,17 +11,26 @@
     "url": "https://github.com/aloysius-pgast/crypto-exchanges-gateway.git"
   },
   "dependencies": {
+    "big.js": "^5.0.3",
     "binance": "https://github.com/aloysius-pgast/binance#master",
+    "bittrex-signalr-client": "https://github.com/aloysius-pgast/bittrex-signalr-client#master",
     "body-parser": "^1.17.2",
     "bottleneck": "^1.16.0",
     "chump": "^1.2.0",
+    "compression": "^1.7.1",
+    "crypto-exchanges-http-client": "^1.0.0",
+    "debug": "^3.1.0",
     "express": "^4.15.3",
     "express-ipfilter": "^0.3.1",
+    "express-ws": "^3.0.0",
     "lodash": "^4.17.4",
     "node-bittrex-api": "^0.7.6",
-    "poloniex-api-node": "^1.6.2",
+    "poloniex-api-node": "^1.6.5",
     "request": "^2.83.0",
+    "retry": "^0.10.1",
+    "sqlite3": "^3.1.13",
     "uuid": "^3.1.0",
-    "winston": "^2.3.1"
+    "winston": "^2.3.1",
+    "ws": "^3.2.0"
   }
 }

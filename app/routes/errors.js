@@ -7,15 +7,23 @@ const logger = require('winston');
  * Default error handler
  */
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, config, isWs) {
 
 // handle authentication
 app.use(function (err, req, res, next) {
     // in case access is forbidden by ip filtering
     if ('IpDeniedError' == err.name)
     {
-        logger.warn("Forbidden access from %s", req.ip);
-        res.status(403).send({origin:"gateway",error:'Forbidden access'});
+        if (isWs)
+        {
+            logger.warn("Forbidden WS access from %s", req.ip);
+            res.status(403).end();
+        }
+        else
+        {
+            logger.warn("Forbidden HTTP access from %s", req.ip);
+            res.status(403).send({origin:"gateway",error:'Forbidden access'});
+        }
         return;
     }
     if (undefined !== err.stack)
@@ -25,6 +33,11 @@ app.use(function (err, req, res, next) {
     else
     {
         logger.error(err);
+    }
+    // nothing more to do if we're dealing with a WS
+    if (isWs)
+    {
+        return;
     }
     res.status(503).send({origin:"gateway",error:'An error occurred'});
     return;

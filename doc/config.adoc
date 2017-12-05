@@ -14,6 +14,11 @@ Below config will only give access to public API (since no key/secret combinatio
         "ipaddr":"127.0.0.1",
         "port":8000
     },
+    "listenWs":{
+        /* only bind to localhost */
+        "ipaddr":"127.0.0.1",
+        "port":8001
+    },
     "ui":{
         /* enable ui : ui should be built first */
         "enabled":true
@@ -64,7 +69,16 @@ Access will be restricted using the following :
     "listen":{
         /* listen to all ip addresses */
         "ipaddr":"*",
-        "port":8000
+        "port":8000,
+        /* used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy */
+        "externalEndpoint":""
+    },
+    "listenWs":{
+        /* only bind to localhost */
+        "ipaddr":"127.0.0.1",
+        "port":8001,
+        /* used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy */
+        "externalEndpoint":""
     },
     "ui":{
         /* enable ui : ui should be built first */
@@ -118,6 +132,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Poloniex */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.25,
             /* rate limiting to comply with Poloniex */
             "throttle":{
                 "publicApi":{
@@ -136,6 +152,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Bittrex */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.25,
             /* rate limiting to comply with Bittrex */
             "throttle":{
                 "lowIntensity":{
@@ -158,6 +176,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Binance */
             "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.10,
             /* rate limiting to comply with Binance */
             "throttle":{
                 "global":{

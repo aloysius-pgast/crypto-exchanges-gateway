@@ -1,3 +1,4 @@
 {
-    "apiEndpoint":"http://127.0.0.1:8000"
+    "restEndpoint":"http://127.0.0.1:8000",
+    "wsEndpoint":"ws://127.0.0.1:8001"
 }

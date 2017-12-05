@@ -1,0 +1,35 @@
+#!/bin/bash
+function usage()
+{
+    echo "Usage $0 <branch>"
+    echo "branch : master|develop (default=master)"
+    exit 1
+}
+DOCKERFILE=Dockerfile-rpi
+GIT_BRANCH=master
+TAG=rpi-latest
+TIMESTAMP=`date +"%Y%m%d%H%M%S"`
+if [ "$1" == '-h' ] || [ "$1" == '--help' ]
+then
+    usage
+fi
+if ! [ -z "$1" ]
+then
+    case $1 in
+        develop)
+            GIT_BRANCH=develop
+            TAG=rpi-dev
+            ;;
+        master)
+            ;;
+        *)
+            usage
+    esac
+fi
+ARCH=`uname -a | awk '{print $13}'`
+if ! [[ "$ARCH" == armv* ]]
+then
+    echo "Script should be run on an armv architecture"
+    exit 1
+fi
+docker build -f $DOCKERFILE --pull --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH --build-arg TIMESTAMP=$TIMESTAMP -t "apendergast/crypto-exchanges-gateway:$TAG" .

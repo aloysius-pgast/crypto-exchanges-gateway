@@ -1,0 +1,6 @@
+= WS streams
+
+include::endpoints.adoc[leveloffset=1]
+include::notifications.adoc[leveloffset=1]
+include::rpc.adoc[leveloffset=1]
+include::sessions.adoc[leveloffset=1]

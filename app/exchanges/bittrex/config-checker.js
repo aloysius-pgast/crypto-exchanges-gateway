@@ -23,6 +23,7 @@ constructor()
         enabled:true,
         key:"",
         secret:"",
+        feesPercent:0.25,
         throttle:{
             lowIntensity:{
                 minPeriod:ConfigChecker.LOW_INTENSITY_API_MIN_REQUEST_PERIOD
@@ -67,6 +68,21 @@ _check()
     if (undefined !== this._config.secret)
     {
         this._finalConfig.secret = this._config.secret;
+    }
+
+    //-- check feesPercent
+    if (undefined !== this._config.feesPercent)
+    {
+        let value = parseFloat(this._config.feesPercent);
+        if (isNaN(value) || value <= 0)
+        {
+            this._invalid({name:'feesPercent',value:this._config.feesPercent});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.feesPercent = value;
+        }
     }
 
     //-- update throttle config

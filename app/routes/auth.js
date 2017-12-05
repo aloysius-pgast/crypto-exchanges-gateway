@@ -4,7 +4,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const ipfilter = require('express-ipfilter').IpFilter;
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, config, isWs) {
 
 // do we need to filter ip ?
 if (config.auth.ipFilter.enabled)
@@ -23,7 +23,7 @@ if (config.auth.ipFilter.enabled)
 // handle authentication
 app.use(function (req, res, next) {
 
-    if ('OPTIONS' == req.method)
+    if (!isWs && 'OPTIONS' == req.method)
     {
         res.status(200).end();
         return;
@@ -31,6 +31,26 @@ app.use(function (req, res, next) {
     // check apiKey
     if (config.auth.apiKey.enabled)
     {
+        if (isWs)
+        {
+            let key = req.headers.apikey;
+            // check if we have a query parameter (browser does not allow to set custom headers)
+            if (undefined === key)
+            {
+                if (undefined !== req.query && undefined !== req.query.apiKey)
+                {
+                    key = req.query.apiKey;
+                }
+            }
+            if (config.auth.apiKey.key != key)
+            {
+                logger.warn("Unauthorized WS access from %s", req.ip)
+                res.status(401).end();
+                return;
+            }
+            next();
+            return;
+        }
         let key = req.headers.apikey;
         if (config.auth.apiKey.key != key)
         {
@@ -49,7 +69,7 @@ app.use(function (req, res, next) {
                 next();
                 return;
             }
-            logger.warn("Unauthorized access from %s", req.ip)
+            logger.warn("Unauthorized HTTP access from %s", req.ip)
             res.status(401).send({origin:"gateway",error:'Unauthorized access'});
             return;
         }

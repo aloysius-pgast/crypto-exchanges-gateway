@@ -115,7 +115,7 @@ _loadData(cb)
         // update window title
         try
         {
-            let title = self.state.pair + ' / ' + data[self.state.pair].last.toFixed(8);
+            let title = data[self.state.pair].last.toFixed(8) + ' / ' + self.state.pair;
             document.title = title;
         }
         catch (e)

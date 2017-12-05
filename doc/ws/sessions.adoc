@@ -1,0 +1,1385 @@
+= Sessions
+
+A session is defined as a set of subscriptions on various exchanges. It is possible to manage sessions through REST API so
+that client can connect to a given session and automatically get real-time data associated with the session.
+
+Updating session definition using REST API will automatically change what type of subscriptions will be sent to already connected client.
+
+== Retrieve a list of existing sessions
+
+*GET* _/sessions_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|rpc
+|boolean
+|_undefined_
+|Use to only retrieve _RPC_ or _non-RPC_ sessions
+
+|===
+
+=== Result
+
+Result will be a dictionary using _session id_ as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|sid
+|string
+|Unique identifier of the session
+
+|isRpc
+|string
+|Whether or not session is an _RPC_ session
+
+|creationTimestamp
+|float
+|Timestamp when session was created
+
+|expires
+|boolean
+|Whether or not session will automatically expires when all WS connections have been closed
+
+|timeout
+|integer
+|Number of seconds before considering the session as expired, when all WS connections have been closed (will always be _0_ if expiry is disabled)
+
+|expiryTimestamp
+|float
+|Timestamp when session will be considered as expired (will only be set if session can expire and after all WS connections have been closed)
+
+|subscriptions
+|object
+|Per-exchange subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange1_
+|object
+|Subcriptions for _exchange1_ exchange
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionType1_
+|object
+|Informations regarding subscriptions of type _subscriptionType1_ for _exchange1_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionTypeN_
+|object
+|Informations regarding subscriptions of type _subscriptionTypeN_ for _exchange1_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchangeN_
+|object
+|Subcriptions for _exchangeN_ exchange
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionType1_
+|object
+|Informations regarding subscriptions of type _subscriptionType1_ for _exchangeN_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionTypeN_
+|object
+|Informations regarding subscriptions of type _subscriptionTypeN_ for _exchangeN_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|connections
+|object[]
+|List of currently open client connections
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|integer
+|Connection id
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
+|float
+|Timestamp when client connected
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}ipaddr
+|string
+|Client ip address
+
+|===
+
+.Examples
+
+Example for *GET* _/sessions_
+
+[source,json]
+----
+{
+    "12345":{
+        "sid":"12345",
+        "isRpc":true,
+        "creationTimestamp":1511270616.654,
+        "expires":false,
+        "timeout":0,
+        "expiryTimestamp":null,
+        "subscriptions":{
+            "binance":{
+                "orderBooks":{
+                    "timestamp":1511283818.638,
+                    "pairs":{
+                        "USDT-BTC":{
+                            "timestamp":1511283818.638
+                        }
+                    }
+                }
+            }
+        },
+        "connections":[
+            {
+                "id":"1",
+                "openTimestamp":1511284842.103,
+                "ipaddr":"127.0.0.1"
+            }
+        ]
+    }
+}
+----
+
+== Retrieve a single session
+
+*GET* _/sessions/{sid}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Result
+
+Result will be a dictionary containing a single entry (see *GET* _/sessions_)
+
+[NOTE]
+====
+In case session does not exist, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/sessions/12345_
+
+[source,json]
+----
+{
+    "12345":{
+        "sid":"12345",
+        "isRpc":true,
+        "creationTimestamp":1511270616.654,
+        "expires":false,
+        "timeout":0,
+        "expiryTimestamp":null,
+        "subscriptions":{
+            "binance":{
+                "orderBooks":{
+                    "timestamp":1511283818.638,
+                    "pairs":{
+                        "USDT-BTC":{
+                            "timestamp":1511283818.638
+                        }
+                    }
+                }
+            }
+        },
+        "connections":[
+            {
+                "id":"1",
+                "openTimestamp":1511284842.103,
+                "ipaddr":"127.0.0.1"
+            }
+        ]
+    }
+}
+----
+
+Example for *GET* _/sessions/INVALID_
+
+[source,json]
+----
+{
+}
+----
+
+== Create a new _RPC_ session
+
+*POST* _/sessions/{sid}_
+
+[NOTE]
+====
+Query parameters can be sent in one of the following format :
+
+* directly in the url (as usually done in GET requests)
+* in the body (_application/x-www-form-urlencoded_)
+====
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|expires
+|boolean
+|false
+|Whether or not session will expire after all WS connections have been closed
+
+|timeout
+|integer
+|600
+|Number of second to wait before marking session as expired, after all WS connections have been closed (will be ignored if _expires_ is _false_)
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session already exists (unless _sid_ is assigned to an _non-RPC_ session)
+====
+
+.Examples
+
+Example for *POST* _/sessions/12345?expires=true&timeout=3600_
+
+[source,json]
+----
+{
+}
+----
+
+== Update expiry for an existing session
+
+*PATCH* _/sessions/{sid}/expiry_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|expires
+|boolean
+|false
+|Whether or not session will expire after all WS connections have been closed
+
+|timeout
+|integer
+|600
+|Number of second to wait before marking session as expired, after all WS connections have been closed (will be ignored if _expires_ is _false_)
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+.Examples
+
+Example for *PATCH* _/sessions/12345/expiry?expires=true&timeout=3600_
+
+[source,json]
+----
+{
+}
+----
+
+== Destroy an existing session
+
+*DELETE* _/sessions/{sid}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist
+
+Destroying a session will automatically disconnect all WS clients for current session
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345_
+
+[source,json]
+----
+{
+}
+----
+
+== List clients connections for an existing session
+
+*GET* _/sessions/{sid}/connections_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Result
+
+Result will be a dictionary with a single entry (key will be the _session id_)
+
+Value will be an array of objects as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|id
+|integer
+|Connection id
+
+|openTimestamp
+|float
+|Timestamp when client connected
+
+|ipaddr
+|string
+|Client ip address
+
+|===
+
+[NOTE]
+====
+In case session does not exist, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/sessions/12345/connections_
+
+[source,json]
+----
+{
+    "12345":[
+        {
+            "id":"1",
+            "openTimestamp":1511284842.103,
+            "ipaddr":"127.0.0.1"
+        }
+    ]
+}
+----
+
+== List subscriptions for an existing session
+
+*GET* _/sessions/{sid}/subscriptions_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Result
+
+Result will be a dictionary with a single entry (key will be the _session id_)
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_exchange1_
+|object
+|Subcriptions for _exchange1_ exchange
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionType1_
+|object
+|Informations regarding subscriptions of type _subscriptionType1_ for _exchange1_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionTypeN_
+|object
+|Informations regarding subscriptions of type _subscriptionTypeN_ for _exchange1_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_..._
+|
+|
+
+|_exchangeN_
+|object
+|Subcriptions for _exchangeN_ exchange
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionType1_
+|object
+|Informations regarding subscriptions of type _subscriptionType1_ for _exchangeN_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}subscriptionTypeN_
+|object
+|Informations regarding subscriptions of type _subscriptionTypeN_ for _exchangeN_ exchange
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscriptions were last changed
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairs
+|object
+|List of pairs for which there are subscriptions
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair1_
+|object
+|Subscription information for pair _pair1_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}..._
+|
+|
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pairN_
+|object
+|Subscription information for pair _pairN_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float
+|Timestamp when subscription for this pair was made
+
+|===
+
+[NOTE]
+====
+In case session does not exist, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/sessions/12345/subscriptions_
+
+[source,json]
+----
+{
+    "12345":{
+        "binance":{
+            "orderBooks":{
+                "timestamp":1511340520.25,
+                "pairs":{
+
+                }
+            }
+        },
+        "bittrex":{
+            "tickers":{
+                "timestamp":1511350047.286,
+                "pairs":{
+                    "USDT-ETH":{
+                        "timestamp":1511350047.286
+                    },
+                    "USDT-NEO":{
+                        "timestamp":1511349917.67
+                    },
+                    "USDT-BTC":{
+                        "timestamp":1511340934.422
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+== List subscriptions for a given echange in an existing session
+
+*GET* _/sessions/{sid}/subscriptions/{exchange}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|===
+
+=== Result
+
+Result will be a dictionary containing a single entry (see *GET* _/sessions/{sid}/subscriptions_)
+
+[NOTE]
+====
+In case session does not exist, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/sessions/12345/subscriptions/bittrex_
+
+[source,json]
+----
+{
+    "12345":{
+        "bittrex":{
+            "tickers":{
+                "timestamp":1511350047.286,
+                "pairs":{
+                    "USDT-ETH":{
+                        "timestamp":1511350047.286
+                    },
+                    "USDT-NEO":{
+                        "timestamp":1511349917.67
+                    },
+                    "USDT-BTC":{
+                        "timestamp":1511340934.422
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+== Cancel all subscriptions for a given session
+
+*DELETE* _/sessions/{sid}/subscriptions_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel all subscriptions for a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist or if exchange is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex_
+
+[source,json]
+----
+{
+}
+----
+
+== Create ticker subscription for a given pair and a given exchange in a given session
+
+*POST* _/sessions/{sid}/subscriptions/{exchange}/tickers/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to subscribe to
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+If session does not exist, it will be created automatically
+
+If exchange is not supported or if pair is not supported on the given exchange, an error will be returned
+====
+
+.Examples
+
+Example for *POST* _/sessions/12345/subscriptions/bittrex/tickers/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel all tickers subscriptions for a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/tickers_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist or if exchange is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/tickers_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel ticker subscriptions for a given pair and a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/tickers/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to unsubscribe from
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist, if exchange is not supported or if pair is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/tickers/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Create order book subscription for a given pair and a given exchange in a given session
+
+*POST* _/sessions/{sid}/subscriptions/{exchange}/orderBooks/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to subscribe to
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+If session does not exist, it will be created automatically
+
+If exchange is not supported or if pair is not supported on the given exchange, an error will be returned
+====
+
+.Examples
+
+Example for *POST* _/sessions/12345/subscriptions/bittrex/orderBooks/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel all order books subscriptions for a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/orderBooks_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist or if exchange is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/orderBooks_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel order book subscriptions for a given pair and a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/orderBooks/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to unsubscribe from
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist, if exchange is not supported or if pair is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/orderBooks/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Resync order book for a given pair and a given exchange in a given session
+
+*PATCH* _/sessions/{sid}/subscriptions/{exchange}/orderBooks/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to resync
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist or if exchange is not supported
+====
+
+.Examples
+
+Example for *PATCH* _/sessions/12345/subscriptions/bittrex/orderBooks/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Create trades subscription for a given pair and a given exchange in a given session
+
+*POST* _/sessions/{sid}/subscriptions/{exchange}/trades/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to subscribe to
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+If session does not exist, it will be created automatically
+
+If exchange is not supported or if pair is not supported on the given exchange, an error will be returned
+====
+
+.Examples
+
+Example for *POST* _/sessions/12345/subscriptions/bittrex/trades/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel all trades subscriptions for a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/trades_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist or if exchange is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/trades_
+
+[source,json]
+----
+{
+}
+----
+
+== Cancel trades subscriptions for a given pair and a given exchange in a given session
+
+*DELETE* _/sessions/{sid}/subscriptions/{exchange}/trades/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{sid}
+|string
+|Session id
+
+|{exchange}
+|string
+|Exchange identifier
+
+|{pair}
+|string
+|Pair to unsubscribe from
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+No error will be return if session does not exist, if exchange is not supported or if pair is not supported
+====
+
+.Examples
+
+Example for *DELETE* _/sessions/12345/subscriptions/bittrex/trades/USDT-BTC_
+
+[source,json]
+----
+{
+}
+----

@@ -198,6 +198,18 @@ _getMarketPairs(pairs, market)
     });
 }
 
+shouldComponentUpdate(nextProps, nextState)
+{
+    if (this.props.exchange != nextProps.exchange || this.props.pair != nextProps.pair ||
+        this.state.market != nextState.market || this.state.currencyFilter != nextState.currencyFilter ||
+        this.state.starred != nextState.starred
+    )
+    {
+        return true;
+    }
+    return false;
+}
+
 componentDidMount()
 {
     this._isMounted = true;
@@ -207,6 +219,8 @@ componentWillUnmount()
 {
     this._isMounted = false;
 }
+
+
 
 // nothing to do, we already know the pair
 componentWillReceiveProps(nextProps) {}

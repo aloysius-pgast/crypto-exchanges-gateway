@@ -47,6 +47,7 @@ Result will be a dictionary with two entries :
 * Only enabled exchanges will be present
 * Value for a feature will always be _true_ (if feature is not supported, it won't be in dictionnary)
 * When property _demo_ is _true_ for an entry, it means that this exchange or service is running in demo mode and will return *fake/random* data for API calls which require authentication (such as trading API on exchanges)
+* When property _dummy_ is _true_ for an entry, it means that this exchange is a _dummy_ exchange (ie: _paper_ exchange used for testing purpose, it's unlikely you'll ever see this on your gateway instance)
 ====
 
 .Examples
@@ -61,6 +62,7 @@ Example for *GET* _/server/uptime_
             "id":"binance",
             "name":"Binance",
             "demo":false,
+            "dummy":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -68,13 +70,17 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         },
         "bittrex":{
             "id":"bittrex",
             "name":"Bittrex",
             "demo":false,
+            "dummy":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -82,13 +88,17 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         },
         "poloniex":{
             "id":"poloniex",
             "name":"Poloniex",
             "demo":false,
+            "dummy":false,
             "features":{
                 "tickers":true,
                 "orderBooks":true,
@@ -96,7 +106,10 @@ Example for *GET* _/server/uptime_
                 "trades":true,
                 "openOrders":true,
                 "closedOrders":true,
-                "balances":true
+                "balances":true,
+                "wsTickers":true,
+                "wsOrderBooks":true,
+                "wsTrades":true
             }
         }
     },
@@ -171,7 +184,6 @@ Example for *GET* _/server/statistics_
         }
     },
     "others":{
-
     }
 }
 ----

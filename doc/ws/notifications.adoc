@@ -1,0 +1,400 @@
+= Notifications
+
+Following notifications can be sent
+
+* _ticker_ : notification containing ticker data for a single pair, on a given exchange
+* _orderBook_ : notification containing full order book for a single pair, on a given exchange
+* _orderBookUpdate_ : notification containing order book update for a single pair, on a given exchange
+* _trades_ : notification containing last trades for a single pair, on a given exchange
+
+== _ticker_ notifications
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _ticker_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange
+|string
+|Exchange identifier
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}data
+|object
+|Ticker data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}last
+|float
+|Last trade's price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
+|float
+|% Change of price in last 24H (0-100)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
+|float
+|Lowest sell price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}buy
+|float
+|Highest buy price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}high
+|float
+|Highest price (last 24H)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}low
+|float
+|Lowest price (last 24H)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume
+|float
+|Volume (last 24H)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"ticker",
+    "d":{
+        "exchange":"bittrex",
+        "pair":"USDT-BTC",
+        "data":{
+            "pair":"USDT-BTC",
+            "last":7155,
+            "priceChangePercent":-5.206677139913463,
+            "sell":7155,
+            "buy":7150,
+            "high":7576,
+            "low":7100.01,
+            "volume":5357.92210528,
+            "timestamp":1509986841.91
+        }
+    }
+}
+----
+
+== _orderBook_ notification
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _orderBook_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange
+|string
+|Exchange identifier
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}cseq
+|integer
+|Nounce / cseq (will be incremented for each event)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}data
+|object
+|Order book data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}buy
+|object[]
+|List of _bid_ entries in the order book
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Buy rate
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity requested
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
+|object[]
+|List of _ask_ entries in the order book
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Sell rate
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity offered
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"orderBook",
+    "d":{
+        "exchange":"bittrex",
+        "pair":"USDT-BTC",
+        "cseq":54694,
+        "data":{
+            "buy":[
+                {
+                    "rate":7158,
+                    "quantity":0.18125832
+                },
+                {
+                    "rate":7147.84000102,
+                    "quantity":0.33576833
+                },
+                {
+                    "rate":7147.84000003,
+                    "quantity":0.00037697
+                }
+            ],
+            "sell":[
+                {
+                    "rate":7159.61768333,
+                    "quantity":0.75758168
+                },
+                {
+                    "rate":7159.62768333,
+                    "quantity":0.00350054
+                },
+                {
+                    "rate":7162.99999999,
+                    "quantity":0.1648124
+                },
+                {
+                    "rate":7167.99999999,
+                    "quantity":0.59600039
+                },
+                {
+                    "rate":7169.99999999,
+                    "quantity":0.5333059
+                }
+            ]
+        }
+    }
+}
+----
+
+== _orderBookUpdate_ notification
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _orderBookUpdate_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange
+|string
+|Exchange identifier
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}cseq
+|integer
+|Nounce / cseq (will be incremented for each event)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}data
+|object
+|Order book data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}buy
+|object[]
+|List of _bid_ entries in the order book
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}action
+|string (_update_,_remove_)
+|* If value is _update_, it means that _quantity_ for this _rate_ should be updated
+* If value is _remove_, it means that there are no more order book entries for this _rate_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Buy rate
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity requested
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
+|object[]
+|List of _ask_ entries in the order book
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}action
+|string (_update_,_remove_)
+|* If value is _update_, it means that _quantity_ for this _rate_ should be updated
+* If value is _remove_, it means that there are no more order book entries for this _rate_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Sell rate
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity offered
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"orderBookUpdate",
+    "d":{
+        "pair":"USDT-BTC",
+        "cseq":85719,
+        "data":{
+            "buy":[
+                {
+                    "action":"update",
+                    "rate":7131,
+                    "quantity":0.72188827
+                }
+            ],
+            "sell":[
+                {
+                    "action":"remove",
+                    "rate":7221.71517258,
+                    "quantity":0
+                },
+                {
+                    "action":"update",
+                    "rate":7226.99999999,
+                    "quantity":0.61909178
+                },
+                {
+                    "action":"update",
+                    "rate":7265.72525,
+                    "quantity":0.00709438
+                }
+            ]
+        }
+    }
+}
+----
+
+== _trades_ notification
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _trades_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange
+|string
+|Exchange identifier
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}data
+|object[]
+|Trades data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|integer
+|Unique identifier of the trade. Some exchanges do not always provide this property for so *you should consider it as being optional*
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity bougth/sold during the trade
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Per-unit price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
+|float
+|Total price (_quantity_ * _rate_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderType
+|string (_buy_,_sell_)
+|Whether market maker was _buyer_ or _seller_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when trade was executed
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"trades",
+    "d":{
+        "exchange":"bittrex",
+        "pair":"USDT-BTC",
+        "data":[
+            {
+                "id":23090089,
+                "quantity":0.0288771,
+                "rate":7149.99999999,
+                "price":206.47126499,
+                "orderType":"buy",
+                "timestamp":1509986924.897
+            },
+            {
+                "id":23090087,
+                "quantity":0.00460101,
+                "rate":7149.99999999,
+                "price":32.89722149,
+                "orderType":"buy",
+                "timestamp":1509986924.553
+            }
+        ]
+    }
+}
+----

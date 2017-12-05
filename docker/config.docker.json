@@ -1,12 +1,18 @@
 {
     "listen":{
         "ipaddr":"*",
-        "port":8000
+        "port":8000,
+        "externalEndpoint":""
+    },
+    "listenWs":{
+        "ipaddr":"*",
+        "port":8001,
+        "externalEndpoint":""
     },
     "ui":{
         "enabled":true
     },
-    "logLevel":"warn",
+    "logLevel":"info",
     "coinmarketcap":{
         "enabled":true
     },
