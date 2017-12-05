@@ -556,7 +556,7 @@ _setupWsListeners(exchange, pair)
             }
             let timestamp = new Date().getTime();
             self._trades.updateTimestamp = timestamp;
-            _.forEach(e.data, (entry) => {
+            _.forEachRight(e.data, (entry) => {
                 self._trades.data.unshift(entry);
             });
         });
