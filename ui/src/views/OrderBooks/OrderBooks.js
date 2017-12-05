@@ -16,6 +16,10 @@ constructor(props) {
    super(props);
    this._isMounted = false;
 
+   this._wsFeatures = {
+       orderBook:false,
+       trades:false
+   }
    this.state = this._initializeState(this.props.data.exchange, this.props.match.params.pair);
    this._initializeData();
 

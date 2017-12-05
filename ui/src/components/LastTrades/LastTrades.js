@@ -63,7 +63,7 @@ shouldComponentUpdate(nextProps, nextState)
 {
     if (this._props.updateTimestamp != nextProps.updateTimestamp || this._props.page != nextProps.page || this._props.pages != nextProps.pages ||
         this._props.exchange != nextProps.exchange || this._props.pair != nextProps.pair ||
-        this._props.loaded != nextProps.loaded)
+        this._props.loaded != nextProps.loaded || this._props.isRefreshing != nextProps.isRefreshing)
     {
         this._initializeData(nextProps);
         return true;

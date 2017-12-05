@@ -36,7 +36,7 @@ componentWillUnmount()
 componentWillReceiveProps(nextProps)
 {
     this.setState((prevState, props) => {
-        return {isRefreshing:false};
+        return {isRefreshing:nextProps.isRefreshing};
     });
 }
 
