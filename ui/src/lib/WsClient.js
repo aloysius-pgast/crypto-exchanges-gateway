@@ -1,8 +1,11 @@
-class WsClient
+import EventEmitter from 'wolfy87-eventemitter/EventEmitter';
+
+class WsClient extends EventEmitter
 {
 
 constructor()
 {
+    super();
     this._connection = null;
     this._connectionId = 0;
     // in case of error, wait 10s before retrying
@@ -10,15 +13,13 @@ constructor()
     this._apiKey = null;
 
     // we support a single subscription
-    this._subscription = {
-        enabled:false
+    this._subscriptions = {
+        enabled:false,
+        entities:{},
+        pair:null,
+        exchange:null,
+        unsubscribe:false
     }
-
-    // event handlers
-    this._onTicker = null;
-    this._onOrderBook = null;
-    this._onOrderBookUpdate = null;
-    this._onTrades = null;
 }
 
 initialize(endpoint)
@@ -148,14 +149,14 @@ _createConnection()
             console.debug(`Websocket is ready : sid = '${data.hello.sid}'`);
             this._receivedHello = true;
             // resubscribe upon reconnection
-            if (self._subscription.enabled)
+            if (self._subscriptions.enabled)
             {
-                self._subscribe.call(self, self._subscription.exchange, self._subscription.entity, self._subscription.pair, false);
+                self._subscribe.call(self);
             }
             return;
         }
         // ignore if we have no subscription
-        if (!self._subscription.enabled)
+        if (!self._subscriptions.enabled)
         {
             return;
         }
@@ -164,28 +165,10 @@ _createConnection()
             switch (data.n)
             {
                 case 'ticker':
-                    if (null !== self._onTicker)
-                    {
-                        self._onTicker(data.d);
-                    }
-                    break;
                 case 'orderBook':
-                    if (null !== self._onOrderBook)
-                    {
-                        self._onOrderBook(data.d);
-                    }
-                    break;
                 case 'orderBookUpdate':
-                    if (null !== self._onOrderBookUpdate)
-                    {
-                        self._onOrderBookUpdate(data.d);
-                    }
-                    break;
                 case 'trades':
-                    if (null !== self._onTrades)
-                    {
-                        self._onTrades(data.d);
-                    }
+                    self.emit(data.n, data.d);
                     break;
                 default:
                     console.warn(`Unsupported notification : '${data.n}'`);
@@ -202,59 +185,98 @@ _createConnection()
 
 /**
  * @param {string} exchange exchange identifier
- * @param {string} entity (ticker|orderBook|trades)
+ * @param {string[]} entities (ticker|orderBook|trades)
  * @param {string} pair
  */
 subscribe(exchange, entity, pair)
 {
-    this._subscribe(exchange, entity, pair, true);
-}
-
-unsubscribe()
-{
-    this._subscription.enabled = false;
-    let messageList = [{m:"unsubscribe"}]
-    this._send(messageList);
-}
-
-// resubscribe upon reconnection
-_subscribe(exchange, entity, pair, unsubscribe)
-{
-    let messageList = [];
-    // unsubscribe first
-    if (unsubscribe)
-    {
-        if (this._subscription.enabled)
-        {
-            // this is a distinct subscription => unsubscribe
-            if (exchange != this._subscription.exchange || entity != this._subscription.entity || pair != this._subscription.pair)
-            {
-                messageList.push({m:"unsubscribe"});
-            }
-        }
-    }
-    let message = {p:{exchange:exchange,pairs:[pair]}};
     switch (entity)
     {
         case 'ticker':
-            message.m = 'subscribeToTickers';
-            break;
         case 'orderBook':
-            message.m = 'subscribeToOrderBooks';
-            break;
         case 'trades':
-            message.m = 'subscribeToTrades';
             break;
         default:
             console.warn(`Unsupported entity : '${entity}'`);
             return;
     }
-    messageList.push(message);
-    this._subscription.exchange = exchange;
-    this._subscription.entity = entity;
-    this._subscription.pair = pair;
-    this._subscription.enabled = true;
-    this._send(messageList);
+    if (!this._subscriptions.enabled)
+    {
+        this._subscriptions.enabled = true;
+        this._subscriptions.entities = {};
+    }
+    this._subscriptions.exchange = exchange;
+    this._subscriptions.pair = pair;
+    if (undefined != this._subscriptions.entities[entity])
+    {
+        return;
+    }
+    this._subscriptions.entities[entity] = true;
+    this._subscribe(entity);
+}
+
+unsubscribe()
+{
+    if (!this._subscriptions.enabled)
+    {
+        return;
+    }
+    this._subscriptions.enabled = false;
+    this._subscriptions.entities = {};
+    // indicate unsubscribe is needed
+    this._subscriptions.unsubscribe = true;
+    // remove all listeners
+    console.log('remove listeners');
+    this.removeAllListeners();
+    let messageList = [{m:"unsubscribe"}]
+    if (this._send(messageList))
+    {
+        // reset unsubscribe if messages were successfully sent
+        this._subscriptions.unsubscribe = false;
+    }
+}
+
+/**
+ * Send subscriptions
+ *
+ * @param {string} entity (used to send subscriptions for a single entity) (optional, if not set all subscriptions will be sent)
+ */
+_subscribe(entity)
+{
+    // TODO : avoid duplicates when calling multiple times
+    let messageList = [];
+    if (this._subscriptions.unsubscribe)
+    {
+        messageList.push({m:'unsubscribe'});
+    }
+    _.forEach(Object.keys(this._subscriptions.entities), (e) => {
+        if (undefined !== entity && e != entity)
+        {
+            return;
+        }
+        let message = {p:{exchange:this._subscriptions.exchange,pairs:[this._subscriptions.pair]}};
+        switch (e)
+        {
+            case 'ticker':
+                message.m = 'subscribeToTickers';
+                break;
+            case 'orderBook':
+                message.m = 'subscribeToOrderBooks';
+                break;
+            case 'trades':
+                message.m = 'subscribeToTrades';
+                break;
+        }
+        messageList.push(message);
+    });
+    if (this._send(messageList))
+    {
+        // reset unsubscribe if messages were successfully sent
+        if (this._subscriptions.unsubscribe)
+        {
+            this._subscriptions.unsubscribe = false;
+        }
+    }
 }
 
 _send(list)
@@ -262,36 +284,17 @@ _send(list)
     if (null === this._connection)
     {
         this._createConnection();
-        return;
+        return false;
     }
     if (1 != this._connection.readyState)
     {
-        return;
+        return false;
     }
     for (var i = 0; i < list.length; ++i)
     {
         this._connection.send(JSON.stringify(list[i]));
     }
-}
-
-onTicker(cb)
-{
-    this._onTicker = cb;
-}
-
-onOrderBook(cb)
-{
-    this._onOrderBook = cb;
-}
-
-onOrderBookUpdate(cb)
-{
-    this._onOrderBookUpdate = cb;
-}
-
-onTrades(cb)
-{
-    this._onTrades = cb;
+    return true;
 }
 
 }

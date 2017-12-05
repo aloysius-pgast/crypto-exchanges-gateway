@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import Big from 'big.js';
 import dateTimeHelper from '../../lib/DateTimeHelper';
 import routeRegistry from '../../lib/RouteRegistry';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
@@ -11,71 +12,43 @@ constructor(props)
 {
     super(props);
     this._isMounted = false;
-    this.state = {
-        page:this.props.page
-    }
-    let arr = this.props.pair.split('-');
+    this._initializeData(props);
+    this._handleManualRefresh = this._handleManualRefresh.bind(this);
+}
+
+_initializeData(props)
+{
+    this._props = props;
+    let arr = props.pair.split('-');
     this._baseCurrency = arr[0];
     this._currency = arr[1];
-    this._data = [];
     this._baseUrl = null;
-    this._handleManualRefresh = this._handleManualRefresh.bind(this);
     this._getBaseUrl();
-    this._splitData();
-    // use first page if requested page does not exist
-    if (this.state.page > this._data.length)
-    {
-        this.state.page = 1;
-    }
 }
 
 _getBaseUrl()
 {
-    let routes = routeRegistry.getExchangesRoutes(this.props.exchange);
-    if (undefined !== routes[this.props.exchange]['newOrder'])
+    let routes = routeRegistry.getExchangesRoutes(this._props.exchange);
+    if (undefined !== routes[this._props.exchange]['newOrder'])
     {
-        this._baseUrl = '#' + routes[this.props.exchange]['newOrder']['path'] + '/';
-    }
-}
-
-/**
- * Split data per pages
- */
-_splitData()
-{
-    if (null === this.props.data)
-    {
-        return;
-    }
-    let maxPage = 10;
-    this._data = _.slice(_.chunk(this.props.data, this.props.pageSize), 0, maxPage);
-    // pad last page
-    let lastPage = this._data[this._data.length - 1];
-    if (lastPage.length < this.props.pageSize)
-    {
-        for (var i = lastPage.length; i < this.props.pageSize; ++i)
-        {
-            lastPage.push({pad:true});
-        }
+        this._baseUrl = '#' + routes[this._props.exchange]['newOrder']['path'] + '/';
     }
 }
 
 _handleManualRefresh()
 {
-    if (undefined !== this.props.OnRefresh)
+    if (undefined !== this._props.OnRefresh)
     {
-        this.props.OnRefresh();
+        this._props.OnRefresh();
     }
 }
 
 _handlePageClick(pageNumber, e) {
     e.preventDefault();
-    this.setState({page:pageNumber}, function(){
-        if (undefined !== this.props.OnSelectPage)
-        {
-            this.props.OnSelectPage(this.props.orderType, pageNumber);
-        }
-    });
+    if (undefined !== this._props.OnSelectPage)
+    {
+        this._props.OnSelectPage(this._props.orderType, pageNumber);
+    }
 }
 
 componentWillUnmount()
@@ -85,6 +58,19 @@ componentWillUnmount()
 
 componentWillReceiveProps(nextProps) {}
 
+shouldComponentUpdate(nextProps, nextState)
+{
+    if (this._props.updateTimestamp != nextProps.updateTimestamp || this._props.page != nextProps.page || this._props.pages != nextProps.pages ||
+        this._props.exchange != nextProps.exchange || this._props.pair != nextProps.pair ||
+        this._props.loaded != nextProps.loaded)
+    {
+        this._initializeData(nextProps);
+        return true;
+    }
+    //console.log(`OrderBook(${this._props.orderType}) : no update`);
+    return false;
+}
+
 componentDidMount()
 {
     this._isMounted = true;
@@ -92,7 +78,7 @@ componentDidMount()
 
 render()
 {
-    if (!this.props.loaded)
+    if (!this._props.loaded)
     {
         return (
             <ComponentLoadingSpinner/>
@@ -101,11 +87,18 @@ render()
     let self = this;
 
     const orderBookEntries = () => {
-        if (null === this.props.data)
+        if (null === this._props.data)
         {
             return null;
         }
-        return _.map(this._data[this.state.page - 1], (item, index) => {
+        if (this._props.data.length < this._props.pageSize)
+        {
+            for (var i = this._props.data.length; i < this._props.pageSize; ++i)
+            {
+                this._props.data.push({pad:true});
+            }
+        }
+        return _.map(this._props.data, (item, index) => {
             // only used for padding the table with empty rows
             if (item.pad)
             {
@@ -117,7 +110,7 @@ render()
                 </tr>
             }
             let classNamesRate = "text-success";
-            if ('sell' == this.props.orderType)
+            if ('sell' == this._props.orderType)
             {
                 classNamesRate = "text-danger";
             }
@@ -129,8 +122,8 @@ render()
                 return <tr key={index}>
                     <td className="text-right"><a className={classNamesRate} href={rateUrl}>{item.rate.toFixed(8)}</a></td>
                     <td className="text-right">{item.quantity.toFixed(8)}</td>
-                    <td className="text-right"><a href={priceUrl}>{item.price}</a></td>
-                    <td className="text-right">{item.sum}</td>
+                    <td className="text-right"><a href={priceUrl}>{item.price.toFixed(8)}</a></td>
+                    <td className="text-right">{item.sum.toFixed(8)}</td>
                 </tr>
             }
             else
@@ -138,15 +131,15 @@ render()
                 return <tr key={index}>
                     <td className="text-right"><span className={classNamesRate}>{item.rate.toFixed(8)}</span></td>
                     <td className="text-right">{item.quantity.toFixed(8)}</td>
-                    <td className="text-right">{item.price}</td>
-                    <td className="text-right">{item.sum}</td>
+                    <td className="text-right">{item.price.toFixed(8)}</td>
+                    <td className="text-right">{item.sum.toFixed(8)}</td>
                 </tr>
             }
         });
     };
 
     const pageLink = (pageNumber) => {
-        if (pageNumber == this.state.page)
+        if (pageNumber == this._props.page)
         {
             return (
                 <li key={pageNumber} className="page-item active"><a className="page-link border-0" href="#" onClick={this._handlePageClick.bind(this, pageNumber)}>{pageNumber}</a></li>
@@ -158,12 +151,16 @@ render()
     };
 
     const pageList = () => {
-        let list = _.map(this._data, (item, index) => index + 1);
-        return _.map(list, (item) => pageLink(item));
+        let list = [];
+        for (var i = 0 ; i < this._props.pages; ++i)
+        {
+            list.push(pageLink(i + 1));
+        }
+        return list;
     };
 
     const pagination = (top) => {
-        if (null === this.props.data)
+        if (null === this._props.data)
         {
             return null;
         }
@@ -183,18 +180,18 @@ render()
     };
 
     let bidAskType = 'BID';
-    if ('sell' == this.props.orderType)
+    if ('sell' == this._props.orderType)
     {
         bidAskType = 'ASK';
     }
     let classNames = '';
-    if (this.props.isFirstLoad)
+    if (this._props.isFirstLoad)
     {
         classNames = 'animated fadeIn';
     }
     return (
         <div className={classNames}>
-          <ComponentLoadedTimestamp isRefreshing={this.props.isRefreshing} timestamp={this.props.loadedTimestamp} err={this.props.err} onManualRefresh={this._handleManualRefresh}/>
+          <ComponentLoadedTimestamp isRefreshing={this._props.isRefreshing} timestamp={this._props.updateTimestamp} err={this._props.err} onManualRefresh={undefined === this._props.OnRefresh ? undefined : this._handleManualRefresh}/>
           {pagination(true)}
           <table className="table table-sm table-responsive" style={{fontSize:'0.80rem',marginBottom:'0px',marginTop:'0px'}}>
             <thead className="thead-inverse">

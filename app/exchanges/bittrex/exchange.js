@@ -32,6 +32,7 @@ class Exchange extends AbstractExchangeClass
     this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
+    this._timeOffset = new Date().getTimezoneOffset() * -60;
 }
 
 /**
@@ -131,7 +132,7 @@ tickers(opt)
                         high: parseFloat(entry.High),
                         low: parseFloat(entry.Low),
                         volume: parseFloat(entry.Volume),
-                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
                     }
                 });
                 resolve(list);
@@ -430,7 +431,7 @@ pairs(opt)
                         rate:entry.Price,
                         price:entry.Total,
                         orderType:orderType,
-                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0)
+                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
                     })
                 });
                 resolve(list);
@@ -574,7 +575,7 @@ pairs(opt)
                          targetRate:parseFloat(entry.Limit),
                          quantity:parseFloat(entry.Quantity),
                          remainingQuantity:parseFloat(entry.QuantityRemaining),
-                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0)
+                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0) + self._timeOffset
                      }
                      // define targetPrice based on quantity & targetRate
                      o.targetPrice = parseFloat(new Big(o.quantity).times(o.targetRate));
@@ -717,7 +718,7 @@ closedOrders(opt)
                         quantity:quantity,
                         actualRate:parseFloat(entry.PricePerUnit),
                         actualPrice:parseFloat(entry.Price),
-                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0)
+                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0) + self._timeOffset
                     }
                     list[o.orderNumber] = o;
                 });
