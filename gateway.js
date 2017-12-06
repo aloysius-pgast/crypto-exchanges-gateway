@@ -4,6 +4,7 @@ const util = require('util');
 const express = require('express');
 const compression = require('compression');
 const http = require('http');
+const https = require('https');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
 const storage = require('./app/storage');
@@ -37,7 +38,8 @@ logger.isLevel = function(level)
 const checker = new ConfigChecker();
 
 var config = {};
-var configFile = path.join(__dirname, 'config/config.json');
+var configPath = 'config/config.json';
+var configFile = path.join(__dirname, configPath);
 if (fs.existsSync(configFile))
 {
     try
@@ -46,7 +48,7 @@ if (fs.existsSync(configFile))
     }
     catch (e)
     {
-        logger.error("Config file '%s' is not a valid JSON file", configFile);
+        logger.error("Config file '%s' is not a valid JSON file", configPath);
         process.exit(1);
     }
 }
@@ -185,11 +187,60 @@ if (undefined !== process.env['cfg.listenWs.externalEndpoint'] && '' != process.
     config.listenWs.externalEndpoint = process.env['cfg.listenWs.externalEndpoint'];
 }
 
+// check certificate files
+var sslCertificate = {
+    key:{
+        required:true,
+        path:'ssl/certificate.key'
+    },
+    cert:{
+        required:true,
+        path:'ssl/certificate.crt'
+    },
+    ca:{
+        required:false,
+        path:'ssl/ca.crt'
+    }
+}
+var sslOptions = {}
+if (config.listen.ssl || config.listenWs.ssl)
+{
+    _.forEach(sslCertificate, (obj, key) => {
+        obj.file = path.join(__dirname, obj.path);
+        if (!fs.existsSync(obj.file))
+        {
+            if (!obj.required)
+            {
+                return;
+            }
+            logger.error("SSL requested in config but file '%s' does not exist", obj.path);
+            process.exit(1);
+        }
+        try
+        {
+            sslOptions[key] = fs.readFileSync(obj.file);
+        }
+        catch (e)
+        {
+            logger.error("SSL requested in config but file '%s' cannot be read (%s)", obj.path, e.message);
+            process.exit(1);
+        }
+    });
+}
+
 //-- HTTP server
 var startHttp = function(){
     const bParser = bodyParser.urlencoded({ extended: false })
     const app = express();
-    const server = http.Server(app);
+    var server;
+    if (config.listen.ssl)
+    {
+        server = https.createServer(sslOptions, app);
+    }
+    else
+    {
+        server = http.createServer(app);
+    }
     server.on('error', function(err){
         if (undefined !== err.code && 'EADDRINUSE' == err.code)
         {
@@ -223,7 +274,12 @@ var startHttp = function(){
     }
     return function(){
         server.listen(config.listen.port, ipaddr, function(){
-            logger.warn("HTTP server is alive on %s:%s", config.listen.ipaddr, config.listen.port);
+            let proto = 'HTTP';
+            if (config.listen.ssl)
+            {
+                proto = 'HTTPS';
+            }
+            logger.warn("%s server is alive on %s:%s", proto, config.listen.ipaddr, config.listen.port);
         });
     }
 }();
@@ -232,7 +288,15 @@ var startHttp = function(){
 var startWs = function()
 {
     const app = express();
-    const server = http.Server(app);
+    var server;
+    if (config.listenWs.ssl)
+    {
+        server = https.createServer(sslOptions, app);
+    }
+    else
+    {
+        server = http.createServer(app);
+    }
     server.on('error', function(err){
         if (undefined !== err.code && 'EADDRINUSE' == err.code)
         {
@@ -262,7 +326,12 @@ var startWs = function()
     }
     return function(){
         server.listen(config.listenWs.port, ipaddr, function(){
-            logger.warn("WS server is alive on %s:%s", config.listenWs.ipaddr, config.listenWs.port);
+            let proto = 'WS';
+            if (config.listenWs.ssl)
+            {
+                proto = 'WSS';
+            }
+            logger.warn("%s server is alive on %s:%s", proto, config.listenWs.ipaddr, config.listenWs.port);
         });
     }
 }();

@@ -12,11 +12,13 @@ constructor()
     let cfg = {
         listen:{
             ipaddr:'*',
-            port:8000
+            port:8000,
+            ssl:false
         },
         listenWs:{
             ipaddr:'*',
-            port:8001
+            port:8001,
+            ssl:false
         },
         logLevel:'warn',
         auth:{
@@ -416,6 +418,11 @@ _checkListen()
             this._finalConfig.listen.externalEndpoint = this._config.listen.externalEndpoint;
         }
     }
+    // check if ssl can be enabled
+    if (true === this._config.listen.ssl)
+    {
+        this._finalConfig.listen.ssl = true;
+    }
     return valid;
 }
 
@@ -467,6 +474,11 @@ _checkListenWs()
         {
             this._finalConfig.listenWs.externalEndpoint = this._config.listenWs.externalEndpoint;
         }
+    }
+    // check if ssl can be enabled
+    if (true === this._config.listenWs.ssl)
+    {
+        this._finalConfig.listenWs.ssl = true;
     }
     return valid;
 }

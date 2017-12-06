@@ -63,6 +63,14 @@ Access will be restricted using the following :
 * an apikey header will be needed in every request
 * only one ip address will be allowed to access the service
 
+[NOTE]
+====
+* When _ssl_ is enabled, following file should exist in ssl sub directory :
+  - _certificate.key_ (private key)
+  - _certificate.crt_ (ssl certificate)
+  - _ca.crt_ (optional) (intermediate certificate, not needed when using _self-signed_ certificate)
+====
+
 [source,json]
 ----
 {
@@ -71,14 +79,18 @@ Access will be restricted using the following :
         "ipaddr":"*",
         "port":8000,
         /* used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy */
-        "externalEndpoint":""
+        "externalEndpoint":"",
+        /* in case you want to enable https */
+        "ssl":true
     },
     "listenWs":{
         /* only bind to localhost */
         "ipaddr":"127.0.0.1",
         "port":8001,
         /* used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy */
-        "externalEndpoint":""
+        "externalEndpoint":"",
+        /* in case you want to enable wss */
+        "ssl":true
     },
     "ui":{
         /* enable ui : ui should be built first */
