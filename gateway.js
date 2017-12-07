@@ -69,9 +69,10 @@ configPath = 'custom_config/config.json';
 configFile = path.join(__dirname, configPath);
 if (fs.existsSync(configFile))
 {
+    let customConfig;
     try
     {
-        config = require(configFile);
+        customConfig = require(configFile);
     }
     catch (e)
     {
@@ -80,7 +81,7 @@ if (fs.existsSync(configFile))
     }
     // retrieve config from checker
     checker = new ConfigChecker(config);
-    if (!checker.check(config))
+    if (!checker.check(customConfig))
     {
         logger.error("Config file '%s' is invalid", configPath);
         _.forEach(checker.getErrors(), function (err) {
