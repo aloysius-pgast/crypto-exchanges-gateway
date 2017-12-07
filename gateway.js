@@ -35,11 +35,9 @@ logger.isLevel = function(level)
 }
 
 //-- load config
-const checker = new ConfigChecker();
-
-var config = {};
-var configPath = 'config/config.json';
-var configFile = path.join(__dirname, configPath);
+let config = {};
+let configPath = 'config/config.json';
+let configFile = path.join(__dirname, configPath);
 if (fs.existsSync(configFile))
 {
     try
@@ -54,9 +52,38 @@ if (fs.existsSync(configFile))
 }
 
 // retrieve config from checker
+let checker = new ConfigChecker();
 if (!checker.check(config))
 {
-    logger.error("Config file is invalid");
+    logger.error("Config file '%s' is invalid", configPath);
+    _.forEach(checker.getErrors(), function (err) {
+        logger.error(err);
+    });
+    process.exit(1);
+}
+config = checker.getCfg();
+
+//-- load custom config (only useful in docker containers, to override default config)
+let hasCustomConfig = false;
+configPath = 'custom_config/config.json';
+configFile = path.join(__dirname, configPath);
+if (fs.existsSync(configFile))
+{
+    try
+    {
+        config = require(configFile);
+    }
+    catch (e)
+    {
+        logger.error("Config file '%s' is not a valid JSON file", configPath);
+        process.exit(1);
+    }
+}
+// retrieve config from checker
+checker = new ConfigChecker(config);
+if (!checker.check(config))
+{
+    logger.error("Config file '%s' is invalid", configPath);
     _.forEach(checker.getErrors(), function (err) {
         logger.error(err);
     });
@@ -71,16 +98,19 @@ if (config.coinmarketcap.enabled)
 }
 
 //-- update config based on environment (used when using docker container)
-// check exchanges config
-_.forEach(config.exchanges, function(obj, exchange) {
-    let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
-    let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
-    if (undefined !== key && '' != key && undefined !== secret && '' != secret)
-    {
-        config.exchanges[exchange]['key'] = key;
-        config.exchanges[exchange]['secret'] = secret;
-    }
-});
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    _.forEach(config.exchanges, function(obj, exchange) {
+        let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
+        let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
+        if (undefined !== key && '' != key && undefined !== secret && '' != secret)
+        {
+            config.exchanges[exchange]['key'] = key;
+            config.exchanges[exchange]['secret'] = secret;
+        }
+    });
+}
 // log which exchanges are enabled
 _.forEach(config.exchanges, function(obj, exchange) {
     if (config.exchanges[exchange]['enabled'])
@@ -104,22 +134,26 @@ _.forEach(config.exchanges, function(obj, exchange) {
 });
 
 //-- check ui config
-let enableUi = process.env['cfg.ui.enabled'];
-if (undefined !== enableUi && '' !== enableUi)
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
 {
-    if (true === enableUi || '1' == enableUi)
+    let enableUi = process.env['cfg.ui.enabled'];
+    if (undefined !== enableUi && '' !== enableUi)
     {
-        config.ui.enabled = true;
-    }
-    else if (false === enableUi || '0' == enableUi)
-    {
-        config.ui.enabled = false;
+        if (true === enableUi || '1' == enableUi)
+        {
+            config.ui.enabled = true;
+        }
+        else if (false === enableUi || '0' == enableUi)
+        {
+            config.ui.enabled = false;
+        }
     }
 }
 // ensure ui has been built
 if (config.ui.enabled)
 {
-    var uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
+    let uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
     if (!fs.existsSync(uiBundleFile))
     {
         config.ui.enabled = false;
@@ -132,13 +166,17 @@ if (config.ui.enabled)
 }
 
 //-- check pushover config
-let pushoverUser = process.env['cfg.pushover.user'];
-let pushoverToken = process.env['cfg.pushover.token'];
-if (undefined !== pushoverUser && '' != pushoverUser && undefined !== pushoverToken && '' != pushoverToken)
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
 {
-    config.pushover.enabled = true;
-    config.pushover.user = pushoverUser;
-    config.pushover.token = pushoverToken;
+    let pushoverUser = process.env['cfg.pushover.user'];
+    let pushoverToken = process.env['cfg.pushover.token'];
+    if (undefined !== pushoverUser && '' != pushoverUser && undefined !== pushoverToken && '' != pushoverToken)
+    {
+        config.pushover.enabled = true;
+        config.pushover.user = pushoverUser;
+        config.pushover.token = pushoverToken;
+    }
 }
 // add log if push over is enabled
 if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushover.token)
@@ -147,48 +185,58 @@ if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushov
 }
 
 //-- check api key
-let apiKey = process.env['cfg.auth.apikey'];
-if (undefined !== apiKey && '' != apiKey)
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
 {
-    config.auth.apiKey.enabled = true;
-    config.auth.apiKey.key = apiKey;
+    let apiKey = process.env['cfg.auth.apikey'];
+    if (undefined !== apiKey && '' != apiKey)
+    {
+        config.auth.apiKey.enabled = true;
+        config.auth.apiKey.key = apiKey;
+    }
 }
 if (config.auth.apiKey.enabled && '' != config.auth.apiKey.key)
 {
     logger.warn("API Key is enabled");
 }
 
-// check config
-let logLevel = process.env['cfg.logLevel'];
-if (undefined !== logLevel)
+// check env for log level (only if custom config does not exist)
+if (!hasCustomConfig)
 {
-    switch (logLevel)
+    let logLevel = process.env['cfg.logLevel'];
+    if (undefined !== logLevel)
     {
-        case 'error':
-        case 'warn':
-        case 'info':
-        case 'verbose':
-        case 'debug':
-        case 'silly':
-            config.logLevel = logLevel;
+        switch (logLevel)
+        {
+            case 'error':
+            case 'warn':
+            case 'info':
+            case 'verbose':
+            case 'debug':
+            case 'silly':
+                config.logLevel = logLevel;
+        }
     }
 }
 
 // update log level
 logger.level = config.logLevel;
 
-// check external endpoints
-if (undefined !== process.env['cfg.listen.externalEndpoint'] && '' != process.env['cfg.listen.externalEndpoint'])
+//check env for external endpoints (only if custom config does not exist)
+if (!hasCustomConfig)
 {
-    config.listen.externalEndpoint = process.env['cfg.listen.externalEndpoint'];
-}
-if (undefined !== process.env['cfg.listenWs.externalEndpoint'] && '' != process.env['cfg.listenWs.externalEndpoint'])
-{
-    config.listenWs.externalEndpoint = process.env['cfg.listenWs.externalEndpoint'];
+    if (undefined !== process.env['cfg.listen.externalEndpoint'] && '' != process.env['cfg.listen.externalEndpoint'])
+    {
+        config.listen.externalEndpoint = process.env['cfg.listen.externalEndpoint'];
+    }
+    if (undefined !== process.env['cfg.listenWs.externalEndpoint'] && '' != process.env['cfg.listenWs.externalEndpoint'])
+    {
+        config.listenWs.externalEndpoint = process.env['cfg.listenWs.externalEndpoint'];
+    }
 }
 
-// check certificate files
-var sslCertificate = {
+//-- check certificate files
+let sslCertificate = {
     key:{
         required:true,
         path:'ssl/certificate.key'
@@ -202,7 +250,7 @@ var sslCertificate = {
         path:'ssl/ca.crt'
     }
 }
-var sslOptions = {}
+let sslOptions = {}
 if (config.listen.ssl || config.listenWs.ssl)
 {
     _.forEach(sslCertificate, (obj, key) => {
@@ -229,10 +277,10 @@ if (config.listen.ssl || config.listenWs.ssl)
 }
 
 //-- HTTP server
-var startHttp = function(){
+let startHttp = function(){
     const bParser = bodyParser.urlencoded({ extended: false })
     const app = express();
-    var server;
+    let server;
     if (config.listen.ssl)
     {
         server = https.createServer(sslOptions, app);
@@ -267,7 +315,7 @@ var startHttp = function(){
     require('./app/routes/http')(app, bParser, config);
 
     // start server
-    var ipaddr = '0.0.0.0';
+    let ipaddr = '0.0.0.0';
     if ('*' != config.listen.ipaddr)
     {
         ipaddr = config.listen.ipaddr;
@@ -285,10 +333,10 @@ var startHttp = function(){
 }();
 
 //-- WS server
-var startWs = function()
+let startWs = function()
 {
     const app = express();
-    var server;
+    let server;
     if (config.listenWs.ssl)
     {
         server = https.createServer(sslOptions, app);
@@ -319,7 +367,7 @@ var startWs = function()
     require('./app/routes/ws')(app, config);
 
     // start server
-    var ipaddr = '0.0.0.0';
+    let ipaddr = '0.0.0.0';
     if ('*' != config.listenWs.ipaddr)
     {
         ipaddr = config.listenWs.ipaddr;

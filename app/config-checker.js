@@ -7,49 +7,57 @@ const AbstractConfigCheckerClass = require('./abstract-config-checker');
 class ConfigChecker extends AbstractConfigCheckerClass
 {
 
-constructor()
+constructor(defaultConfig)
 {
-    let cfg = {
-        listen:{
-            ipaddr:'*',
-            port:8000,
-            ssl:false
-        },
-        listenWs:{
-            ipaddr:'*',
-            port:8001,
-            ssl:false
-        },
-        logLevel:'warn',
-        auth:{
-            trustProxy:false,
-            apiKey:{
-                enabled:false,
-                key:''
+    let cfg;
+    if (undefined !== defaultConfig)
+    {
+        cfg = defaultConfig;
+    }
+    else
+    {
+        cfg = {
+            listen:{
+                ipaddr:'*',
+                port:8000,
+                ssl:false
             },
-            ipFilter:{
-                enabled:false,
-                allow:[]
-            }
-        },
-        ui:{
-           enabled:false
-        },
-        coinmarketcap:{
-            enabled:false
-        },
-        pushover:{
-            enabled:false
-        },
-        exchanges:{
-            binance:{
-                enabled:true
+            listenWs:{
+                ipaddr:'*',
+                port:8001,
+                ssl:false
             },
-            bittrex:{
-                enabled:true
+            logLevel:'warn',
+            auth:{
+                trustProxy:false,
+                apiKey:{
+                    enabled:false,
+                    key:''
+                },
+                ipFilter:{
+                    enabled:false,
+                    allow:[]
+                }
             },
-            poloniex:{
-                enabled:true
+            ui:{
+               enabled:false
+            },
+            coinmarketcap:{
+                enabled:false
+            },
+            pushover:{
+                enabled:false
+            },
+            exchanges:{
+                binance:{
+                    enabled:true
+                },
+                bittrex:{
+                    enabled:true
+                },
+                poloniex:{
+                    enabled:true
+                }
             }
         }
     }
