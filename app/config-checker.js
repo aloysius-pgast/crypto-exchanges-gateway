@@ -10,56 +10,53 @@ class ConfigChecker extends AbstractConfigCheckerClass
 constructor(defaultConfig)
 {
     let cfg;
-    if (undefined !== defaultConfig)
-    {
-        cfg = defaultConfig;
-    }
-    else
-    {
-        cfg = {
-            listen:{
-                ipaddr:'*',
-                port:8000,
-                ssl:false
+    cfg = {
+        listen:{
+            ipaddr:'*',
+            port:8000,
+            ssl:false
+        },
+        listenWs:{
+            ipaddr:'*',
+            port:8001,
+            ssl:false
+        },
+        logLevel:'warn',
+        auth:{
+            trustProxy:false,
+            apiKey:{
+                enabled:false,
+                key:''
             },
-            listenWs:{
-                ipaddr:'*',
-                port:8001,
-                ssl:false
+            ipFilter:{
+                enabled:false,
+                allow:[]
+            }
+        },
+        ui:{
+           enabled:false
+        },
+        coinmarketcap:{
+            enabled:false
+        },
+        pushover:{
+            enabled:false
+        },
+        exchanges:{
+            binance:{
+                enabled:true
             },
-            logLevel:'warn',
-            auth:{
-                trustProxy:false,
-                apiKey:{
-                    enabled:false,
-                    key:''
-                },
-                ipFilter:{
-                    enabled:false,
-                    allow:[]
-                }
+            bittrex:{
+                enabled:true
             },
-            ui:{
-               enabled:false
-            },
-            coinmarketcap:{
-                enabled:false
-            },
-            pushover:{
-                enabled:false
-            },
-            exchanges:{
-                binance:{
-                    enabled:true
-                },
-                bittrex:{
-                    enabled:true
-                },
-                poloniex:{
-                    enabled:true
-                }
+            poloniex:{
+                enabled:true
             }
         }
+    }
+    if (undefined !== defaultConfig)
+    {
+        _.defaultsDeep(cfg, defaultConfig)
     }
     super(cfg);
 }

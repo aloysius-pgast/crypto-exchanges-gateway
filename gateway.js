@@ -78,18 +78,18 @@ if (fs.existsSync(configFile))
         logger.error("Config file '%s' is not a valid JSON file", configPath);
         process.exit(1);
     }
+    // retrieve config from checker
+    checker = new ConfigChecker(config);
+    if (!checker.check(config))
+    {
+        logger.error("Config file '%s' is invalid", configPath);
+        _.forEach(checker.getErrors(), function (err) {
+            logger.error(err);
+        });
+        process.exit(1);
+    }
+    config = checker.getCfg();
 }
-// retrieve config from checker
-checker = new ConfigChecker(config);
-if (!checker.check(config))
-{
-    logger.error("Config file '%s' is invalid", configPath);
-    _.forEach(checker.getErrors(), function (err) {
-        logger.error(err);
-    });
-    process.exit(1);
-}
-config = checker.getCfg();
 
 // add log if CoinMarketCap is enabled
 if (config.coinmarketcap.enabled)
