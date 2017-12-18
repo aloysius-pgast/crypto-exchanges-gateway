@@ -71,12 +71,12 @@ constructor(props)
 
 _handleStarPair(flag)
 {
-    let key = 'starredPair:' + this.state.pair;
+    let key = `starredPair:${this.props.exchange}:${this.state.pair}`;
     // add to favorites
     if (flag)
     {
         let timestamp = parseInt(new Date().getTime() / 1000);
-        let data = JSON.stringify({exchange:this.props.exchange,pair:this.state.pair,timestamp:timestamp});
+        let data = JSON.stringify({exchange:this.props.exchange,pair:this.state.pair,timestamp:timestamp,version:1});
         window.localStorage.setItem(key, data);
     }
     else
@@ -236,8 +236,8 @@ render()
         {
             return null;
         }
-        // already starred
-        let key = 'starredPair:' + this.state.pair;
+        // already starred ?
+        let key = `starredPair:${this.props.exchange}:${this.state.pair}`;
         let value = window.localStorage.getItem(key);
         if (null !== value)
         {
