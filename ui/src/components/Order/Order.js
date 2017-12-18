@@ -567,7 +567,7 @@ render()
         return (
           <Row>
             <Col>
-              <div className="text-success" style={{marginBottom:'10px'}}>Order successfully executed ! New order is {this.state.order.orderNumber}</div>
+              <div className="text-success" style={{marginBottom:'10px'}}>Order successfully created. New order is {this.state.order.orderNumber}</div>
             </Col>
           </Row>
         )
