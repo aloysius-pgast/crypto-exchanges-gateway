@@ -23,7 +23,9 @@ constructor(defaultConfig)
         },
         logLevel:'warn',
         auth:{
-            trustProxy:false,
+            trustProxy:{
+                enabled:false
+            },
             apiKey:{
                 enabled:false,
                 key:''
@@ -296,12 +298,31 @@ _checkAuth()
     {
         if (!this._isValidBoolean(this._config.auth.trustProxy.enabled))
         {
-            this._invalid({name:'auth.trustProxy', value:this._config.auth.trustProxy});
+            this._invalid({name:'auth.trustProxy.enabled', value:this._config.auth.trustProxy.enabled});
             valid = false;
         }
         else
         {
-            this._finalConfig.auth.trustProxy = this._config.auth.trustProxy;
+            if (true === this._config.auth.trustProxy.enabled)
+            {
+                if (undefined === this._config.auth.trustProxy.proxies)
+                {
+                    this._missing('auth.trustProxy.proxies');
+                    valid = false;
+                }
+                else
+                {
+                    if (0 == this._config.auth.trustProxy.proxies.length)
+                    {
+                        this._err("Invalid config parameter 'auth.trustProxy.proxies' (cannot be empty)");
+                        valid = false;
+                    }
+                    else
+                    {
+                        this._finalConfig.auth.trustProxy = this._config.auth.trustProxy;
+                    }
+                }
+            }
         }
     }
     if (!this._checkApiKey())
