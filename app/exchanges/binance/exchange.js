@@ -101,7 +101,11 @@ _toExchangePair(pair)
 _tickers(pairs)
 {
     let self = this;
-    let arr = [];
+    // last price returned by ticker24hr does not match the real last price
+    let p = self._limiterGlobal.schedule(function(){
+        return self._restClient.allPrices();
+    });
+    let arr = [{promise:p, context:{exchange:'binance',api:'allPrices'}}];
     _.forEach(pairs, function (entry) {
         let p = self._limiterGlobal.schedule(function(){
             let pair = self._toExchangePair(entry);
@@ -112,10 +116,18 @@ _tickers(pairs)
     return new Promise((resolve, reject) => {
         PromiseHelper.all(arr).then(function(data){
             let list = {};
+            let allPrices = {};
             _.forEach(data, function (entry) {
                 // could not retrieve specific ticker
                 if (!entry.success)
                 {
+                    return;
+                }
+                if ('allPrices' == entry.context.api)
+                {
+                    _.forEach(entry.value, (obj) => {
+                        allPrices[obj.symbol] = parseFloat(obj.price);
+                    });
                     return;
                 }
                 list[entry.context.pair] = {
@@ -128,6 +140,14 @@ _tickers(pairs)
                     low: parseFloat(entry.value.lowPrice),
                     volume: parseFloat(entry.value.volume),
                     timestamp: parseFloat(entry.value.closeTime / 1000.0)
+                }
+            });
+            // update last prices
+            _.forEach(list, (entry, pair) => {
+                let p = self._toExchangePair(pair);
+                if (undefined !== allPrices[p])
+                {
+                    entry.last = allPrices[p];
                 }
             });
             resolve(list);

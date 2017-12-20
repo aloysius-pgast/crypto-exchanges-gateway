@@ -28,6 +28,12 @@ _loadChart()
     {
         timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
+    let hide_drawing_toolbar = false;
+    // hide drawing toolbar on small screens
+    if (window.innerWidth < 768)
+    {
+        hide_drawing_toolbar = true;
+    }
     new TradingView.widget({
       "autosize": true,
       "symbol": tradingViewHelper.getChartId(this.props.exchange, this.state.pair),
@@ -42,6 +48,7 @@ _loadChart()
       "hide_top_toolbar": false,
       "withdateranges": true,
       "hideideas": true,
+      "hide_side_toolbar":hide_drawing_toolbar,
       "container_id":this._containerId
     });
 }

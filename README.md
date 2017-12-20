@@ -251,6 +251,8 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.exchanges.binance.key : Binance user key
 * cfg.exchanges.binance.secret : Binance secret
 
+If you don't want to use environment variables or want to customize config for a running container, you can create and edit *custom_config/config.json*
+
 _Examples_ :
 
 Run container with Bittrex user/key environment variables

@@ -17,6 +17,8 @@ FROM apendergast/alpine-node:runtime-latest
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=ui /root/crypto-exchanges-gateway .
 
+VOLUME ["/root/crypto-exchanges-gateway/ssl","/root/crypto-exchanges-gateway/storage/db","/root/crypto-exchanges-gateway/custom_config"]
+
 ENV cfg.auth.apikey ""
 ENV cfg.listen.externalEndpoint ""
 ENV cfg.listenWs.externalEndpoint ""

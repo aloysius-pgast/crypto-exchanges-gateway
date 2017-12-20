@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.3.1]
+* Fix Binance tickers (last price returned by 'ticker24hr' API was not reflecting current 'last price')
+* Display TradingView drawing toolbar on tablets & desktop
+* Support for same favorite pair on multiple exchanges
+
 ## [v1.3.0]
 * Support for real-time data over websocket (new config parameter _listenWs_ is necessary) :
   * Support for tickers retrieval

@@ -7,20 +7,25 @@ const AbstractConfigCheckerClass = require('./abstract-config-checker');
 class ConfigChecker extends AbstractConfigCheckerClass
 {
 
-constructor()
+constructor(defaultConfig)
 {
-    let cfg = {
+    let cfg;
+    cfg = {
         listen:{
             ipaddr:'*',
-            port:8000
+            port:8000,
+            ssl:false
         },
         listenWs:{
             ipaddr:'*',
-            port:8001
+            port:8001,
+            ssl:false
         },
         logLevel:'warn',
         auth:{
-            trustProxy:false,
+            trustProxy:{
+                enabled:false
+            },
             apiKey:{
                 enabled:false,
                 key:''
@@ -50,6 +55,10 @@ constructor()
                 enabled:true
             }
         }
+    }
+    if (undefined !== defaultConfig)
+    {
+        _.defaultsDeep(cfg, defaultConfig)
     }
     super(cfg);
 }
@@ -289,12 +298,31 @@ _checkAuth()
     {
         if (!this._isValidBoolean(this._config.auth.trustProxy.enabled))
         {
-            this._invalid({name:'auth.trustProxy', value:this._config.auth.trustProxy});
+            this._invalid({name:'auth.trustProxy.enabled', value:this._config.auth.trustProxy.enabled});
             valid = false;
         }
         else
         {
-            this._finalConfig.auth.trustProxy = this._config.auth.trustProxy;
+            if (true === this._config.auth.trustProxy.enabled)
+            {
+                if (undefined === this._config.auth.trustProxy.proxies)
+                {
+                    this._missing('auth.trustProxy.proxies');
+                    valid = false;
+                }
+                else
+                {
+                    if (0 == this._config.auth.trustProxy.proxies.length)
+                    {
+                        this._err("Invalid config parameter 'auth.trustProxy.proxies' (cannot be empty)");
+                        valid = false;
+                    }
+                    else
+                    {
+                        this._finalConfig.auth.trustProxy = this._config.auth.trustProxy;
+                    }
+                }
+            }
         }
     }
     if (!this._checkApiKey())
@@ -416,6 +444,11 @@ _checkListen()
             this._finalConfig.listen.externalEndpoint = this._config.listen.externalEndpoint;
         }
     }
+    // check if ssl can be enabled
+    if (true === this._config.listen.ssl)
+    {
+        this._finalConfig.listen.ssl = true;
+    }
     return valid;
 }
 
@@ -467,6 +500,11 @@ _checkListenWs()
         {
             this._finalConfig.listenWs.externalEndpoint = this._config.listenWs.externalEndpoint;
         }
+    }
+    // check if ssl can be enabled
+    if (true === this._config.listenWs.ssl)
+    {
+        this._finalConfig.listenWs.ssl = true;
     }
     return valid;
 }

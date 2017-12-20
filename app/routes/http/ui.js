@@ -38,7 +38,12 @@ app.get('/ui/config/config.json', (req, res) => {
     }
     else
     {
+        // force ws instead of wss if ssl is enabled for http but disabled for ws (which would be an edge case)
         cfg.wsEndpoint = util.format('wss://%s:%d', host_port[0], config.listenWs.port);
+        if (config.listen.ssl && !config.listenWs.ssl)
+        {
+            cfg.wsEndpoint = util.format('ws://%s:%d', host_port[0], config.listenWs.port);
+        }
     }
     // check if we have externalEndpoints in config file
     if (undefined !== config.listen.externalEndpoint)

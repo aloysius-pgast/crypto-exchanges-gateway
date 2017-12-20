@@ -59,6 +59,47 @@ if (window.ctx.hasLocalStorage)
             window.localStorage.removeItem('apiKey');
         }
     }
+    // migrate previous starred pairs
+    let legacyStarredPairs = [];
+    let migratedStarredPairs = {};
+    for (var i = 0; i < window.localStorage.length; i++)
+    {
+        let key = window.localStorage.key(i);
+        if (!key.startsWith('starredPair:'))
+        {
+            continue;
+        }
+        let value = window.localStorage.getItem(key);
+        // entry was removed (not supposed to happen)
+        if (null === value)
+        {
+            continue;
+        }
+        let obj = JSON.parse(value);
+        let version = 0;
+        if (undefined !== obj.version)
+        {
+            version = parseInt(obj.version);
+        }
+        if (version >= 1)
+        {
+            continue;
+        }
+
+        legacyStarredPairs.push(key);
+        let newKey = `starredPair:${obj.exchange}:${obj.pair}`;
+        obj.version = 1;
+        migratedStarredPairs[newKey] = obj;
+    }
+    // declare new keys
+    _.forEach(migratedStarredPairs, (obj, key) => {
+        let data = JSON.stringify(obj);
+        window.localStorage.setItem(key, data);
+    });
+    // remove legacy keys
+    _.forEach(legacyStarredPairs, (key) => {
+        window.localStorage.removeItem(key);
+    });
 }
 // try to retrieve api key from session storage
 let value = window.sessionStorage.getItem('apiKey');

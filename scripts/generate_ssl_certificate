@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# usage function
+function usage()
+{
+    echo "Usage: $0 [CN]"
+    echo "Generate a self-signed certificate"
+    echo ""
+    echo "    CN: Common name to use in certificate (should be your ip address or a name which resolves to your ip address)"
+    exit 1
+}
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]
+then
+    usage
+fi
+if [ -z "$1" ]
+then
+    usage
+fi
+
+# check if openssl binary exists
+OPENSSL_BINARY=`which openssl`
+if [ $? -ne 0 ]
+then
+    echo "No openssl binary found !"
+    exit 1
+fi
+# common name
+COMMON_NAME=$1
+
+# path
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+SSL_DIR=$MY_DIR/../ssl
+if ! [ -d $SSL_DIR ]
+then
+    mkdir -p $SSL_DIR
+fi
+KEY_FILE=$SSL_DIR/certificate.key
+CRT_FILE=$SSL_DIR/certificate.crt
+
+# abort if crt/key file exist
+if [ -f "$KEY_FILE" ] || [ -f "$CRT_FILE" ]
+then
+    echo "Found existing certificate, aborting"
+    exit 0
+fi
+
+echo -n "Generating certificate.key..."
+OUTPUT=`openssl genrsa -out $KEY_FILE 2048 2>&1`
+if [ $? -ne 0 ]
+then
+    echo "ERR"
+    echo $OUTPUT
+    exit 1
+else
+    echo "OK"
+fi
+
+echo -n "Generating certificate.crt..."
+OUTPUT=`openssl req -new -x509 -key $KEY_FILE -out $CRT_FILE -days 3650 -subj /CN=$COMMON_NAME`
+if [ $? -ne 0 ]
+then
+    echo "ERR"
+    echo $OUTPUT
+    exit 1
+else
+    echo "OK"
+fi

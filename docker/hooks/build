@@ -5,4 +5,4 @@ if [ "$DOCKER_TAG" == "rpi" ] || [ "$DOCKER_TAG" == "rpi-dev" ]
 then
     DOCKERFILE=Dockerfile-rpi-crossbuild
 fi
-docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg V1=$CACHE_TAG --build-arg V2=$DOCKER_TAG --build-arg GIT_BRANCH=$GIT_BRANCH -t $IMAGE_NAME .
+docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH -t $IMAGE_NAME .
