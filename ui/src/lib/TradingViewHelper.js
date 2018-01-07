@@ -9,6 +9,7 @@ hasChartSupport(exchange)
     {
         case 'bittrex':
         case 'poloniex':
+        case 'binance':
             return true;
     }
     return false;
@@ -23,6 +24,8 @@ getChartId(exchange, pair)
             return 'BITTREX:' + arr[1] + arr[0];
         case 'poloniex':
             return 'POLONIEX:' + arr[1] + arr[0];
+        case 'binance':
+            return 'BINANCE:' + arr[1] + arr[0];
     }
     return null;
 }
