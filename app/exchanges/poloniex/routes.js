@@ -17,12 +17,22 @@ if (!config.exchanges[exchangeId].enabled)
     return;
 }
 
-// public features
-let features = ['tickers','orderBooks','pairs','trades', 'wsTickers', 'wsOrderBooks', 'wsTrades'];
-
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(exchangeId, exchangeName, config);
 let fakeExchange = null;
+
+// features
+let features = {
+    'tickers':{enabled:true, allPairs:true}, 'wsTickers':{enabled:true},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
+    'pairs':{enabled:true},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true},
+    'klines':{enabled:false}, 'wsKlines':{enabled:false},
+    // disabled by default
+    'openOrders':{enabled:false},
+    'closedOrders':{enabled:false},
+    'balances':{enabled:false}
+};
 
 /**
  * Retrieves existing pairs
@@ -253,8 +263,11 @@ else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchange
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
-// add private features
-features = _.concat(features, ['openOrders','closedOrders','balances']);
+// enable private features
+features['openOrders'] = {enabled:true, allPairs:true};
+features['closedOrders'] = {enabled:true, allPairs:true};
+features['balances'] = {enabled:true, allCurrencies:true};
+
 // register exchange
 serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
 

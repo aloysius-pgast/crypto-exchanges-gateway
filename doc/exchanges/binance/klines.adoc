@@ -1,0 +1,164 @@
+= Klines
+
+== Retrieves charts data for a given pair
+
+*GET* _/exchanges/binance/klines/{pair}_
+
+Uses Binance _klines_ API
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{pair}
+|string
+|Pair to retrieve last trades for (_X-Y_)
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|outputFormat
+|string (_custom_,_exchange_)
+|custom
+|If value is _exchange_ result returned by remote exchange will be returned untouched
+
+|interval
+|string
+|5m
+|Klines interval
+
+* 1m
+* 3m
+* 5m
+* 15m
+* 30m
+* 1h
+* 2h
+* 4h
+* 6h
+* 8h
+* 12h
+* 1d
+* 3d
+* 1w
+* 1M
+
+|===
+
+[NOTE]
+====
+500 points will be returned
+====
+
+=== Result
+
+[NOTE]
+====
+This only applies when _outputFormat_ is set to _custom_
+====
+
+Result will be an array of trade object (*the first one being the newest*)
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|open
+|float
+|Open price
+
+|close
+|float
+|Close price
+
+|high
+|float
+|Highest price (last 24H)
+
+|low
+|float
+|Lowest price (last 24H)
+
+|volume
+|float
+|Volume
+
+|timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/binance/klines/USDT-NEO_
+
+[source,json]
+----
+[
+    {
+        "timestamp":1515267600,
+        "open":98.103,
+        "high":98.5,
+        "low":98.103,
+        "close":98.5,
+        "volume":110.45
+    },
+    {
+        "timestamp":1515267900,
+        "open":98.399,
+        "high":98.782,
+        "low":98.399,
+        "close":98.399,
+        "volume":20.776
+    },
+    {
+        "timestamp":1515268200,
+        "open":98.399,
+        "high":98.782,
+        "low":98.104,
+        "close":98.759,
+        "volume":34.548
+    },
+    {
+        "timestamp":1515268500,
+        "open":98.276,
+        "high":98.98,
+        "low":97.773,
+        "close":98.907,
+        "volume":90.266
+    },
+    {
+        "timestamp":1515268800,
+        "open":98.907,
+        "high":99,
+        "low":98.759,
+        "close":99,
+        "volume":618.428
+    },
+    {
+        "timestamp":1515269100,
+        "open":99,
+        "high":99,
+        "low":98.759,
+        "close":99,
+        "volume":582.186
+    }
+]
+----

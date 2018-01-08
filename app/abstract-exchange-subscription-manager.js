@@ -68,6 +68,11 @@ constructor(exchange, options)
             timestamp:null,
             pairs:{},
             count:0
+        },
+        klines:{
+            timestamp:null,
+            pairs:{},
+            count:0
         }
     }
     // keep track of established connections
@@ -510,6 +515,117 @@ updateTradesSubscriptions(sessionId, subscribe, unsubscribe, connect)
 }
 
 /**
+ * Initialize klines subscription
+ *
+ * @param {string} sessionId session id
+ * @param {float} timestamp timestamp of the first subscription
+ */
+_initializeKlinesPair(sessionId, timestamp)
+{
+    let obj = {
+        // last time subscriptions for current pair have changed
+        timestamp:timestamp,
+        // list of sessions which have a subscription for current pair
+        sessions:{}
+    }
+    obj.sessions[sessionId] = timestamp;
+    return obj;
+}
+
+/**
+ * Subscribe to klines stream for a list of pairs
+ *
+ * @param {string} sessionId session id
+ * @param {array} subscribe list of pairs/intervals to subscribe to {pair:string,interval:string}
+ * @param {array} unsubscribe list of pairs/intervals to unsubscribe from
+ * @param {boolean} connect whether or not stream clients should be connected (optional, default = true)
+ */
+updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, connect)
+{
+    if ('string' != typeof(sessionId) || '' === sessionId)
+    {
+        throw Error("Argument 'sessionId' should be a non-empty string");
+    }
+    if (undefined === connect)
+    {
+        connect = true;
+    }
+    let timestamp = (new Date().getTime()) / 1000.0;
+    let changes = {
+        subscribe:[],
+        unsubscribe:[]
+    };
+    let updated = false;
+
+    // process subscribe
+    _.forEach(subscribe, (e) => {
+        // no subscriptions for this pair yet
+        if (undefined === this._subscriptions.klines.pairs[e.pair])
+        {
+            this._subscriptions.klines.pairs[e.pair] = {};
+        }
+        // no subscription for this interval
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval])
+        {
+            this._subscriptions.klines.pairs[e.pair][e.interval] = this._initializeKlinesPair(sessionId, timestamp);
+            changes.subscribe.push({entity:'klines',pair:e.pair,interval:e.interval});
+            updated = true;
+        }
+        else
+        {
+            if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId])
+            {
+                this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId] = timestamp;
+            }
+        }
+    });
+
+    // process unsubscribe
+    _.forEach(unsubscribe, (e) => {
+        // no subscription for this pair
+        if (undefined === this._subscriptions.klines.pairs[e.pair])
+        {
+            return;
+        }
+        // no subscription for this interval
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval])
+        {
+            return;
+        }
+        // no subscription for this session
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId])
+        {
+            return;
+        }
+        delete this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId];
+        if (_.isEmpty(this._subscriptions.klines.pairs[e.pair][e.interval].sessions))
+        {
+            changes.unsubscribe.push({entity:'klines',pair:e.pair,interval:e.interval});
+            delete this._subscriptions.klines.pairs[e.pair][e.interval];
+            if (_.isEmpty(this._subscriptions.klines.pairs[e.pair]))
+            {
+                delete this._subscriptions.klines.pairs[e.pair];
+            }
+            updated = true;
+        }
+    });
+
+    if (updated)
+    {
+        if (debug.enabled)
+        {
+            this._debugChanges(changes);
+        }
+        this._subscriptions.klines.timestamp = timestamp;
+        this._subscriptions.klines.count = 0;
+        _.forEach(this._subscriptions.klines.pairs, (e, p) => {
+            this._subscriptions.klines.count += Object.keys(e).length
+        });
+        this._processChanges(changes, {connect:connect});
+    }
+}
+
+/**
  * Returns true if a new subscription to this market should be setup (ie: if there is no existing subscription for orderBook or trades)
  */
 _subscribeToMarket(pair, timestamp)
@@ -565,11 +681,11 @@ getConnections()
 /**
  * List existing subscriptions
  *
- * @return {object} {tickers:{},orderBooks:{},trades:{}}
+ * @return {object} {tickers:{},orderBooks:{},trades:{},klines:{}}
  */
 getSubscriptions()
 {
-    let entities = ['tickers','orderBooks','trades'];
+    let entities = ['tickers','orderBooks','trades','klines'];
     let subscriptions = {};
     _.forEach(entities, (entity) => {
         if (undefined !== this._subscriptions[entity] && null !== this._subscriptions[entity].timestamp)
@@ -579,7 +695,20 @@ getSubscriptions()
                 pairs:{}
             }
             _.forEach(this._subscriptions[entity].pairs, (entry, pair) => {
-                subscriptions[entity].pairs[pair] = {timestamp:entry.timestamp};
+                if ('klines' == entity)
+                {
+                    _.forEach(entry, (obj, interval) => {
+                        if (undefined === subscriptions[entity].pairs[pair])
+                        {
+                            subscriptions[entity].pairs[pair] = {};
+                        }
+                        subscriptions[entity].pairs[pair][interval] = {timestamp:obj.timestamp};
+                    });
+                }
+                else
+                {
+                    subscriptions[entity].pairs[pair] = {timestamp:entry.timestamp};
+                }
             });
         }
     });
@@ -638,7 +767,16 @@ _processSubscriptions(streamClientDescriptor)
                 break;
         }
         _.forEach(obj.pairs, (entry, p) => {
-            changes.subscribe.push({entity:key,pair:p});
+            if ('klines' == key)
+            {
+                _.forEach(entry, (obj, interval) => {
+                    changes.subscribe.push({entity:key,pair:p,interval:interval});
+                });
+            }
+            else
+            {
+                changes.subscribe.push({entity:key,pair:p});
+            }
         });
     });
     if (this._globalTickersSubscription)
@@ -652,7 +790,7 @@ _processSubscriptions(streamClientDescriptor)
     {
         return;
     }
-    this._processChanges(changes, {connect:true, client:streamClientDescriptor});
+    this._processChanges(changes, {connect:true, client:streamClientDescriptor}); 
 }
 
 }

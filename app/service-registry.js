@@ -18,7 +18,7 @@ constructor()
  * @param {string} id exchange id
  * @param {string} name exchange name
  * @param {string} instance Exchange object
- * @param {array} features dictionary of features {string:true} (optional)
+ * @param {array} features dictionary of features {string:{enabled:boolean}} (optional)
  * @param {boolean} demoMode indicates whether or not demo mode is enabled for this exchange
  */
 registerExchange(id, name, instance, features, demoMode, obj)
@@ -27,8 +27,8 @@ registerExchange(id, name, instance, features, demoMode, obj)
     let demo = false;
     if (undefined !== features)
     {
-        _.forEach(features, function(feature){
-            featureList[feature] = true;
+        _.forEach(features, function(obj, feature){
+            featureList[feature] = obj;
         });
     }
     if (undefined !== demoMode)
@@ -55,7 +55,7 @@ getExchange(id)
  *
  * @param {string} id service id
  * @param {string} name service name
- * @param {array} features dictionary of features {string:true} (optional)
+ * @param {array} features dictionary of features {string:{enabled:boolean}} (optional)
  * @param {boolean} demoMode indicates whether or not demo mode is enabled for this service
  */
 registerService(id, name, features, demoMode)
@@ -64,8 +64,8 @@ registerService(id, name, features, demoMode)
     let demo = false;
     if (undefined !== features)
     {
-        _.forEach(features, function(feature){
-            featureList[feature] = true;
+        _.forEach(features, function(obj, feature){
+            featureList[feature] = obj;
         });
     }
     if (undefined !== demoMode)

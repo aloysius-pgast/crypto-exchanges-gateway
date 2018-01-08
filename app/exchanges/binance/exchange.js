@@ -9,6 +9,16 @@ const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
+// list of possible interval for klines
+const supportedKlinesIntervals = [
+  '1m', '3m', '5m', '15m', '30m',
+  '1h', '2h', '4h', '6h', '8h', '12h',
+  '1d', '3d',
+  '1w',
+  '1M'
+]
+const defaultKlinesInterval = '5m';
+
 class Exchange extends AbstractExchangeClass
 {
 
@@ -38,6 +48,21 @@ constructor(exchangeId, exchangeName, config)
     this._cachedOrders = {};
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
+}
+
+getSupportedKlinesIntervals()
+{
+    return supportedKlinesIntervals;
+}
+
+getDefaultKlinesInterval()
+{
+    return defaultKlinesInterval;
+}
+
+isKlinesIntervalSupported(interval)
+{
+    return -1 !== supportedKlinesIntervals.indexOf(interval);
 }
 
 /**
@@ -398,7 +423,6 @@ pairs(opt)
  */
  orderBook(opt) {
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
     return this._limiterGlobal.schedule(function(){
         let pair = self._toExchangePair(opt.pair);
         let p = self._restClient.depth({symbol:pair, limit:opt.limit});
@@ -428,6 +452,111 @@ pairs(opt)
                     result.lastUpdateId = data.lastUpdateId;
                 }
                 resolve(result);
+            }).catch(function(err){
+                reject(err.msg);
+            });
+        });
+    });
+}
+
+/**
+ * Returns charts data
+ *
+ * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
+ * @param {string} opt.pair pair to retrieve order book for
+ * @param {string} opt.interval charts interval
+ * @return {Promise} format depends on parameter opt.outputFormat
+ */
+
+ /*
+ If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
+
+ [
+     [
+         1513256400000,
+         "47.92800000",
+         "48.70000000",
+         "45.80100000",
+         "47.07600000",
+         "6361.94700000",
+         1513259999999,
+         "300408.63210100",
+         431,
+         "3017.09900000",
+         "142185.99138900",
+         "3445945.45866000"
+     ],
+     [
+         1513260000000,
+         "47.11000000",
+         "47.11000000",
+         "44.74400000",
+         "45.35700000",
+         "5352.61100000",
+         1513263599999,
+         "244037.18913000",
+         470,
+         "1670.36500000",
+         "76024.59013000",
+         "3449014.45866000"
+     ],
+     ...
+ ]
+
+ If opt.outputFormat is 'custom', the result will be as below
+
+ [
+     {
+         "timestamp":1513256400,
+         "open":47.928,
+         "high":48.7,
+         "low":45.801,
+         "close":47.076,
+         "volume":6361.947
+     },
+     {
+         "timestamp":1513260000,
+         "open":47.11,
+         "high":47.11,
+         "low":44.744,
+         "close":45.357,
+         "volume":5352.611
+     },
+     {
+         "timestamp":1513263600,
+         "open":45.271,
+         "high":46.8,
+         "low":43,
+         "close":46.018,
+         "volume":8146.15
+     },
+     ...
+ ]
+ */
+ klines(opt) {
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        let pair = self._toExchangePair(opt.pair);
+        let p = self._restClient.klines({symbol:pair, interval:opt.interval});
+        // return raw results
+        if ('exchange' == opt.outputFormat)
+        {
+            return p;
+        }
+        return new Promise((resolve, reject) => {
+            p.then(function(data){
+                let list = [];
+                _.forEach(data, (entry) => {
+                    list.push({
+                        timestamp:parseFloat(entry[0] / 1000.0),
+                        open:parseFloat(entry[1]),
+                        high:parseFloat(entry[2]),
+                        low:parseFloat(entry[3]),
+                        close:parseFloat(entry[4]),
+                        volume:parseFloat(entry[5])
+                    });
+                });
+                resolve(list);
             }).catch(function(err){
                 reject(err.msg);
             });

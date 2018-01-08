@@ -19,19 +19,19 @@ constructor(props) {
 
 componentWillReceiveProps(nextProps)
 {
-    let exchange = nextProps.data.exchange;
-    this._demoMode = serviceRegistry.checkExchangeDemoMode(exchange);
+    let exchangeId = nextProps.data.exchange;
+    this._demoMode = serviceRegistry.checkExchangeDemoMode(exchangeId);
     this.setState(function(prevState, props){
-        return {exchange:exchange};
+        return {exchange:exchangeId};
     });
 }
 
 componentDidMount()
 {
-    let exchange = this.props.data.exchange;
-    this._demoMode = serviceRegistry.checkExchangeDemoMode(exchange);
+    let exchangeId = this.props.data.exchange;
+    this._demoMode = serviceRegistry.checkExchangeDemoMode(exchangeId);
     this.setState(function(prevState, props){
-        return {exchange:exchange};
+        return {exchange:exchangeId};
     });
 }
 

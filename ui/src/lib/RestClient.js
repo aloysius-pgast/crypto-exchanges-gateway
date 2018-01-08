@@ -199,26 +199,63 @@ getPairs(exchange)
     });
 }
 
-getOpenOrders(exchange, orderNumber)
+getOpenOrders(exchange, pairs)
 {
     let path = '/openOrders';
-    if (undefined !== orderNumber)
+    let params = {};
+    if (undefined !== pairs)
     {
-        path += orderNumber;
+        // if list of requested pairs is empty, resolve to an empty dict (used in case there are no starred pairs)
+        if (0 == pairs.length)
+        {
+            return new Promise((resolve, reject) => {
+                resolve({});
+            });
+        }
+        params.pairs = pairs.join(',');
     }
     let url = this._getExchangeUrl(exchange, path);
     let self = this;
-    return this._sendRequest('get', url, function(data){
+    return this._sendRequest('get', url, params, function(data){
     });
 }
 
-getClosedOrders(exchange, orderNumber)
+getOpenOrder(exchange, orderNumber)
+{
+    let path = `/openOrders/${orderNumber}`;
+    let url = this._getExchangeUrl(exchange, path);
+    let self = this;
+    return this._sendRequest('get', url, params, function(data){
+    });
+}
+
+getClosedOrders(exchange, pairs)
 {
     let path = '/closedOrders';
-    if (undefined !== orderNumber)
+    let params = {};
+    if (undefined !== pairs)
     {
-        path += orderNumber;
+        // if list of requested pairs is empty, resolve to an empty dict (used in case there are no starred pairs)
+        if (0 == pairs.length)
+        {
+            return new Promise((resolve, reject) => {
+                resolve({});
+            });
+        }
+        params.pairs = pairs.join(',');
     }
+    // useful for poloniex, retrieve trades from last month
+    let timestamp = parseInt(new Date().getTime() / 1000) - 3600 * 30;
+    params.fromTimestamp = timestamp;
+    let url = this._getExchangeUrl(exchange, path);
+    let self = this;
+    return this._sendRequest('get', url, params, function(data){
+    });
+}
+
+getClosedOrder(exchange, orderNumber)
+{
+    let path = `/closedOrders/${orderNumber}`;
     // useful for poloniex, retrieve trades from last month
     let timestamp = parseInt(new Date().getTime() / 1000) - 3600 * 30;
     let params = {fromTimestamp:timestamp};

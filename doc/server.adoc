@@ -45,14 +45,14 @@ Result will be a dictionary with two entries :
 [NOTE]
 ====
 * Only enabled exchanges will be present
-* Value for a feature will always be _true_ (if feature is not supported, it won't be in dictionnary)
+* Value for a feature will always be an object _{"enabled":boolean}_
 * When property _demo_ is _true_ for an entry, it means that this exchange or service is running in demo mode and will return *fake/random* data for API calls which require authentication (such as trading API on exchanges)
 * When property _dummy_ is _true_ for an entry, it means that this exchange is a _dummy_ exchange (ie: _paper_ exchange used for testing purpose, it's unlikely you'll ever see this on your gateway instance)
 ====
 
 .Examples
 
-Example for *GET* _/server/uptime_
+Example for *GET* _/server/services_
 
 [source,json]
 ----
@@ -61,74 +61,183 @@ Example for *GET* _/server/uptime_
         "binance":{
             "id":"binance",
             "name":"Binance",
+            "features":{
+                "tickers":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving tickers for all pairs with a single request */
+                    "allPairs":false
+                },
+                "wsTickers":{
+                    "enabled":true
+                },
+                "orderBooks":{
+                    "enabled":true
+                },
+                "wsOrderBooks":{
+                    "enabled":true
+                },
+                "pairs":{
+                    "enabled":true
+                },
+                "trades":{
+                    "enabled":true
+                },
+                "wsTrades":{
+                    "enabled":true
+                },
+                "klines":{
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+                },
+                "wsKlines":{
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+                },
+                "openOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "allPairs":false
+                },
+                "closedOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
+                    "allPairs":false
+                },
+                "balances":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving balances for all pairs using a single request */
+                    "allCurrencies":true
+                }
+            },
             "demo":false,
             "dummy":false,
-            "features":{
-                "tickers":true,
-                "orderBooks":true,
-                "pairs":true,
-                "trades":true,
-                "openOrders":true,
-                "closedOrders":true,
-                "balances":true,
-                "wsTickers":true,
-                "wsOrderBooks":true,
-                "wsTrades":true
-            }
+            "feesPercent":0.1
         },
         "bittrex":{
             "id":"bittrex",
             "name":"Bittrex",
+            "features":{
+                "tickers":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving tickers for all pairs with a single request */
+                    "allPairs":true
+                },
+                "wsTickers":{
+                    "enabled":true
+                },
+                "orderBooks":{
+                    "enabled":true
+                },
+                "wsOrderBooks":{
+                    "enabled":true
+                },
+                "pairs":{
+                    "enabled":true
+                },
+                "trades":{
+                    "enabled":true
+                },
+                "wsTrades":{
+                    "enabled":true
+                },
+                "klines":{
+                    "enabled":false
+                },
+                "wsKlines":{
+                    "enabled":false
+                },
+                "openOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "allPairs":true
+                },
+                "closedOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
+                    "allPairs":true
+                },
+                "balances":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving balances for all pairs using a single request */
+                    "allCurrencies":true
+                }
+            },
             "demo":false,
             "dummy":false,
-            "features":{
-                "tickers":true,
-                "orderBooks":true,
-                "pairs":true,
-                "trades":true,
-                "openOrders":true,
-                "closedOrders":true,
-                "balances":true,
-                "wsTickers":true,
-                "wsOrderBooks":true,
-                "wsTrades":true
-            }
+            "feesPercent":0.25
         },
         "poloniex":{
             "id":"poloniex",
             "name":"Poloniex",
+            "features":{
+                "tickers":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving tickers for all pairs with a single request */
+                    "allPairs":true
+                },
+                "wsTickers":{
+                    "enabled":true
+                },
+                "orderBooks":{
+                    "enabled":true
+                },
+                "wsOrderBooks":{
+                    "enabled":true
+                },
+                "pairs":{
+                    "enabled":true
+                },
+                "trades":{
+                    "enabled":true
+                },
+                "wsTrades":{
+                    "enabled":true
+                },
+                "klines":{
+                    "enabled":false
+                },
+                "wsKlines":{
+                    "enabled":false
+                },
+                "openOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "allPairs":true
+                },
+                "closedOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
+                    "allPairs":true
+                },
+                "balances":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving balances for all pairs using a single request */
+                    "allCurrencies":true
+                }
+            },
             "demo":false,
             "dummy":false,
-            "features":{
-                "tickers":true,
-                "orderBooks":true,
-                "pairs":true,
-                "trades":true,
-                "openOrders":true,
-                "closedOrders":true,
-                "balances":true,
-                "wsTickers":true,
-                "wsOrderBooks":true,
-                "wsTrades":true
-            }
+            "feesPercent":0.25
         }
     },
     "others":{
         "coinmarketcap":{
             "id":"coinmarketcap",
             "name":"Coin Market Cap",
-            "demo":false,
             "features":{
 
-            }
+            },
+            "demo":false
         },
         "pushover":{
             "id":"pushover",
             "name":"Push Over",
-            "demo":false,
             "features":{
 
-            }
+            },
+            "demo":false
         }
     }
 }

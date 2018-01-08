@@ -43,7 +43,7 @@ const checkExchangeAndPair = (ws, exchangeId, pair, features) => {
     {
         let result = true;
         _.forEach(features, (f) => {
-            if (undefined === exchange.features[f])
+            if (undefined === exchange.features[f] || !exchange.features[f].enabled)
             {
                 result = false;
                 logger.warn("Feature '%s' is not supported by exchange '%s'", f, exchangeId);
@@ -226,6 +226,45 @@ app.ws('/exchanges/:exchange/trades/:pair', function(ws, req) {
         try
         {
             session.subscribeToTrades(req.params.exchange, [req.params.pair]);
+        }
+        catch (e)
+        {
+            logger.error(e.stack);
+            ws.terminate();
+        }
+    });
+});
+
+//-- klines route
+app.ws('/exchanges/:exchange/klines/:pair', function(ws, req) {
+    updateWs(ws, req);
+    let u = url.parse(req.url);
+    // remove .websocket
+    let pathname = u.pathname.replace('.websocket', '');
+    checkExchangeAndPair(ws, req.params.exchange, req.params.pair, ['wsKlines']).then(function(result){
+        if (!result)
+        {
+            return;
+        }
+        let exchange = serviceRegistry.getExchange(req.params.exchange);
+        let interval = exchange.instance.getDefaultKlinesInterval();
+        if (undefined !== req.params.interval)
+        {
+            if (!exchange.instance.isKlinesIntervalSupported(req.params.interval))
+            {
+                logger.warn("Kline interval '%s' is not supported on exchange '%s'", req.params.interval, req.params.exchange);
+                ws.terminate();
+            }
+            interval = req.params.interval;
+        }
+        let session = sessionRegistry.registerNonRpcSession(ws, pathname);
+        if (null === session)
+        {
+            return;
+        }
+        try
+        {
+            session.subscribeToKlines(req.params.exchange, [req.params.pair], interval);
         }
         catch (e)
         {

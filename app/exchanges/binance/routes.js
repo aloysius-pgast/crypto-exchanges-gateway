@@ -17,12 +17,22 @@ if (!config.exchanges[exchangeId].enabled)
     return;
 }
 
-// public features
-let features = ['tickers','orderBooks','pairs','trades', 'wsTickers', 'wsOrderBooks', 'wsTrades'];
-
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(exchangeId, exchangeName, config);
 let fakeExchange = null;
+
+// features
+let features = {
+    'tickers':{enabled:true, allPairs:false}, 'wsTickers':{enabled:true},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
+    'pairs':{enabled:true},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true},
+    'klines':{enabled:true,intervals:exchange.getSupportedKlinesIntervals()}, 'wsKlines':{enabled:true,intervals:exchange.getSupportedKlinesIntervals()},
+    // disabled by default
+    'openOrders':{enabled:false},
+    'closedOrders':{enabled:false},
+    'balances':{enabled:false}
+};
 
 /**
  * Retrieves existing pairs
@@ -213,6 +223,55 @@ app.get(`/exchanges/${exchangeId}/orderBooks/:pair`, (req, res) => {
 });
 
 /**
+ * Returns charts data for a given pair
+ *
+ * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
+ * @param {string} pair pair to retrieve charts data for
+ * @param {string} interval charts interval (optional, default = 5m)
+ */
+app.get(`/exchanges/${exchangeId}/klines/:pair`, (req, res) => {
+    let opt = {outputFormat:'custom', interval:exchange.getDefaultKlinesInterval()};
+    if (undefined === req.params.pair || '' == req.params.pair)
+    {
+        statistics.increaseExchangeStatistic(exchangeId, 'getKlines', false);
+        res.status(400).send({origin:"gateway",error:"Missing url parameter 'pair'"});
+        return;
+    }
+    opt.pair = req.params.pair;
+    if (undefined != req.query.interval)
+    {
+        if (!exchange.isKlinesIntervalSupported(req.query.interval))
+        {
+            statistics.increaseExchangeStatistic(exchangeId, 'getKlines', false);
+            res.status(400).send({origin:"gateway",error:util.format("Parameter 'interval' is not valid : value = '%s'", req.query.interval)});
+            return;
+        }
+        opt.interval = req.query.interval;
+    }
+    if ('exchange' == req.query.outputFormat)
+    {
+        opt.outputFormat = 'exchange';
+    }
+    exchange.klines(opt)
+        .then(function(data) {
+            statistics.increaseExchangeStatistic(exchangeId, 'getKlines', true);
+            res.send(data);
+        })
+        .catch(function(err)
+        {
+            statistics.increaseExchangeStatistic(exchangeId, 'getKlines', false);
+            if (undefined === err.msg)
+            {
+                res.status(503).send({origin:"remote",error:err});
+            }
+            else
+            {
+                res.status(503).send({origin:"remote",error:err.msg});
+            }
+        });
+});
+
+/**
  * Returns last trades for a given pair (Binance only allows to retrieve last 500)
  *
  * @param {string} outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched (optional, default = 'custom')
@@ -290,8 +349,11 @@ else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchange
     fakeExchange = new FakeExchangeClass(exchange);
 }
 
-// add private features
-features = _.concat(features, ['openOrders','closedOrders','balances']);
+// enable private features
+features['openOrders'] = {enabled:true, allPairs:false};
+features['closedOrders'] = {enabled:true, allPairs:false};
+features['balances'] = {enabled:true, allCurrencies:true};
+
 // register exchange
 serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
 

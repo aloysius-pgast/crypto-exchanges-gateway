@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import restClient from '../../lib/RestClient';
 import dateTimeHelper from '../../lib/DateTimeHelper';
 import routeRegistry from '../../lib/RouteRegistry';
+import serviceRegistry from '../../lib/ServiceRegistry';
+import starredPairs from '../../lib/StarredPairs';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import ComponentLoadedTimestamp from '../../components/ComponentLoadedTimestamp';
 
@@ -18,6 +20,7 @@ constructor(props)
         err: null,
         data:[]
     };
+    this._allPairs = true;
     this._pricesBaseUrl = '#';
     this._newOrderBaseUrl = '#';
     this._handleManualRefresh = this._handleManualRefresh.bind(this);
@@ -50,7 +53,6 @@ _handleManualRefresh()
     this._loadData();
 }
 
-
 _reloadData()
 {
     this.setState((prevState, props) => {
@@ -63,7 +65,14 @@ _reloadData()
 _loadData()
 {
     let self = this;
-    restClient.getOpenOrders(this.props.exchange).then(function(data){
+    let pairs = undefined;
+    if (!this._allPairs)
+    {
+        pairs = _.map(starredPairs.getStarredPairs({exchange:this.props.exchange}), (e) => {
+            return e.pair;
+        });
+    }
+    restClient.getOpenOrders(this.props.exchange, pairs).then(function(data){
         if (!self._isMounted)
         {
             return;
@@ -98,16 +107,13 @@ componentWillUnmount()
     this._isMounted = false;
 }
 
-componentWillReceiveProps(nextProps)
-{
-    this._getBaseUrls(nextProps.exchange);
-    this._reloadData();
-}
-
+componentWillReceiveProps(nextProps) {}
 
 componentDidMount()
 {
     this._isMounted = true;
+    let features = serviceRegistry.getExchangeFeatures(this.props.exchange, ['openOrders']);
+    this._allPairs = features['openOrders'].allPairs;
     this._getBaseUrls(this.props.exchange);
     this._loadData();
 }
@@ -143,9 +149,22 @@ render()
         )
     }
 
+    const RetrieveOnlyStarredPairs = () => {
+        if (this._allPairs)
+        {
+            return null
+        }
+        return (
+            <div style={{color:'#e64400'}}>
+                For performance reasons, open orders will be retrieved only for starred pairs
+            </div>
+        )
+    }
+
     let self = this;
     return (
       <div className="animated fadeIn col-lg-5 p-0">
+        <RetrieveOnlyStarredPairs/>
         <ComponentLoadedTimestamp timestamp={this.state.loadedTimestamp} err={this.state.err} onManualRefresh={this._handleManualRefresh}/>
         <table className="table table-responsive table-sm" style={{fontSize:'0.80rem'}}>
           <thead className="thead-inverse">

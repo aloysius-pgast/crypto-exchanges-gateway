@@ -26,7 +26,7 @@ wscat --connect '127.0.0.1:8001/exchanges/bittrex/tickers/USDT-NEO'
 
 _ws://{ipaddr}:{port}/exchanges/{exchange}/orderBooks/{pair}_
 
-This type of endpoint can be used to listen to _orderBooks_ & _orderBookUpdate_ notifications for a single pair, on a single exchange
+This type of endpoint can be used to listen to _orderBook_ & _orderBookUpdate_ notifications for a single pair, on a single exchange
 
 .Examples
 
@@ -50,6 +50,21 @@ Example to listen to _USDT-NEO_ trades notifications on _bittrex_ exchange
 [source,bash]
 ----
 wscat --connect '127.0.0.1:8001/exchanges/bittrex/trades/USDT-NEO'
+----
+
+=== Klines endpoints
+
+_ws://{ipaddr}:{port}/exchanges/{exchange}/klines/{pair}_
+
+This type of endpoint can be used to listen to _kline_ event for a single pair, on a single exchange
+
+.Examples
+
+Example to listen to _USDT-NEO_ trades notifications on _bittrex_ exchange
+
+[source,bash]
+----
+wscat --connect '127.0.0.1:8001/exchanges/binance/klines/USDT-NEO?interval=5m'
 ----
 
 == RPC endpoint
