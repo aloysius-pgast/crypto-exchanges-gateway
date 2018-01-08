@@ -64,7 +64,7 @@ checkServiceFeatures(id, features, any)
     let self = this;
     // ensure we have all requested features
     _.forEach(features, function(f){
-        if (undefined === self._services.others[id].features[f])
+        if (undefined === self._services.others[id].features[f] || !self._services.others[id].features[f].enabled)
         {
             allFeatures = false;
         }
@@ -148,7 +148,7 @@ getFees(id)
  * Checks whether or not an exchange is available and provide requested features
  *
  * @param {string} id exchange id
- * @param {array} array of features to check for this exchange (optional)
+ * @param {array} features array of features to check for this exchange (optional)
  * @param {boolean} any if true, will return true if at least one feature i available, otherwise will return true only if all features are available (optional, default = false)
  * @return {boolean} true if exchange is available with all requested features, false otherwise
  */
@@ -168,7 +168,7 @@ checkExchangeFeatures(id, features, any)
     let self = this;
     // ensure we have all requested features
     _.forEach(features, function(f){
-        if (undefined === self._services.exchanges[id].features[f])
+        if (undefined === self._services.exchanges[id].features[f] || !self._services.exchanges[id].features[f].enabled)
         {
             allFeatures = false;
         }
@@ -183,6 +183,34 @@ checkExchangeFeatures(id, features, any)
         return allFeatures;
     }
     return oneFeature;
+}
+
+/**
+ * Checks whether or not an exchange is available and provide requested features
+ *
+ * @param {string} id exchange id
+ * @param {array} features array of features to check for this exchange (optional)
+ * @return {object}
+ */
+getExchangeFeatures(id, features)
+{
+    if (undefined === this._services.exchanges[id])
+    {
+        return {};
+    }
+    if (undefined === features)
+    {
+        return this._services.exchanges[id].features;
+    }
+    let dict = {};
+    let self = this;
+    _.forEach(features, function(f){
+        if (undefined !== self._services.exchanges[id].features[f])
+        {
+            dict[f] =  self._services.exchanges[id].features[f];
+        }
+    });
+    return dict;
 }
 
 /**

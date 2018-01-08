@@ -39,7 +39,7 @@ constructor(props)
 _addExchangeRoutes(obj)
 {
     // Prices view
-    if (undefined !== obj.features['tickers'])
+    if (obj.features['tickers'].enabled)
     {
         // pair parameter is optional
         let path = '/exchanges/' + obj.id + '/prices';
@@ -53,7 +53,7 @@ _addExchangeRoutes(obj)
         });
     }
     // OrderBooks view
-    if (undefined !== obj.features['orderBooks'])
+    if (obj.features['orderBooks'].enabled)
     {
         // pair parameter is optional
         let path = '/exchanges/' + obj.id + '/orderBooks';
@@ -67,7 +67,7 @@ _addExchangeRoutes(obj)
         });
     }
     // MyOrders view
-    if (undefined !== obj.features['openOrders'])
+    if (obj.features['openOrders'].enabled)
     {
         let path = '/exchanges/' + obj.id + '/myOrders';
         routeRegistry.registerExchangeRoute(path, obj.id, 'myOrders', true);
@@ -79,7 +79,7 @@ _addExchangeRoutes(obj)
         });
     }
     // NewOrder view
-    if (undefined !== obj.features['openOrders'])
+    if (obj.features['openOrders'].enabled)
     {
         let path = '/exchanges/' + obj.id + '/newOrder';
         routeRegistry.registerExchangeRoute(path, obj.id, 'newOrder');
@@ -94,7 +94,7 @@ _addExchangeRoutes(obj)
         });
     }
     // MyBalances view
-    if (undefined !== obj.features['balances'])
+    if (obj.features['balances'].enabled)
     {
         let path = '/exchanges/' + obj.id + '/myBalances';
         routeRegistry.registerExchangeRoute(path, obj.id, 'myBalances');

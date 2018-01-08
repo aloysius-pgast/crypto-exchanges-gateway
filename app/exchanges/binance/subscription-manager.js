@@ -26,7 +26,8 @@ constructor(exchange)
     this._orderBooksUpdates = {};
     this._clients = {
         orderBooks:{},
-        trades:{}
+        trades:{},
+        klines:{}
     }
 }
 
@@ -290,6 +291,62 @@ _unregisterTradesClient(pair)
     this._clients.trades[pair].disconnect();
 }
 
+_registerKlinesClient(pair, interval)
+{
+    if (undefined === this._clients.klines[pair])
+    {
+        this._clients.klines[pair] = {};
+    }
+    let client = this._clients.klines[pair][interval];
+    if (undefined !== client)
+    {
+        if (!client.isConnected())
+        {
+            client.connect();
+        }
+        return;
+    }
+    let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
+    let uri = BASE_WS_URI + `/${p}@kline_${interval}`;
+    let self = this;
+    client = new StreamClientClass(this._exchangeId, uri);
+    let descriptor = {entity:'klines',pair:pair,interval:interval,client:client}
+    client.on('connected', function(){
+        self._registerConnection(`klines-${pair}-${interval}`, {uri:uri});
+        self._processSubscriptions.call(self, descriptor);
+    });
+    client.on('disconnected', function(){
+        self._unregisterConnection(`klines-${pair}-${interval}`);
+        // nothing to do, reconnection will be automatic
+    });
+    // no more retry left, we need to reconnect
+    client.on('terminated', function(){
+        self._unregisterConnection(`klines-${pair}-${interval}`);
+        client.reconnect(false);
+    });
+    client.on('kline', function(evt){
+        // ignore if we don't support this pair
+        if (undefined === self._subscriptions.klines.pairs[evt.pair] || undefined === self._subscriptions.klines.pairs[evt.pair][evt.interval])
+        {
+            return;
+        }
+        evt.exchange = self._exchangeId;
+        self.emit('kline', evt);
+    });
+    this._clients.klines[pair][interval] = client;
+    client.connect();
+}
+
+_unregisterKlinesClient(pair, interval)
+{
+    if (undefined === this._clients.klines[pair] || undefined === this._clients.klines[pair][interval])
+    {
+        return;
+    }
+    this._unregisterConnection(`klines-${pair}-${interval}`);
+    this._clients.klines[pair][interval].disconnect();
+}
+
 /**
  * Process subscription changes
  *
@@ -323,6 +380,9 @@ _processChanges(changes, opt)
                 case 'trades':
                     this._unregisterTradesClient(entry.pair);
                     break;
+                case 'klines':
+                    this._unregisterKlinesClient(entry.pair, entry.interval);
+                    break;
             }
         });
     }
@@ -355,6 +415,9 @@ _processChanges(changes, opt)
                         break;
                     case 'trades':
                         this._registerTradesClient(entry.pair);
+                        break;
+                    case 'klines':
+                        this._registerKlinesClient(entry.pair, entry.interval);
                         break;
                 }
             });

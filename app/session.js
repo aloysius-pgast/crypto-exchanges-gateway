@@ -186,7 +186,7 @@ getExpiryTimestamp()
  */
 getSubscriptions()
 {
-    let entities = ['tickers','orderBooks','trades'];
+    let entities = ['tickers','orderBooks','trades','klines'];
     let subscriptions = {};
     _.forEach(this._exchanges, (exchange, exchangeId) => {
         let exchangeSubscriptions = {};
@@ -198,7 +198,20 @@ getSubscriptions()
                     pairs:{}
                 };
                 _.forEach(exchange.subscriptions[entity].pairs, (entry, pair) => {
-                    exchangeSubscriptions[entity].pairs[pair] = {timestamp:entry.timestamp};
+                    if ('klines' == entity)
+                    {
+                        _.forEach(entry, (obj, interval) => {
+                            if (undefined === exchangeSubscriptions[entity].pairs[pair])
+                            {
+                                exchangeSubscriptions[entity].pairs[pair] = {};
+                            }
+                            exchangeSubscriptions[entity].pairs[pair][interval] = {timestamp:obj.timestamp};
+                        });
+                    }
+                    else
+                    {
+                        exchangeSubscriptions[entity].pairs[pair] = {timestamp:entry.timestamp};
+                    }
                 });
             }
         });
@@ -623,6 +636,12 @@ _processMessage(ws, msg)
                 return this._handleUnsubscribeFromTrades(obj, ws);
             case 'unsubscribefromalltrades':
                 return this._handleUnsubscribeFromAllTrades(obj, ws);
+            case 'subscribetoklines':
+                return this._handleSubscribeToKlines(obj, ws);
+            case 'unsubscribefromklines':
+                return this._handleUnsubscribeFromKlines(obj, ws);
+            case 'unsubscribefromallklines':
+                return this._handleUnsubscribeFromAllKlines(obj, ws);
             case 'unsubscribe':
                 return this._handleUnsubscribe(obj, ws);
             default:
@@ -669,7 +688,7 @@ _checkExchange(obj, ws, features)
     if (undefined !== features)
     {
         _.forEach(features, (f) => {
-            if (undefined === obj._exchange.features[f])
+            if (undefined === obj._exchange.features[f] || !obj._exchange.features[f].enabled)
             {
                 result = false;
                 RpcHelper.replyErrorInvalidParams(ws, obj, `Feature '${f}' is not supported by '${obj.p.exchange}' exchange`);
@@ -785,6 +804,10 @@ _getExchange(exchangeId, addListeners)
                 trades:{
                     pairs:{},
                     timestamp:null
+                },
+                klines:{
+                    pairs:{},
+                    timestamp:null
                 }
             }
         }
@@ -870,6 +893,25 @@ _getExchange(exchangeId, addListeners)
         {
             manager.addListener('trades', exchange.listeners['trades']);
         }
+
+        // klines callback
+        exchange.listeners['kline'] = function(evt){
+            // ignore if we don't support this pair/interval
+            if (undefined === exchange.subscriptions.klines.pairs[evt.pair] || undefined === exchange.subscriptions.klines.pairs[evt.pair][evt.interval])
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Received 'kline' event from exchange '${evt.exchange}' for pair '${evt.pair}' (${evt.interval})`);
+            }
+            self._forwardEvent.call(self, 'kline', evt);
+        };
+        if (addListeners)
+        {
+            manager.addListener('kline', exchange.listeners['kline']);
+        }
+
         this._exchanges[exchangeId] = exchange;
     }
     return this._exchanges[exchangeId];
@@ -961,6 +1003,20 @@ unsubscribe(opt)
                         entry.timestamp = timestamp;
                     }
                     break;
+                case 'klines':
+                    let pairList = [];
+                    _.forEach(entry.pairs, (dict, p) => {
+                        _.forEach(dict, (obj, interval) => {
+                            pairList.push({pair:p,interval:interval});
+                        });
+                    });
+                    exchange.manager.updateKlinesSubscriptions(this._sid, [], pairList, false);
+                    if (options.remove)
+                    {
+                        entry.pairs = {};
+                        entry.timestamp = timestamp;
+                    }
+                    break;
             }
         })
     });
@@ -989,6 +1045,15 @@ _subscribe()
                     break;
                 case 'trades':
                     exchange.manager.updateTradesSubscriptions(this._sid, pairs, [], true);
+                    break;
+                case 'klines':
+                    let pairList = [];
+                    _.forEach(entry.pairs, (dict, p) => {
+                        _.forEach(dict, (obj, interval) => {
+                            pairList.push({pair:p,interval:interval});
+                        });
+                    });
+                    exchange.manager.updateKlinesSubscriptions(this._sid, pairList, [], true);
                     break;
             }
         })
@@ -1588,6 +1653,197 @@ unsubscribeFromAllTrades(exchangeId)
     this.unsubscribeFromTrades(exchangeId, pairs);
 }
 
+_initializeKlinesPair(timestamp)
+{
+    return {timestamp:timestamp};
+}
+
+/**
+ * Subscribe to klines stream for a list of pairs (method assumes exchange exists, pairs & necessary features are supported)
+ *
+ * @param {string} exchangeId exchange id
+ * @param {array} pairs array of pairs (X-Y) to subscribe to
+ * @param {string} interval klines interval
+ * @param {boolean} reset if true, all existing subscription will be discarded and replaced by new ones (optional, default = false)
+ * @param {boolean} connect whether or not connection with exchange should be established if necessary (optional, default = true)
+ */
+subscribeToKlines(exchangeId, pairs, interval, reset, connect)
+{
+    if (undefined === connect)
+    {
+        connect = true;
+    }
+    // ensure connection is made if we have at least one connected client
+    if (!connect && 0 != this._socketsCount)
+    {
+        connect = true;
+    }
+    let exchange = this._getExchange(exchangeId, true);
+    let timestamp = (new Date().getTime()) / 1000.0;
+    let changes = {
+        subscribe:[],
+        unsubscribe:[]
+    }
+    let updated = false;
+    if (true === reset)
+    {
+        let pairDict = {};
+        // check if we have to subscribe
+        _.forEach(pairs, (p) => {
+            if (undefined === pairDict[p])
+            {
+                pairDict[p] = {};
+                if (undefined !== exchange.subscriptions.klines.pairs[p] && undefined !== exchange.subscriptions.klines.pairs[p][interval])
+                {
+                    pairDict[p][interval] = exchange.subscriptions.klines.pairs[p][interval];
+                }
+                else
+                {
+                    pairDict[p][interval] = this._initializeKlinesPair(timestamp);
+                    changes.subscribe.push({pair:p,interval:interval});
+                    updated = true;
+                }
+            }
+        });
+        // check if we have to unsubscribe
+        _.forEach(exchange.subscriptions.klines.pairs, (entry, p) => {
+            _.forEach(entry, (obj, int) => {
+                if (undefined === pairDict[p] || int !== pairDict[p].interval)
+                {
+                    changes.unsubscribe.push({pair:p,interval:int});
+                    updated = true;
+                }
+            });
+        });
+        exchange.subscriptions.klines.pairs = pairDict;
+    }
+    else
+    {
+        let pairDict = {};
+        // check if we have to subscribe
+        _.forEach(pairs, (p) => {
+            if (undefined !== pairDict[p])
+            {
+                return;
+            }
+            if (undefined !== exchange.subscriptions.klines.pairs[p])
+            {
+                pairDict[p] = exchange.subscriptions.klines.pairs[p];
+            }
+            else
+            {
+                pairDict[p] = {};
+            }
+            if (undefined === pairDict[p][interval])
+            {
+                pairDict[p][interval] = this._initializeKlinesPair(timestamp);
+                changes.subscribe.push({pair:p,interval:interval});
+                updated = true;
+            }
+        });
+        // add existing subscriptions
+        _.forEach(exchange.subscriptions.klines.pairs, (entry, p) => {
+            if (undefined !== pairDict[p])
+            {
+                return;
+            }
+            pairDict[p] = entry;
+        });
+        exchange.subscriptions.klines.pairs = pairDict;
+    }
+    if (updated)
+    {
+        if (debug.enabled)
+        {
+            this._debugChanges('klines', changes);
+        }
+        exchange.subscriptions.klines.timestamp = timestamp;
+        // store session
+        this._store();
+        exchange.manager.updateKlinesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+    }
+}
+
+/**
+ * Unsubscribe from trades stream for a list of pairs (method assumes exchange exists, pairs & necessary features are supported)
+ *
+ * @param {string} exchange exchange id
+ * @param {array} pairs array of pairs (X-Y) to unsubscribe from
+ * @param {string} interval kline interval to unsubscribe for (optional, if not defined will unsubscribe for all currently subscribed intervals)
+ */
+unsubscribeFromKlines(exchangeId, pairs, interval)
+{
+    let exchange = this._getExchange(exchangeId, true);
+    let timestamp = (new Date().getTime()) / 1000.0;
+    let changes = {
+        unsubscribe:[]
+    };
+    let updated = false;
+    // check if we have to unsubscribe
+    let pairDict = {};
+    _.forEach(pairs, (p) => {
+        if (undefined !== pairDict[p])
+        {
+            return;
+        }
+        pairDict[p] = true;
+        if (undefined !== exchange.subscriptions.klines.pairs[p])
+        {
+            let intervals = [];
+            // unsubscribe only for given interval
+            if (undefined !== interval)
+            {
+                intervals.push(interval);
+            }
+            else
+            {
+                _.forEach(exchange.subscriptions.klines.pairs[p], (obj, int) => {
+                    intervals.push(int);
+                });
+            }
+            if (0 !== intervals.length)
+            {
+                updated = true;
+                _.forEach(intervals, (int) => {
+                    changes.unsubscribe.push({pair:p, interval:int});
+                    delete exchange.subscriptions.klines.pairs[p][interval];
+                });
+            }
+            if (_.isEmpty(exchange.subscriptions.klines.pairs[p]))
+            {
+                delete exchange.subscriptions.klines.pairs[p];
+            }
+        }
+    });
+    if (updated)
+    {
+        if (debug.enabled)
+        {
+            this._debugChanges('klines', changes);
+        }
+        exchange.subscriptions.klines.timestamp = timestamp;
+        // store session
+        this._store();
+        // do nothing if we don't have any socket (unless session has been destroyed)
+        if (0 != this._socketsCount || this._destroyed)
+        {
+            exchange.manager.updateKlinesSubscriptions(this._sid, [], changes.unsubscribe, false);
+        }
+    }
+}
+
+/**
+ * Unsubscribe from klines stream for all currently subscribed pairs (method assumes exchange exists, pairs & necessary features are supported)
+ *
+ * @param {string} exchangeId exchange id
+ */
+unsubscribeFromAllKlines(exchangeId)
+{
+    let exchange = this._getExchange(exchangeId, true);
+    let pairs = Object.keys(exchange.subscriptions.klines.pairs);
+    this.unsubscribeFromKlines(exchangeId, pairs);
+}
+
 //-- WS message handlers
 // pair retrieval
 _handleGetPairs(obj, ws)
@@ -1620,7 +1876,7 @@ _handleGetPairs(obj, ws)
 _handleSubscribeToTickers(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsTickers']).then(function(result){
         if (!result)
         {
             return;
@@ -1639,7 +1895,7 @@ _handleSubscribeToTickers(obj, ws)
 _handleUnsubscribeFromTickers(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsTickers']).then(function(result){
         if (!result)
         {
             return;
@@ -1652,7 +1908,7 @@ _handleUnsubscribeFromTickers(obj, ws)
 // unsubscribe from all tickers
 _handleUnsubscribeFromAllTickers(obj, ws)
 {
-    if (!this._checkExchange(obj, ws))
+    if (!this._checkExchange(obj, ws, ['wsTickers']))
     {
         return;
     }
@@ -1664,7 +1920,7 @@ _handleUnsubscribeFromAllTickers(obj, ws)
 _handleSubscribeToOrderBooks(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsOrderBooks']).then(function(result){
         if (!result)
         {
             return;
@@ -1687,7 +1943,7 @@ _handleSubscribeToOrderBooks(obj, ws)
 _handleUnsubscribeFromOrderBooks(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsOrderBooks']).then(function(result){
         if (!result)
         {
             return;
@@ -1700,7 +1956,7 @@ _handleUnsubscribeFromOrderBooks(obj, ws)
 // unsubscribe from all order books
 _handleUnsubscribeFromAllOrderBooks(obj, ws)
 {
-    if (!this._checkExchange(obj, ws))
+    if (!this._checkExchange(obj, ws, ['wsOrderBooks']))
     {
         return;
     }
@@ -1711,7 +1967,7 @@ _handleUnsubscribeFromAllOrderBooks(obj, ws)
 _handleResyncOrderBooks(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsOrderBooks']).then(function(result){
         if (!result)
         {
             return;
@@ -1725,7 +1981,7 @@ _handleResyncOrderBooks(obj, ws)
 _handleSubscribeToTrades(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsTrades']).then(function(result){
         if (!result)
         {
             return;
@@ -1744,7 +2000,7 @@ _handleSubscribeToTrades(obj, ws)
 _handleUnsubscribeFromTrades(obj, ws)
 {
     let self = this;
-    this._checkExchangeAndPairs(obj, ws).then(function(result){
+    this._checkExchangeAndPairs(obj, ws, ['wsTrades']).then(function(result){
         if (!result)
         {
             return;
@@ -1757,11 +2013,66 @@ _handleUnsubscribeFromTrades(obj, ws)
 // unsubscribe from all trades
 _handleUnsubscribeFromAllTrades(obj, ws)
 {
-    if (!this._checkExchange(obj, ws))
+    if (!this._checkExchange(obj, ws, ['wsTrades']))
     {
         return;
     }
     this.unsubscribeFromAllTrades(obj.p.exchange);
+    RpcHelper.replySuccess(ws, obj, true);
+}
+
+// subscribe to kline
+_handleSubscribeToKlines(obj, ws)
+{
+    let self = this;
+    this._checkExchangeAndPairs(obj, ws, ['wsKlines']).then(function(result){
+        if (!result)
+        {
+            return;
+        }
+        let exchange = serviceRegistry.getExchange(obj.p.exchange);
+        let interval = exchange.instance.getDefaultKlinesInterval();
+        if (undefined !== obj.p.interval)
+        {
+            if (!exchange.instance.isKlinesIntervalSupported(obj.p.interval))
+            {
+                RpcHelper.replyErrorInvalidParams(ws, obj, "Unsupported value for 'interval' parameter", {interval:interval});
+                return;
+            }
+            interval = obj.p.interval;
+        }
+        let reset = false;
+        if (undefined !== obj.p.reset && true === obj.p.reset)
+        {
+            reset = true;
+        }
+        self.subscribeToKlines.call(self, obj.p.exchange, obj.p.pairs, interval, reset, true);
+        RpcHelper.replySuccess(ws, obj, true);
+    });
+}
+
+// unsubscribe from klines
+_handleUnsubscribeFromKlines(obj, ws)
+{
+    let self = this;
+    this._checkExchangeAndPairs(obj, ws, ['wsKlines']).then(function(result){
+        if (!result)
+        {
+            return;
+        }
+        self.unsubscribeFromKlines.call(self, obj.p.exchange, obj.p.pairs, obj.p.interval);
+        RpcHelper.replySuccess(ws, obj, true);
+    });
+}
+
+// unsubscribe from all klines
+_handleUnsubscribeFromAllKlines(obj, ws)
+{
+    if (!this._checkExchange(obj, ws, ['wsKlines']))
+    {
+        return;
+    }
+    this.unsubscribeFromAllKlines(obj.p.exchange, obj.p.pairs);
     RpcHelper.replySuccess(ws, obj, true);
 }
 

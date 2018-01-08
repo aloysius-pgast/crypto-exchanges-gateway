@@ -6,6 +6,7 @@ Following notifications can be sent
 * _orderBook_ : notification containing full order book for a single pair, on a given exchange
 * _orderBookUpdate_ : notification containing order book update for a single pair, on a given exchange
 * _trades_ : notification containing last trades for a single pair, on a given exchange
+* _kline_ : notification containing klines data for a single pair, on a given exchange
 
 == _ticker_ notifications
 
@@ -395,6 +396,86 @@ Following notifications can be sent
                 "timestamp":1509986924.553
             }
         ]
+    }
+}
+----
+
+== _kline_ notifications
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _kline_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}exchange
+|string
+|Exchange identifier
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}interval
+|string
+|Kline interval (ex: _5m_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}data
+|object
+|Kline data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}open
+|float
+|Open price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}close
+|float
+|Close price
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}high
+|float
+|Highest price (last 24H)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}low
+|float
+|Lowest price (last 24H)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume
+|float
+|Volume
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp
+
+|===
+
+.Examples
+
+[source,json]
+----
+{
+    "n":"ticker",
+    "d":{
+        "exchange":"binance",
+        "pair":"USDT-ETH",
+        "interval":"5m",
+        "data":{
+            "timestamp":1515410100,
+            "open":1135.5,
+            "close":1131.76,
+            "high":1136.3,
+            "low":1130.13,
+            "volume":74.30783
+        }
     }
 }
 ----

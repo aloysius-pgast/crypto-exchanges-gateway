@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.4.0]
+### Gateway
+* Support for Klines (chart data) on Binance exchange (REST + WS)
+
+### UI
+* Restrict orders retrieval to starred pairs for Binance exchange (for performance reasons)
+* TradingView charts for Binance
+
 ## [v1.3.1]
 * Fix Binance tickers (last price returned by 'ticker24hr' API was not reflecting current 'last price')
 * Display TradingView drawing toolbar on tablets & desktop

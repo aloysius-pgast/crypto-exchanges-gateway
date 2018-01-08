@@ -860,6 +860,195 @@ _Reply_
 }
 ----
 
+=== subscribeToKlines
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to subscribe to (_X-Y_)
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|interval
+|string
+|_Depends on exchange_
+|Klines interval (ex: _5m_)
+
+|reset
+|boolean
+|false
+|If _true_, previous subscriptions will be discarded
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"subscribeToKlines",
+    "p":{
+        "exchange":"binance",
+        "pairs":["USDT-NEO"],
+        "interval":"5m",
+        "reset":false
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromKlines
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|pairs
+|string[]
+|Array of pairs to unsubscribe from (_X-Y_)
+
+|===
+
+==== Optional arguments
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|interval
+|string
+|_None_
+|Klines interval (ex: _5m_). If not set, will unsubscribe for all intervals
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromKlines",
+    "p":{
+        "exchange":"binance",
+        "pairs":["USDT-NEO"]
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
+=== unsubscribeFromAllKlines
+
+===== Mandatory arguments
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|exchange
+|string
+|Exchange identifier
+
+|===
+
+==== Result
+
+Result will be boolean value _true_ if method executed successfully. An error will be returned otherwise
+
+.Examples
+
+_Request_
+
+[source,json]
+----
+{
+    "i":1,
+    "m":"unsubscribeFromAllKlines",
+    "p":{
+        "exchange":"binance"
+    }
+}
+----
+
+_Reply_
+
+[source,json]
+----
+{
+    "i":1,
+    "r":true
+}
+----
+
 === unsubscribe
 
 Used to cancel all subscriptions for a given exchange or all exchanges

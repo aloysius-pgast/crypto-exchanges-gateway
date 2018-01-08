@@ -28,7 +28,7 @@ const checkExchange = (req, res, features) => {
     if (undefined !== features)
     {
         _.forEach(features, (f) => {
-            if (undefined === exchange.features[f])
+            if (undefined === exchange.features[f] || !exchange.features[f].enabled)
             {
                 exchangeInstance = null;
                 res.status(400).send({origin:"gateway",error:`Feature '${f}' is not supported by '${req.params.exchange}' exchange`});
@@ -371,7 +371,7 @@ app.delete('/sessions/:sid/subscriptions/:exchange', (req, res) => {
  */
 app.post('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) => {
     // check exchange & pair
-    checkExchangeAndPair(req, res).then((result) => {
+    checkExchangeAndPair(req, res, ['wsTickers']).then((result) => {
         if (!result)
         {
             return;
@@ -444,7 +444,7 @@ app.delete('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) =>
  */
 app.post('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) => {
     // check exchange & pair
-    checkExchangeAndPair(req, res).then((result) => {
+    checkExchangeAndPair(req, res, ['wsOrderBooks']).then((result) => {
         if (!result)
         {
             return;
@@ -539,7 +539,7 @@ app.delete('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res)
  */
 app.post('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => {
     // check exchange & pair
-    checkExchangeAndPair(req, res).then((result) => {
+    checkExchangeAndPair(req, res, ['wsTrades']).then((result) => {
         if (!result)
         {
             return;
@@ -602,6 +602,96 @@ app.delete('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => 
         return;
     }
     session.unsubscribeFromTrades(req.params.exchange, [req.params.pair]);
+    res.send({});
+});
+
+/**
+ * Create klines subscription for a given pair, on a given exchange, in a given session
+ *
+ * NB: if session does not exist, it will be created automatically
+ */
+app.post('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => {
+    // check exchange & pair
+    checkExchangeAndPair(req, res, ['wsKlines']).then((result) => {
+        if (!result)
+        {
+            return;
+        }
+        let exchange = serviceRegistry.getExchange(req.params.exchange);
+        let interval = exchange.instance.getDefaultKlinesInterval();
+        let int = RequestHelper.getParam(req, 'interval');
+        if (undefined != int && '' != int)
+        {
+            if (!exchange.instance.isKlinesIntervalSupported(int))
+            {
+                res.status(400).send({origin:"gateway",error:`Parameter 'interval' is not valid : value = '${int}'`});
+                return;
+            }
+            interval = int;
+        }
+        let session = sessionRegistry.getSession(req.params.sid);
+        // session does not exist
+        if (null === session)
+        {
+            // creates session
+            session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
+            session.disableExpiry();
+        }
+        // create subscription
+        session.subscribeToKlines(req.params.exchange, [req.params.pair], interval, false, false);
+        res.send({});
+    });
+});
+
+/**
+ * Cancel all klines subscriptions for a given exchange, in a given session
+ */
+app.delete('/sessions/:sid/subscriptions/:exchange/klines', (req, res) => {
+    let session = sessionRegistry.getSession(req.params.sid);
+    // session does not exist
+    if (null === session)
+    {
+        res.send({});
+        return;
+    }
+    let exchange = serviceRegistry.getExchange(req.params.exchange);
+    // exchange dos not exist, do nothing
+    if (null === exchange)
+    {
+        res.send({});
+        return;
+    }
+    session.unsubscribeFromAllKlines(req.params.exchange);
+    res.send({});
+});
+
+/**
+ * Cancel klines subscription for a given pair, on a given exchange, in a given session
+ *
+ * @param {string} pairs pairs to cancel subscriptions for (optional)
+ */
+app.delete('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => {
+    let session = sessionRegistry.getSession(req.params.sid);
+    // session does not exist
+    if (null === session)
+    {
+        res.send({});
+        return;
+    }
+    let exchange = serviceRegistry.getExchange(req.params.exchange);
+    // exchange dos not exist, do nothing
+    if (null === exchange)
+    {
+        res.send({});
+        return;
+    }
+    let interval = undefined;
+    let int = RequestHelper.getParam(req, 'interval');
+    if (undefined != int && '' != int)
+    {
+        interval = int;
+    }
+    session.unsubscribeFromKlines(req.params.exchange, [req.params.pair], interval);
     res.send({});
 });
 
