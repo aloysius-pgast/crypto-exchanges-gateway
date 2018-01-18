@@ -62,9 +62,16 @@ render()
               <tbody>
               {
                 _.map(this._props.data.balances, (item, index) => {
+                  let stylePrice = {};
+                  let titlePrice = '';
+                  if (item.unknownPrice)
+                  {
+                      stylePrice={color:'#e64400'};
+                      titlePrice = 'Price is unknown';
+                  }
                   return <tr key={index}>
                       <td>{item.currency}</td>
-                      <td className="text-right">{item.price.toFixed(2)}</td>
+                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{item.price.toFixed(2)}</span></td>
                       <td className="text-right">{item.pricePercent.toFixed(2)} %</td>
                       <td className="text-right">{item.volume.toFixed(4)}</td>
                   </tr>

@@ -53,6 +53,10 @@
 |float [0,100]
 |% of portfolio (based on price) represented by current currency
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}unknownPrice
+|boolean
+|Whether or not price is unknown. Price will be unknown if such currency does not exist in Coin Market Cap
+
 |===
 
 .Examples
@@ -66,42 +70,50 @@ Example for *GET* _/portfolio_
         "PINK":{
             "volume":1538.5109958399999,
             "price":0,
-            "pricePercent":0
+            "pricePercent":0,
+            "unknownPrice":true
         },
         "ETH":{
             "volume":1.11208348,
             "price":1191.2416,
-            "pricePercent":20.25
+            "pricePercent":20.25,
+            "unknownPrice":false
         },
         "BLK":{
             "volume":209.84192613,
             "price":0,
-            "pricePercent":0
+            "pricePercent":0,
+            "unknownPrice":true
         },
         "BTC":{
             "volume":0.28314554999999997,
             "price":3380.9561,
-            "pricePercent":57.49
+            "pricePercent":57.49,
+            "unknownPrice":false
         },
         "USDT":{
             "volume":1292.68608245,
             "price":1309.1808,
-            "pricePercent":22.26
+            "pricePercent":22.26,
+            "unknownPrice":false
         },
         "KORE":{
             "volume":583.04778728,
             "price":0,
-            "pricePercent":0
+            "pricePercent":0,
+            "unknownPrice":true
         },
         "XMY":{
             "volume":1390.18863437,
             "price":0,
-            "pricePercent":0
+            "pricePercent":0,
+            "unknownPrice":true
         },
         "XMG":{
             "volume":759.00263044,
             "price":0,
-            "pricePercent":0
+            "pricePercent":0,
+            "unknownPrice":true
         }
     },
     "price":5881.3785

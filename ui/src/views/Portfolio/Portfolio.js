@@ -63,7 +63,7 @@ _loadData()
             balances.push(obj);
         });
         balances.sort(function(a,b) {
-            b.price - a.price;
+            return b.price - a.price;
         });
         let d = {price:data.price,balances:balances}
         let newState = {loaded:true, isRefreshing:false, updateTimestamp:timestamp, firstLoad:false, data:d};
@@ -102,7 +102,7 @@ render()
     return (
       <div className={classNames}>
         <br/>
-        <h6>PORTFOLIO VALUE: {this.state.data.price.toFixed(4)} $</h6>
+        <h6>PORTFOLIO VALUE =~ {this.state.data.price.toFixed(4)} $</h6>
         <br/>
         <PortfolioChart isRefreshing={this.state.isRefreshing} isFirstLoad={this.state.isFirstLoad} loaded={this.state.loaded} updateTimestamp={this.state.updateTimestamp} err={this.state.err} data={this.state.data} OnRefresh={this._handleRefresh}/>
         <PortfolioBalances isRefreshing={this.state.isRefreshing} isFirstLoad={this.state.isFirstLoad} loaded={this.state.loaded} updateTimestamp={this.state.updateTimestamp} err={this.state.err} data={this.state.data} OnRefresh={this._handleRefresh}/>

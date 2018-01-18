@@ -85,7 +85,7 @@ app.get('/portfolio', (req, res) => {
             _.forEach(entry.value, (e, currency) => {
                 if (undefined === balances[currency])
                 {
-                    balances[currency] = {volume:0, price:0, pricePercent:0.0}
+                    balances[currency] = {volume:0, price:0, pricePercent:0.0, unknownPrice:true}
                 }
                 balances[currency].volume += e.total;
             });
@@ -116,6 +116,7 @@ const sendPortfolio = (res, balances, tickers) => {
         {
             return;
         }
+        entry.unknownPrice = false;
         entry.price = parseFloat(new Big(entry.volume).times(tickers[currency]).toFixed(4));
         totalPrice += entry.price;
     });

@@ -78,7 +78,8 @@ render()
     const height =  0.7 * width;
     const chartSeries = [];
     _.forEach(this._props.data.balances, (e) => {
-        if (e.pricePercent > 1)
+        // only keeps currencies representing % >= 2%
+        if (e.pricePercent >= 2)
         {
             chartSeries.push({
                 "field":e.currency,
