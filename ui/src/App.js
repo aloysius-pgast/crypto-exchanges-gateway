@@ -18,6 +18,7 @@ import TopMenu from './views/TopMenu/';
 
 //-- exchanges views
 import MarketOverview from './views/MarketOverview';
+import Portfolio from './views/Portfolio';
 import Prices from './views/Prices';
 import OrderBooks from './views/OrderBooks';
 import MyOrders from './views/MyOrders';
@@ -113,9 +114,14 @@ _loadRoutes()
 
     //-- exchanges
     let exchanges = serviceRegistry.getExchanges();
+    let exchangesWithBalancesSupport = [];
     if (0 != Object.keys(exchanges))
     {
         _.forEach(exchanges, function(obj){
+            if (obj.features.balances.enabled)
+            {
+                exchangesWithBalancesSupport.push(obj.id);
+            }
             self._addExchangeRoutes(obj);
         });
     }
@@ -146,6 +152,18 @@ _loadRoutes()
             path:path,
             exact:true,
             component:MarketOverview
+        });
+    }
+
+    // Portfolio requires coinmarket cap & support for 'balances' features in exchanges
+    if (undefined !== services['coinmarketcap'] && 0 != exchangesWithBalancesSupport.length)
+    {
+        path = '/services/portfolio';
+        routeRegistry.registerRoute(path, 'portfolio', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:Portfolio
         });
     }
 

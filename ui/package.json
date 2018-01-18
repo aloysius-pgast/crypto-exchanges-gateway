@@ -40,6 +40,7 @@
     "react": "^15.6.2",
     "react-addons-css-transition-group": "^15.6.2",
     "react-addons-transition-group": "^15.6.2",
+    "react-d3-basic": "^1.6.11",
     "react-dom": "^15.6.1",
     "react-markdown": "^2.5.0",
     "react-router-dom": "^4.2.2",

@@ -7,6 +7,7 @@ const coinmarketcap = require('../../coinmarketcap/routes');
 const pushover = require('../../pushover/routes');
 const exchanges = require('./exchanges');
 const sessions = require('./sessions');
+const portfolio = require('./portfolio');
 const ui = require('./ui');
 
 module.exports = function(app, bodyParser, config) {
@@ -18,6 +19,7 @@ module.exports = function(app, bodyParser, config) {
     sessions(app, bodyParser, config);
     ui(app, bodyParser, config);
     server(app, bodyParser, config);
+    portfolio(app, bodyParser, config);
     _default(app, config);
     errors(app, config);
 };

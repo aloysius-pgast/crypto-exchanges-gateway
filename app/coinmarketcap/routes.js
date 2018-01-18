@@ -11,9 +11,6 @@ if (!config.coinmarketcap.enabled)
     return;
 }
 
-// register service
-serviceRegistry.registerService('coinmarketcap', 'Coin Market Cap', []);
-
 const acceptedConvertCurrencies = {
     "AUD":1,
     "BRL":1,
@@ -33,6 +30,9 @@ const acceptedConvertCurrencies = {
 
 const CoinMarketCapClass = require('./coinmarketcap');
 const coinmarketcap = new CoinMarketCapClass(config);
+
+// register service
+serviceRegistry.registerService('coinmarketcap', 'Coin Market Cap', coinmarketcap, {});
 
 /**
  * Returns tickers for all currencies (or a list of currencies)

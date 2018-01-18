@@ -1,5 +1,11 @@
 # Change Log
 
+## [v1.5.0]
+### Gateway
+* New route _/portfolio_ to retrieve portfolio across all exchanges
+### UI
+* Display portfolio (table + chart)
+
 ## [v1.4.0]
 ### Gateway
 * Support for Klines (chart data) on Binance exchange (REST + WS)

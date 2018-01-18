@@ -11,11 +11,11 @@ if (!config.pushover.enabled)
     return;
 }
 
-// register service
-serviceRegistry.registerService('pushover', 'Push Over', []);
-
 const PushOverClass = require('./pushover');
 const pushover = new PushOverClass(config);
+
+// register service
+serviceRegistry.registerService('pushover', 'Push Over', pushover, {});
 
 /**
  * Sends a push notification

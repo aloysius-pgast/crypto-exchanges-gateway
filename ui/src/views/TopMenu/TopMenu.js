@@ -150,6 +150,10 @@ _updateStateFromRoute(props)
                     title = 'Market Overview';
                     helpId = 'marketOverview';
                     break;
+                case 'portfolio':
+                    title = 'My Portfolio';
+                    helpId = 'portfolio';
+                    break;
             }
         }
     }

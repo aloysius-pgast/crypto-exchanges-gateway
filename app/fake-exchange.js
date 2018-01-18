@@ -16,7 +16,21 @@ const fakeData = {
     },
     balances:{
         minCount:0,
-        maxCount:15,
+        maxCount:5,
+        min:0.1,
+        max:1000,
+        "BTC":{
+            min:0.001,
+            max:0.25
+        },
+        "ETH":{
+            min:0.01,
+            max:2
+        },
+        "LTC":{
+            min:0.1,
+            max:20
+        }
     },
     rate:{
         min:0.0001,
@@ -352,8 +366,8 @@ _generateBalances(pairs, opt)
         currencies = opt.currencies;
     }
     _.forEach(currencies, (c) => {
-        let available = this._generateQuantity();
-        let onOrders = this._generateQuantity();
+        let available = this._generateBalance(c);
+        let onOrders = this._generateBalance(c);
         let total = available + onOrders;
         list[c] = {
             currency:c,
@@ -363,6 +377,18 @@ _generateBalances(pairs, opt)
         }
     });
     return list;
+}
+
+_generateBalance(currency)
+{
+    let min = fakeData.balances.min;
+    let max = fakeData.balances.max;
+    if (undefined !== fakeData.balances[currency])
+    {
+        min = fakeData.balances[currency].min;
+        max = fakeData.balances[currency].max;
+    }
+    return parseFloat(this._generateFloat(min, max).toFixed(8));
 }
 
 _generateOrderNumbers(count)

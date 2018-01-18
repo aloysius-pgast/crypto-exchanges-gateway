@@ -1,0 +1,6 @@
+{
+  "name": "PortfolioChart",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./PortfolioChart.js"
+}
