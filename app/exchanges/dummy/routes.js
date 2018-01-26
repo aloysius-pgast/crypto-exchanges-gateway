@@ -291,14 +291,14 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
     opt.orderNumber = req.params.orderNumber;
     let p = exchange.openOrders(opt);
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrders', true);
+        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrder', true);
         res.send(data);
     })
     .catch(function(err)
@@ -308,7 +308,7 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
         {
             origin = 'gateway';
         }
-        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(exchangeId, 'getOpenOrder', false);
         res.status(503).send({origin:origin,error:err.error});
     });
 });
@@ -475,14 +475,14 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
     let opt = {};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
     opt.orderNumber = req.params.orderNumber;
     let p = exchange.closedOrders(opt);
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrders', true);
+        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrder', true);
         res.send(data);
     })
     .catch(function(err)
@@ -492,7 +492,7 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
         {
             origin = 'gateway';
         }
-        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(exchangeId, 'getClosedOrder', false);
         res.status(503).send({origin:origin,error:err.error});
     });
 });

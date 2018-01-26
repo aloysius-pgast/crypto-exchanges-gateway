@@ -77,6 +77,7 @@ Following API are currently supported :
 * List open orders
 * List closed orders
 * Retrieve balances
+* Retrieve portfolio across all exchanges with estimated value in USD
 
 See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
 

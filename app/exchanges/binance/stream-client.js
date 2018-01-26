@@ -70,6 +70,9 @@ _processMessage(message)
             case 'aggTrade':
                 this._processTrades(data);
                 return;
+            case '24hrTicker':
+                this._processTicker(data);
+                return;
             case 'kline':
                 this._processKline(data);
                 return;
@@ -197,6 +200,57 @@ _processTrades(data)
         }]
     }
     this.emit('trades', evt);
+}
+
+/*
+  Process 'aggTrade' data and emit 'trades' event
+
+  Example data
+
+  {
+    "e": "24hrTicker",  // Event type
+    "E": 123456789,     // Event time
+    "s": "BNBBTC",      // Symbol
+    "p": "0.0015",      // Price change
+    "P": "250.00",      // Price change percent
+    "w": "0.0018",      // Weighted average price
+    "x": "0.0009",      // Previous day's close price
+    "c": "0.0025",      // Current day's close price
+    "Q": "10",          // Close trade's quantity
+    "b": "0.0024",      // Best bid price
+    "B": "10",          // Bid bid quantity
+    "a": "0.0026",      // Best ask price
+    "A": "100",         // Best ask quantity
+    "o": "0.0010",      // Open price
+    "h": "0.0025",      // High price
+    "l": "0.0010",      // Low price
+    "v": "10000",       // Total traded base asset volume
+    "q": "18",          // Total traded quote asset volume
+    "O": 0,             // Statistics open time
+    "C": 86400000,      // Statistics close time
+    "F": 0,             // First trade ID
+    "L": 18150,         // Last trade Id
+    "n": 18151          // Total number of trades
+  }
+*/
+_processTicker(data)
+{
+    let pair = this._toCustomPair(data.s);
+    let evt = {
+        pair:pair,
+        data:{
+            pair:pair,
+            last:parseFloat(data.c),
+            priceChangePercent:parseFloat(data.P),
+            sell:parseFloat(data.a),
+            buy:parseFloat(data.b),
+            high:parseFloat(data.h),
+            low:parseFloat(data.l),
+            volume:parseFloat(data.v),
+            timestamp:parseFloat(data.E / 1000.0)
+        }
+    }
+    this.emit('ticker', evt);
 }
 
 /*
