@@ -1,9 +1,16 @@
 "use strict";
-
 const chump = require('chump');
 const util = require('util');
 const logger = require('winston');
 const _ = require('lodash');
+
+// list of possible priority values
+const supportedPriorities = [
+    'lowest', 'low',
+    'normal',
+    'high',
+    'emergency'
+]
 
 class PushOver
 {
@@ -12,6 +19,11 @@ constructor(config)
 {
     this._user = config.pushover.user;
     this._client = new chump.Client(config.pushover.token);
+}
+
+isPrioritySupported(priority)
+{
+    return -1 !== supportedPriorities.indexOf(priority);
 }
 
 /**

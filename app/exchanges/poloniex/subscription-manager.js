@@ -306,7 +306,10 @@ _processChanges(changes, opt)
  */
 _retrieveMarkets(initial, connect)
 {
-    this._marketsState = MARKETS_STATE_RETRIEVING;
+    if (initial)
+    {
+        this._marketsState = MARKETS_STATE_RETRIEVING;
+    }
     let timeout = 0;
     let self = this;
     this._exchangeInstance.pairs({includePairId:true}).then(function(data){
