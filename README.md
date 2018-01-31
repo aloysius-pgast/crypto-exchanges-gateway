@@ -86,6 +86,7 @@ See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of t
 ## Limitations
 
 * Margin trading is not supported (and is unlikely to be)
+* Withdrawal is not supported (and is unlikely to be)
 * _Stop loss_ & _trailing stop loss_ are not supported for the moment (although you can expect support in the future !)
 
 ## Other services
