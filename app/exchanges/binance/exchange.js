@@ -318,10 +318,11 @@ pairs(opt)
                     let baseCurrency = entry.symbol.substr(-3);
                     switch (baseCurrency)
                     {
-                        // only keep BTC, ETH & USD as base currency
+                        // only keep BTC, ETH, USD & BNC as base currency
                         case 'BTC':
                         case 'ETH':
                         case 'SDT':
+                        case 'BNB':
                             break;
                         default:
                             return;

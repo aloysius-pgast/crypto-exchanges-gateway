@@ -4,6 +4,7 @@
 ### Gateway
 * New route _/portfolio_ to retrieve portfolio across all exchanges
 * Use _Binance_ WS to provide real-time tickers instead of REST API
+* _BNB_ pairs were not returned by _/pairs_ route on _Binance_
 ### UI
 * Display portfolio (table + chart)
 
