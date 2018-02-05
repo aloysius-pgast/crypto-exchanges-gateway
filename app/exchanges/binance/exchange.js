@@ -643,7 +643,8 @@ pairs(opt)
                     let rate = parseFloat(entry.p);
                     let price = parseFloat(new Big(quantity).times(rate));
                     let orderType = 'sell';
-                    if (entry.m)
+                    // seems to be reversed and when 'm' is true, entry is displayed in RED on Binance website
+                    if (false === entry.m)
                     {
                         orderType = 'buy';
                     }

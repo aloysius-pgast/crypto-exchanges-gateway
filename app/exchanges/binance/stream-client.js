@@ -173,7 +173,7 @@ _processOrderBookUpdate(data)
   	  "f": 77489,				// first breakdown trade id
   	  "l": 77489,				// last breakdown trade id
   	  "T": 1499405254324,		// trade time
-  	  "m": false,				// whehter buyer is a maker
+  	  "m": false,				// whether buyer is a maker (seems to be reversed and when 'm' is true, entry is displayed in RED on Binance website)
   	  "M": true				   // can be ignore
   }
  */
@@ -184,7 +184,8 @@ _processTrades(data)
     let rate = parseFloat(data.p);
     let price = parseFloat(new Big(quantity).times(rate));
     let orderType = 'sell';
-    if (data.m)
+    // seems to be reversed and when 'm' is true, entry is displayed in RED on Binance website
+    if (false === data.m)
     {
         orderType = 'buy';
     }
