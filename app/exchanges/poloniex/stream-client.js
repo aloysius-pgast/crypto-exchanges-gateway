@@ -127,7 +127,7 @@ _processTickersData(data)
         sell: parseFloat(data[2][2]),
         buy: parseFloat(data[2][3]),
         priceChangePercent: parseFloat(data[2][4]) * 100,
-        quoteVolume: parseFloat(data[2][6]),
+        volume: parseFloat(data[2][6]),
         high: parseFloat(data[2][8]),
         low: parseFloat(data[2][9]),
         timestamp:new Date().getTime() / 1000
