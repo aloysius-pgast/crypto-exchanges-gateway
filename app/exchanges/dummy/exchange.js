@@ -109,6 +109,8 @@ pairs(opt)
     return new Promise((resolve, reject) => {
         self._client.pairs('dummy').then(function(data){
             let list = {};
+            // same limits for all pairs
+            let limits = self._getDefaultLimits();
             _.forEach(data, function (entry) {
                 if (undefined !== opt.pair)
                 {
@@ -137,7 +139,8 @@ pairs(opt)
                 list[entry.pair] = {
                     pair:entry.pair,
                     baseCurrency: entry.baseCurrency,
-                    currency: entry.currency
+                    currency: entry.currency,
+                    limits:limits
                 }
             });
             if (updateCache)

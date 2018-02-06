@@ -137,7 +137,7 @@ _debugChanges(changes)
         let stack = new Error().stack;
         let line = stack.split('\n')[2];
         let method = line.replace(/^.* at [a-zA-Z0-9_.][a-zA-Z0-9_]*\.([a-zA-Z0-9_]+).*$/, '$1');
-        debug(`Method '${method}' will trigger following changes : ${JSON.stringify(changes)}`);
+        debug(`Method '${method}' will trigger following changes for '${this._exchangeId}' : ${JSON.stringify(changes)}`);
     }
     catch (e)
     {
@@ -790,7 +790,7 @@ _processSubscriptions(streamClientDescriptor)
     {
         return;
     }
-    this._processChanges(changes, {connect:true, client:streamClientDescriptor}); 
+    this._processChanges(changes, {connect:true, client:streamClientDescriptor});
 }
 
 }
