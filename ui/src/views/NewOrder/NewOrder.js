@@ -169,6 +169,7 @@ _loadBalances(pair)
             return;
         }
         alert(err);
+        let timestamp = new Date().getTime();
         self.setState((prevState, props) => {
             return {pairs:{loaded:true, data:null, err:err, loadedTimestamp:timestamp}};
         });
@@ -310,7 +311,7 @@ render() {
         let classNames = "float-lg-left mr-sm-auto mr-md-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="buy" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="buy" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.baseCurrency} limits={this.state.pairs.data[this.state.pair].limits} balanceCurrency={arr[0]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }
@@ -320,7 +321,7 @@ render() {
         let classNames = "float-lg-left mr-sm-auto mr-md-5";
         return (
             <div className={classNames} style={{minWidth:'40%'}}>
-              <Order orderType="sell" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
+              <Order orderType="sell" exchange={this.state.exchange} feesPercent={this._feesPercent} quantity={this.state.quantity} rate={this.state.rate} pair={this.state.pair} ticker={this.state.ticker.data} balance={this.state.balances.data.currency} limits={this.state.pairs.data[this.state.pair].limits} balanceCurrency={arr[1]} baseCurrency={arr[0]} currency={arr[1]} onClose={this._handleCloseOrder}/>
             </div>
         )
     }

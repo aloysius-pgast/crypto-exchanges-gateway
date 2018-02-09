@@ -83,7 +83,7 @@ _addExchangeRoutes(obj)
     if (obj.features['openOrders'].enabled)
     {
         let path = '/exchanges/' + obj.id + '/newOrder';
-        routeRegistry.registerExchangeRoute(path, obj.id, 'newOrder');
+        routeRegistry.registerExchangeRoute(path, obj.id, 'newOrder', true);
         path += '/:pair?';
         path += '/:rate?';
         path += '/:quantity?';
