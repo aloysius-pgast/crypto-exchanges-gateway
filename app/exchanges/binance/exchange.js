@@ -308,7 +308,9 @@ pairs(opt)
         let p = self._restClient.exchangeInfo();
         return new Promise((resolve, reject) => {
             p.then(function(data){
-                let list = {}
+                let list = {};
+                // count active pairs
+                let activePairs = 0;
                 _.forEach(data.symbols, function (entry) {
                     // ignore if status != 'TRADING'
                     if ('TRADING' != entry.status)
@@ -320,6 +322,7 @@ pairs(opt)
                     {
                         return;
                     }
+                    ++activePairs;
                     let baseCurrency = entry.quoteAsset;
                     switch (baseCurrency)
                     {
@@ -389,11 +392,29 @@ pairs(opt)
                     }
                     list[pair] = obj;
                 });
-                if (updateCache)
+                // something must be wrong on exchange
+                if (0 == data.symbols.length)
                 {
-                    self._cachedPairs.cache = list;
-                    self._cachedPairs.lastTimestamp = timestamp;
-                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                    logger.warn("Received no pair from '%s' : something must be wrong with exchange", self._id);
+                }
+                else
+                {
+                    // no active pair
+                    if (0 == activePairs)
+                    {
+                        console.log(JSON.stringify(data.symbols));
+                        logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", data.symbols.length, self._id);
+                    }
+                    else
+                    {
+                        // only update cache if we have trading pairs
+                        if (updateCache)
+                        {
+                            self._cachedPairs.cache = list;
+                            self._cachedPairs.lastTimestamp = timestamp;
+                            self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                        }
+                    }
                 }
                 resolve(list);
             }).catch(function(err){

@@ -209,7 +209,7 @@ pairs(opt)
         let p = self._client.returnTicker();
         return new Promise((resolve, reject) => {
             p.then(function(data){
-                let list = {}
+                let list = {};
                 // same limits for all pairs
                 let limits = self._getDefaultLimits();
                 _.forEach(data, function (value, key) {
