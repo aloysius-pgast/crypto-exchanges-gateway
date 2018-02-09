@@ -409,7 +409,7 @@ _updateState(newState, field)
                 {
                     newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
                     // check if total is 0 or > balance
-                    if (newState.total.floatValue.eq(0))
+                    if (newState.total.floatValue.lte(0.00000001))
                     {
                         newState.total.valid = false;
                         newState.total.err = null;
@@ -726,7 +726,7 @@ _handleCheckOrder(e)
     }
     if ('' == this.state.rawTotal.value || !this.state.rawTotal.valid)
     {
-        newState.total.valid = false;
+        newState.rawTotal.valid = false;
         valid = false;
     }
     this.setState(newState);
