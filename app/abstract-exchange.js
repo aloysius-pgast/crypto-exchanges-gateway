@@ -2,17 +2,6 @@
 const logger = require('winston');
 
 const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
-const stepToPrecision = {
-    "0.00000001":8,
-    "0.00000010":7,
-    "0.00000100":6,
-    "0.00001000":5,
-    "0.00010000":4,
-    "0.00100000":3,
-    "0.01000000":2,
-    "0.10000000":1,
-    "1.00000000":0
-}
 
 class AbstractExchange
 {
@@ -53,25 +42,19 @@ _precisionToStep(value)
     return step;
 }
 
+// borrowed from ccxt
 _stepToPrecision(value)
 {
-    let precision = 8;
+    let split;
     if ('string' == typeof(value))
     {
-        value = parseFloat(value).toFixed(8);
+        split = value.replace(/0+$/g, '').split('.');
     }
     else
     {
-        value = value.toFixed(8);
+        split = value.toFixed(8).replace(/0+$/g, '').split('.');
     }
-    precision = stepToPrecision[value];
-    if (undefined === precision)
-    {
-        logger.warn(`Could not convert 'step' to 'precision' : value = '${value}'`)
-        // use default
-        precision = 8;
-    }
-    return precision;
+    return (split.length > 1) ? (split[1].length) : 0;
 }
 
 _getDefaultLimits()
@@ -90,7 +73,7 @@ _getDefaultLimits()
             precision:8
         },
         price:{
-            min:0,
+            min:0.00000001,
             max:null
         }
     }
