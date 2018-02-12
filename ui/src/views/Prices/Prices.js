@@ -5,6 +5,7 @@ import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import PairChooser from '../../components/PairChooser';
 import Ticker from '../../components/Ticker';
 import CandleSticks from '../../components/CandleSticks';
+import serviceRegistry from '../../lib/ServiceRegistry';
 
 class Prices extends Component
 {
@@ -12,8 +13,10 @@ class Prices extends Component
 constructor(props) {
    super(props);
    this._isMounted = false;
+   let exchangeInstance = serviceRegistry.getExchange(this.props.data.exchange);
    this.state = {
        exchange:this.props.data.exchange,
+       exchangeType:exchangeInstance.type,
        loaded:false,
        err: null,
        data:null,
@@ -54,11 +57,13 @@ _loadData()
 
 componentWillReceiveProps(nextProps)
 {
-    let exchange = nextProps.data.exchange;
+    let exchangeId = nextProps.data.exchange;
+    let exchangeInstance = serviceRegistry.getExchange(exchange);
     this.setState(function(prevState, props){
         return {
             loaded:false,
             exchange:exchange,
+            exchangeType:exchangeInstance.type,
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair
         };
     }, function(){
@@ -108,7 +113,7 @@ render() {
             return null;
         }
         // no chart support ?
-        if (!tradingViewHelper.hasChartSupport(this.state.exchange))
+        if (!tradingViewHelper.hasChartSupport(this.state.exchangeType))
         {
             return null;
         }
@@ -116,7 +121,7 @@ render() {
             <div className="animated fadeIn">
               <br/>
                 <h6>CHART</h6>
-                <CandleSticks exchange={this.state.exchange} pair={this.state.pair}/>
+                <CandleSticks exchange={this.state.exchangeType} pair={this.state.pair}/>
             </div>
         )
     }
