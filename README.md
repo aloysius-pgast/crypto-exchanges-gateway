@@ -271,7 +271,7 @@ This project was made possible thanks to following projects :
 * [body-parser](https://www.npmjs.com/package/body-parser)
 * [lodash](https://www.npmjs.com/package/lodash)
 * [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
-* [binance](https://github.com/aloysius-pgast/binance)
+* [binance](https://www.npmjs.com/package/binance)
 * [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
 * [winston](https://www.npmjs.com/package/winston) (for logging)
