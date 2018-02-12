@@ -7,16 +7,14 @@ const serviceRegistry = require('../../service-registry');
 const statistics = require('../../statistics');
 const FakeExchangeClass = require('../../fake-exchange');
 
-module.exports = function(app, bodyParser, config) {
-
-const exchangeId = 'bittrex';
-const exchangeName = 'Bittrex';
+module.exports = function(app, bodyParser, config, exchangeId) {
 
 if (!config.exchanges[exchangeId].enabled)
 {
     return;
 }
 
+const exchangeName = config.exchanges[exchangeId].name;
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(exchangeId, exchangeName, config);
 let fakeExchange = null;
@@ -241,7 +239,7 @@ let demoMode = false;
 if ('' === config.exchanges[exchangeId].key || '' === config.exchanges[exchangeId].secret)
 {
     // register exchange
-    serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
+    serviceRegistry.registerExchange(exchangeId, exchange.getType(), exchangeName, exchange, features, demoMode);
     return;
 }
 else if ('demo' == config.exchanges[exchangeId].key && 'demo' == config.exchanges[exchangeId].secret)
@@ -256,7 +254,7 @@ features['closedOrders'] = {enabled:true, allPairs:true};
 features['balances'] = {enabled:true, allCurrencies:true};
 
 // register exchange
-serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, demoMode);
+serviceRegistry.registerExchange(exchangeId, exchange.getType(), exchangeName, exchange, features, demoMode);
 
 /**
  * Returns open orders

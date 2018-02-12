@@ -21,16 +21,22 @@
     },
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
+            "name":"Poloniex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "bittrex":{
+            "type":"bittrex",
+            "name":"Bittrex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "binance":{
+            "type":"binance",
+            "name":"Binance",
             "enabled":true,
             "key":"",
             "secret":""

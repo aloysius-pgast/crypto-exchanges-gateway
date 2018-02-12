@@ -10,43 +10,22 @@ module.exports = function(app, bodyParser, config) {
 
 let enabledExchanges = [];
 
-// load every enabled exchange (except dummy ones)
-let dummyExchanges = [];
+// load every enabled exchange
 _.forEach(config.exchanges, function (entry, exchangeId) {
     if (undefined === entry.enabled || !entry.enabled)
     {
         return;
     }
-    if (true === entry.dummy)
-    {
-        dummyExchanges.push(entry);
-        return;
-    }
-    let file = path.join(__dirname, '../../exchanges', exchangeId, 'routes.js');
+    let file = path.join(__dirname, '../../exchanges', entry.type, 'routes.js');
     if (!fs.existsSync(file))
     {
-        logger.warn(util.format("Exchange '%s' is enabled in config but file '%s' does not exist (exchange will be disabled)", exchangeId, file));
+        logger.warn("Exchange '%s' (%s) is enabled in config but file '%s' does not exist (exchange will be disabled)", exchangeId, entry.type, file);
         return;
     }
     enabledExchanges.push(exchangeId);
     // load exchange routes
-    require(file)(app, bodyParser, config);
+    require(file)(app, bodyParser, config, exchangeId);
 });
-// handle dummy exchanges
-if (0 != dummyExchanges.length)
-{
-    _.forEach(dummyExchanges, (entry) => {
-        let file = path.join(__dirname, '../../exchanges', 'dummy', 'routes.js');
-        if (!fs.existsSync(file))
-        {
-            logger.warn(util.format("Exchange '%s' is enabled in config but file '%s' does not exist (exchange will be disabled)", entry.id, file));
-            return;
-        }
-        enabledExchanges.push(entry.id);
-        // load exchange routes
-        require(file)(app, bodyParser, config, entry.id);
-    });
-}
 
 /**
  * List available exchanges

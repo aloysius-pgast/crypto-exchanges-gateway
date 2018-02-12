@@ -24,7 +24,7 @@
     "express-ipfilter": "^0.3.1",
     "express-ws": "^3.0.0",
     "lodash": "^4.17.4",
-    "node-bittrex-api": "^0.7.6",
+    "node-bittrex-api": "^0.8.3",
     "poloniex-api-node": "^1.6.5",
     "request": "^2.83.0",
     "retry": "^0.10.1",

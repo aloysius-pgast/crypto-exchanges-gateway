@@ -44,17 +44,7 @@ constructor(defaultConfig)
         pushover:{
             enabled:false
         },
-        exchanges:{
-            binance:{
-                enabled:true
-            },
-            bittrex:{
-                enabled:true
-            },
-            poloniex:{
-                enabled:true
-            }
-        }
+        exchanges:{}
     }
     if (undefined !== defaultConfig)
     {
@@ -189,79 +179,68 @@ _checkPushOver()
 _checkExchanges()
 {
     let valid = true;
+    // by default no exchange is enabled
     if (undefined === this._config.exchanges)
     {
         this._config.exchanges = this._defaultConfig.exchanges;
     }
     // try to load all config-checker.js file in exchanges directory (except for dummy exchange which will be handled separately)
     let exchangesDir = path.join(__dirname, 'exchanges');
+    let configCheckers = {};
     _.forEach(fs.readdirSync(exchangesDir), (exchangeId) => {
-        if ('dummy' == exchangeId)
-        {
-            return;
-        }
         let file = path.join(exchangesDir, exchangeId, 'config-checker.js');
         if (fs.existsSync(file))
         {
             const checkerClass = require(file);
-            let checker = new checkerClass();
-            let config = {};
-            if (undefined !== this._config.exchanges[exchangeId])
-            {
-                config = this._config.exchanges[exchangeId];
-            }
-            if (!checker.check(config))
-            {
-                // mark config as invalid
-                valid = false;
-                // copy errors
-                let self = this;
-                _.forEach(checker.getErrors(), function(err){
-                    self._err(err);
-                });
-            }
-            else
-            {
-                this._finalConfig.exchanges[exchangeId] = checker.getCfg();
-            }
+            configCheckers[exchangeId] = checkerClass;
         }
     });
-    // check if we have dummy exchanges enabled
-    let dummyExchanges = [];
-    _.forEach(this._config.exchanges, (entry, id) => {
-        if (undefined === entry.dummy || false === entry.dummy)
+    let index = 0;
+    let exchangeTypes = {};
+    _.forEach(this._config.exchanges, (exchangeConfig, exchangeId) => {
+        ++index;
+        if (undefined === exchangeConfig.type)
         {
+            exchangeConfig.type = exchangeId;
+        }
+        if (undefined === configCheckers[exchangeConfig.type])
+        {
+            this._err(`Unsupported exchange type '${exchangeConfig.type}' for exchange #${index} '${exchangeId}'`);
+            valid = false;
             return;
         }
-        if (true === entry.enabled)
+        const checkerClass = configCheckers[exchangeConfig.type];
+        // keep track of all exchange types 'cause some might not allow multiple instances
+        if (undefined === exchangeTypes[exchangeConfig.type])
         {
-            entry.id = id;
-            dummyExchanges.push(entry);
+            exchangeTypes[exchangeConfig.type] = 0;
+        }
+        ++exchangeTypes[exchangeConfig.type];
+        // check if multiple instances are allowed
+        if (exchangeTypes[exchangeConfig.type] > 1)
+        {
+            if (!checkerClass.MULTIPLE_INSTANCES)
+            {
+                this._err(`Exchange type '${exchangeConfig.type}' does not support multiple instances`);
+                valid = false;
+                return;
+            }
+        }
+        let checker = new checkerClass();
+        if (!checker.check(exchangeConfig))
+        {
+            // mark config as invalid
+            valid = false;
+            // copy errors
+            _.forEach(checker.getErrors(), function(err){
+                this._err(err);
+            });
+        }
+        else
+        {
+            this._finalConfig.exchanges[exchangeId] = checker.getCfg();
         }
     });
-    if (0 != dummyExchanges.length)
-    {
-        let file = path.join(exchangesDir, 'dummy', 'config-checker.js');
-        const checkerClass = require(file);
-        _.forEach(dummyExchanges, (entry) => {
-            let config = entry;
-            let checker = new checkerClass(entry.id);
-            if (!checker.check(config))
-            {
-                // mark config as invalid
-                valid = false;
-                // copy errors
-                let self = this;
-                _.forEach(checker.getErrors(), function(err){
-                    self._err(err);
-                });
-            }
-            else
-            {
-                this._finalConfig.exchanges[entry.id] = checker.getCfg();
-            }
-        });
-    }
     return valid;
 }
 

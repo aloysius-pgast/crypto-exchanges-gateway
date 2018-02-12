@@ -6,9 +6,10 @@ const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.00000
 class AbstractExchange
 {
 
-constructor(id, name)
+constructor(id, type, name)
 {
     this._id = id;
+    this._type = type,
     this._name = name;
     this._cachedPairs = {
         lastTimestamp:0,
@@ -84,12 +85,17 @@ _getDefaultLimits()
  */
 isDummy()
 {
-    return false;
+    return 'dummy' == this._type;
 }
 
 getId()
 {
     return this._id;
+}
+
+getType()
+{
+    return this._type;
 }
 
 getName()

@@ -16,11 +16,16 @@ static get MEDIUM_INTENSITY_API_MIN_REQUEST_PERIOD() { return 10 };
 // how many seconds should we wait between 2 high intensity methods
 static get HIGH_INTENSITY_API_MIN_REQUEST_PERIOD() { return 30 };
 
+// whether or not multiple instances can be supported for this exchange
+static get MULTIPLE_INSTANCES() { return  true };
+
 constructor()
 {
     // default config
     let cfg = {
         enabled:true,
+        type:"bittrex",
+        name:"Bittrex",
         key:"",
         secret:"",
         feesPercent:0.25,
@@ -57,6 +62,12 @@ _check()
     if (!this._finalConfig.enabled)
     {
         return true;
+    }
+
+    //-- check name
+    if (undefined !== this._config.name && '' != this._config.name)
+    {
+        this._finalConfig.name = this._config.name;
     }
 
     //-- check key & secret

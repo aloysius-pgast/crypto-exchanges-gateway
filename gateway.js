@@ -120,16 +120,16 @@ _.forEach(config.exchanges, function(obj, exchange) {
         {
             if ('demo' == config.exchanges[exchange]['key'] && 'demo' == config.exchanges[exchange]['secret'])
             {
-                logger.warn("%s exchange is enabled (public API & trading API)(DEMO)", exchange);
+                logger.warn("%s exchange (%s) is enabled (public API & trading API)(DEMO)", exchange, obj.type);
             }
             else
             {
-                logger.warn("%s exchange is enabled (public API & trading API)", exchange);
+                logger.warn("%s exchange (%s) is enabled (public API & trading API)", exchange, obj.type);
             }
         }
         else
         {
-            logger.warn("%s exchange is enabled (public API)", exchange);
+            logger.warn("%s exchange (%s) is enabled (public API)", exchange, obj.type);
         }
     }
 });

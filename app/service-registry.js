@@ -16,12 +16,13 @@ constructor()
  * Registers an exchange and indicate supported features
  *
  * @param {string} id exchange id
+ * @param {string} type exchange type (ex: binance)
  * @param {string} name exchange name
  * @param {object} instance Exchange object
  * @param {object} features dictionary of features {string:{enabled:boolean}} (optional)
  * @param {boolean} demoMode indicates whether or not demo mode is enabled for this exchange
  */
-registerExchange(id, name, instance, features, demoMode, obj)
+registerExchange(id, type, name, instance, features, demoMode, obj)
 {
     let featureList = {};
     let demo = false;
@@ -38,7 +39,7 @@ registerExchange(id, name, instance, features, demoMode, obj)
             demo = true;
         }
     }
-    this._services.exchanges[id] = {id:id,instance:instance,name:name,features:featureList,demo:demo,dummy:instance.isDummy()}
+    this._services.exchanges[id] = {id:id,type:type,instance:instance,name:name,features:featureList,demo:demo}
 }
 
 getExchanges(id)

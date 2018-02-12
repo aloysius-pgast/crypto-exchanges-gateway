@@ -6,6 +6,8 @@ const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
+const exchangeType = 'poloniex';
+
 class Exchange extends AbstractExchangeClass
 {
 

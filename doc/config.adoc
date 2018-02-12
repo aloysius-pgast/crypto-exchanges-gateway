@@ -34,16 +34,19 @@ Below config will only give access to public API (since no key/secret combinatio
     },
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "bittrex":{
+            "type":"bittrex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "binance":{
+            "type":"binance",
             "enabled":true,
             "key":"",
             "secret":""
@@ -139,6 +142,8 @@ Access will be restricted using the following :
     /* exchanges configuration */
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
+            "name":"Poloniex",
             "enabled":true,
             /* API key provided by Poloniex */
             "key":"ABCD",
@@ -158,6 +163,8 @@ Access will be restricted using the following :
         },
         "bittrex":{
             "enabled":true,
+            "type":"bittrex",
+            "name":"bittrex",
             /* to account for clock skew */
             "recvWindow":5000,
             /* API key provided by Bittrex */
@@ -182,8 +189,28 @@ Access will be restricted using the following :
                 }
             }
         },
+        /* it is possible to define multiple instances of same exchange */
         "binance":{
             "enabled":true,
+            "type":"binance",
+            "name":"Binance #1",
+            /* API key provided by Binance */
+            "key":"ABCD",
+            /* Secret provided by Binance */
+            "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.10,
+            /* rate limiting to comply with Binance */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":20
+                }
+            }
+        },
+        "binance2":{
+            "enabled":true,
+            "type":"binance",
+            "name":"Binance #2",
             /* API key provided by Binance */
             "key":"ABCD",
             /* Secret provided by Binance */

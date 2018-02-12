@@ -10,11 +10,9 @@ const statistics = require('../../statistics');
  Dummy exchange is a paper exchange I use for development & troubleshooting purpose
  */
 
-module.exports = function(app, bodyParser, config, id) {
+module.exports = function(app, bodyParser, config, exchangeId) {
 
-const exchangeId = id;
-const exchangeName = config.exchanges[id].name;
-
+const exchangeName = config.exchanges[exchangeId].name;
 const ExchangeClass = require('./exchange');
 const exchange = new ExchangeClass(exchangeId, exchangeName, config);
 
@@ -243,7 +241,7 @@ features['closedOrders'] = {enabled:true, allPairs:true};
 features['balances'] = {enabled:true, allCurrencies:true};
 
 // register exchange
-serviceRegistry.registerExchange(exchangeId, exchangeName, exchange, features, false);
+serviceRegistry.registerExchange(exchangeId, exchange.getType(), exchangeName, exchange, features, false);
 
 /**
  * Returns open orders

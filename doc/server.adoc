@@ -60,6 +60,8 @@ Example for *GET* _/server/services_
     "exchanges":{
         "binance":{
             "id":"binance",
+            /* exchange type, it is possible to define multiple instance of one exchange */
+            "type":"binance",
             "name":"Binance",
             "features":{
                 "tickers":{
@@ -117,6 +119,8 @@ Example for *GET* _/server/services_
         },
         "bittrex":{
             "id":"bittrex",
+            /* exchange type, it is possible to define multiple instance of one exchange */
+            "type":"bittrex",
             "name":"Bittrex",
             "features":{
                 "tickers":{
@@ -170,6 +174,8 @@ Example for *GET* _/server/services_
         },
         "poloniex":{
             "id":"poloniex",
+            /* exchange type, it is possible to define multiple instance of one exchange */
+            "type":"poloniex",
             "name":"Poloniex",
             "features":{
                 "tickers":{

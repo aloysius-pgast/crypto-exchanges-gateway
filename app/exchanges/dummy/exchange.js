@@ -9,6 +9,8 @@ const SubscriptionManagerClass = require('./subscription-manager');
  Dummy exchange is a paper exchange I use for development & troubleshooting purpose
  */
 
+const exchangeType = 'dummy';
+
 class Exchange extends AbstractExchangeClass
 {
 
@@ -21,17 +23,12 @@ class Exchange extends AbstractExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    super(exchangeId, exchangeName);
+    super(exchangeId, exchangeType, exchangeName);
     let baseHttpUri = config.exchanges[exchangeId].baseHttpUri;
     let baseWsUri = config.exchanges[exchangeId].baseWsUri
     this._client = new HttpClient(baseHttpUri);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
-}
-
-isDummy()
-{
-    return true;
 }
 
 /**

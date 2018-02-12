@@ -11,11 +11,16 @@ static get PUBLIC_API_MAX_REQUESTS_PER_SECOND() { return  6 };
 // maximum number of requests per seconds for trading api
 static get TRADING_API_MAX_REQUESTS_PER_SECOND() { return 6 };
 
+// whether or not multiple instances can be supported for this exchange
+static get MULTIPLE_INSTANCES() { return  true };
+
 constructor()
 {
     // default config
     let cfg = {
         enabled:true,
+        type:"poloniex",
+        name:"Poloniex",
         key:"",
         secret:"",
         feesPercent:0.25,
@@ -49,6 +54,12 @@ _check()
     if (!this._finalConfig.enabled)
     {
         return true;
+    }
+
+    //-- check name
+    if (undefined !== this._config.name && '' != this._config.name)
+    {
+        this._finalConfig.name = this._config.name;
     }
 
     //-- check key & secret

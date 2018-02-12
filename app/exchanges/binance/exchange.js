@@ -18,6 +18,7 @@ const supportedKlinesIntervals = [
   '1M'
 ]
 const defaultKlinesInterval = '5m';
+const exchangeType = 'binance';
 
 class Exchange extends AbstractExchangeClass
 {
@@ -31,7 +32,7 @@ class Exchange extends AbstractExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    super(exchangeId, exchangeName);
+    super(exchangeId, exchangeType, exchangeName);
     let opt = {
         key:config.exchanges.binance.key,
         secret:config.exchanges.binance.secret,

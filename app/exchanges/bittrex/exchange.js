@@ -1,9 +1,12 @@
 "use strict";
+const createApiInstance = require('node-bittrex-api').createInstance;
 const Bottleneck = require('bottleneck');
 const _ = require('lodash');
 const Big = require('big.js');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
+
+const exchangeType = 'bittrex';
 
 class Exchange extends AbstractExchangeClass
 {
@@ -17,8 +20,7 @@ class Exchange extends AbstractExchangeClass
  */
  constructor(exchangeId, exchangeName, config)
  {
-    super(exchangeId, exchangeName);
-    this._client = require('node-bittrex-api');
+    super(exchangeId, exchangeType, exchangeName);
     let opt = {
         apikey:config.exchanges.bittrex.key,
         apisecret:config.exchanges.bittrex.secret,
@@ -26,7 +28,7 @@ class Exchange extends AbstractExchangeClass
         stream:false,
         cleartext:false
     };
-    this._client.options(opt);
+    this._client = createApiInstance(opt);
     this._limiterLowIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.lowIntensity.minPeriod * 1000);
     this._limiterMediumIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.mediumIntensity.minPeriod * 1000);
     this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);

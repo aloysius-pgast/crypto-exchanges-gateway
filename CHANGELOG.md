@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.6.0]
+### Gateway
+* Support for multiple instances of same exchange (might not be supported for all exchanges)
+
 ## [v1.5.0]
 ### Gateway
 * New route _/portfolio_ to retrieve portfolio across all exchanges

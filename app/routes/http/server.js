@@ -39,10 +39,10 @@ app.get('/server/services', (req, res) => {
     _.forEach(services.exchanges, (entry, id) => {
         data.exchanges[id] = {
             id:entry.id,
+            type:entry.type,
             name:entry.name,
             features:entry.features,
             demo:entry.demo,
-            dummy:entry.dummy,
             feesPercent:config.exchanges[id].feesPercent
         }
     });
