@@ -993,6 +993,38 @@ render()
       )
     }
 
+    const RateWarning = () => {
+        if (!this.state.rate.valid)
+        {
+            return null;
+        }
+        let msg;
+        let warn = false;
+        if ('buy' == this.props.orderType)
+        {
+            if (this.state.rate.floatValue.gt(this.props.ticker.sell))
+            {
+                warn = true;
+                msg = `Rate is higher than lowest sell value ${this.props.ticker.sell}`;
+            }
+        }
+        else
+        {
+            if (this.state.rate.floatValue.lt(this.props.ticker.buy))
+            {
+                warn = true;
+                msg = `Rate is lower than highest buy value ${this.props.ticker.buy}`;
+            }
+        }
+        if (!warn)
+        {
+            return null;
+        }
+        return (
+            <div style={{color:'#e64400'}}>{msg}</div>
+        );
+    }
+
     const invalidValue = (value, limitId) => {
         if (value.valid)
         {
@@ -1073,6 +1105,7 @@ render()
                       <div className="invalid-feedback" style={{display:!this.state.rate.valid ? 'inline' : 'none'}}>
                       {invalidValue(this.state.rate, 'rate')}
                       </div>
+                      <RateWarning/>
                     </FormGroup>
                   </Col>
                 </Row>
