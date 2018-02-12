@@ -43,7 +43,7 @@ serviceRegistry.registerService('coinmarketcap', 'Coin Market Cap', coinmarketca
  * @param {string} convert convert to another currency (optional)
  */
 app.get('/coinmarketcap/tickers', (req, res) => {
-    let opt = {outputFormat:'custom'};
+    let opt = {outputFormat:'custom',limit:100};
     if ('coinmarketcap' == req.query.outputFormat)
     {
         opt.outputFormat = 'coinmarketcap';
