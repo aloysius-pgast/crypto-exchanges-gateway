@@ -1040,7 +1040,7 @@ render()
             if (this.state.rate.floatValue.gt(this.props.ticker.sell))
             {
                 warn = true;
-                msg = `Rate is higher than lowest sell value ${this.props.ticker.sell}`;
+                msg = `Rate is higher than lowest <i>Ask</i> value ${this.props.ticker.sell}`;
             }
         }
         else
@@ -1048,7 +1048,7 @@ render()
             if (this.state.rate.floatValue.lt(this.props.ticker.buy))
             {
                 warn = true;
-                msg = `Rate is lower than highest buy value ${this.props.ticker.buy}`;
+                msg = `Rate is lower than highest <i>Bid</i> value ${this.props.ticker.buy}`;
             }
         }
         if (!warn)
@@ -1056,7 +1056,7 @@ render()
             return null;
         }
         return (
-            <div style={{color:'#e64400'}}>{msg}</div>
+            <div style={{color:'#e64400'}} dangerouslySetInnerHTML={{__html:msg}}/>
         );
     }
 
