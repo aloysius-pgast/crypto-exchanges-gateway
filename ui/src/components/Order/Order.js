@@ -123,7 +123,6 @@ constructor(props)
                 quantity.err = 'STEP';
             }
 
-            // check if we have enough balance to buy this quantity
             if ('buy' == this.props.orderType)
             {
                 let maxQuantity = this._balance.floatValue.div(this._buyFeesFactor).div(rate.floatValue);
@@ -146,12 +145,17 @@ constructor(props)
                     total.valid = false;
                     total.err = 'NAN';
                 }
+                // ensure total is <= balance
+                if (total.floatValue.gt(this._balance.floatValue))
+                {
+                    total.valid = false;
+                    total.err = 'BALANCE';
+                }
                 rawTotal.value = this._formatFloat(rawTotal.floatValue);
                 total.value = this._formatFloat(total.floatValue);
                 fees.floatValue = total.floatValue.minus(rawTotal.floatValue);
                 fees.value = this._formatFloat(fees.floatValue);
             }
-            // ensure we have enough balance to sell this quantity
             else
             {
                 // ensure quantity is > min
@@ -159,6 +163,12 @@ constructor(props)
                 {
                     quantity.valid = false;
                     quantity.err = 'MIN';
+                }
+                // ensure quantity is <= balance
+                if (quantity.floatValue.gt(this._balance.floatValue))
+                {
+                    quantity.valid = false;
+                    quantity.err = 'BALANCE';
                 }
                 rawTotal.floatValue = quantity.floatValue.times(rate.floatValue);
                 // ensure raw total is > min
@@ -182,6 +192,8 @@ constructor(props)
     }
     this.state = {
         showPriceDropdown:false,
+        showQuantityDropdown:false,
+        showTotalDropdown:false,
         quantity:{value:quantity.value,floatValue:quantity.floatValue,valid:quantity.valid,err:quantity.err,timestamp:null},
         rate:{value:rate.value,floatValue:rate.floatValue,valid:rate.valid,err:rate.err,timestamp:null},
         total:{value:total.value,floatValue:total.floatValue,valid:total.valid,err:total.err,timestamp:null},
@@ -196,11 +208,11 @@ constructor(props)
         }
     }
     this._handleSetRate = this._handleSetRate.bind(this);
+    this._handleSetQuantity = this._handleSetQuantity.bind(this);
+    this._handleSetTotal = this._handleSetTotal.bind(this);
     this._handleSetValue = this._handleSetValue.bind(this);
     this._handleSetMinQuantity = this._handleSetMinQuantity.bind(this);
-    this._handleSetMaxQuantity = this._handleSetMaxQuantity.bind(this);
     this._handleSetMinRawTotal = this._handleSetMinRawTotal.bind(this);
-    this._handleSetMaxTotal = this._handleSetMaxTotal.bind(this);
     this._handleCheckOrder = this._handleCheckOrder.bind(this);
     this._handleConfirmOrder = this._handleConfirmOrder.bind(this);
     this._handleCancelOrder = this._handleCancelOrder.bind(this);
@@ -263,6 +275,61 @@ _formatFloat(value, precision)
     return this._getRoundedFloat(value, precision).toFixed(precision);
 }
 
+_handleSetQuantity(e)
+{
+    let value;
+    let floatValue;
+    switch (e.target.id)
+    {
+        case 'min':
+            value = this._limits.quantity.minStr;
+            break;
+        case '25%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.25), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case '50%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.5), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case '75%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.75), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case 'max':
+            floatValue = this._getRoundedFloat(this._balance.floatValue, this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+    }
+    this._setValue('quantity', value);
+}
+
+_handleSetTotal(e)
+{
+    let value;
+    let floatValue;
+    switch (e.target.id)
+    {
+        case '25%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.25), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case '50%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.5), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case '75%':
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.75), this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+        case 'max':
+            floatValue = this._getRoundedFloat(this._balance.floatValue, this._limits.quantity.precision, this._limits.quantity.step);
+            value = floatValue.toFixed(this._limits.quantity.precision);
+            break;
+    }
+    this._setValue('total', value);
+}
+
 _handleSetRate(e)
 {
     let floatValue;
@@ -290,21 +357,9 @@ _handleSetValue(e)
     this._setValue(e.target.id, e.target.value);
 }
 
-_handleSetMaxTotal(e)
-{
-    this._setValue('total', this._balance.value);
-}
-
 _handleSetMinRawTotal(e)
 {
     this._setValue('rawTotal', this._limits.price.min.toFixed(8));
-}
-
-_handleSetMaxQuantity(e)
-{
-    let floatValue = new Big(this._getRoundedFloat(this._balance.value, this._limits.quantity.precision, this._limits.quantity.step));
-    let value = floatValue.toFixed(this._limits.quantity.precision);
-    this._setValue('quantity', value);
 }
 
 _handleSetMinQuantity(e)
@@ -801,16 +856,6 @@ render()
         buySellAction = 'sell';
     }
 
-    const MaxQuantityButton = () => {
-        if ('sell' == this.props.orderType)
-        {
-            return (
-                <button className="btn btn-secondary" onClick={this._handleSetMaxQuantity}>M<small>AX</small></button>
-            )
-        }
-        return null
-    }
-
     const MinQuantityButton = () => {
         if ('buy' == this.props.orderType)
         {
@@ -825,16 +870,6 @@ render()
         return (
             <button className="btn btn-secondary" onClick={this._handleSetMinRawTotal}>M<small>IN</small></button>
         )
-        return null
-    }
-
-    const MaxTotalButton = () => {
-        if ('buy' == this.props.orderType)
-        {
-            return (
-                <button className="btn btn-secondary" onClick={this._handleSetMaxTotal}>M<small>AX</small></button>
-            )
-        }
         return null
     }
 
@@ -1072,7 +1107,18 @@ render()
                       </Label>
                       <InputGroup>
                         <MinQuantityButton/>
-                        <MaxQuantityButton/>
+                        <ButtonDropdown style={{display:'sell' == this.props.orderType ? 'inline' : 'none'}} isOpen={this.state.showQuantityDropdown} toggle={() => { this.setState({ showQuantityDropdown: !this.state.showQuantityDropdown }); }}>
+                          <DropdownToggle caret color="secondary">
+                            Q<small>TY</small>
+                          </DropdownToggle>
+                          <DropdownMenu className={this.state.showQuantityDropdown ? 'show' : ''}>
+                            <DropdownItem id="max" onClick={this._handleSetQuantity}>Max</DropdownItem>
+                            <DropdownItem id="min" onClick={this._handleSetQuantity}>Min</DropdownItem>
+                            <DropdownItem id="25%" onClick={this._handleSetQuantity}>25%</DropdownItem>
+                            <DropdownItem id="50%" onClick={this._handleSetQuantity}>50%</DropdownItem>
+                            <DropdownItem id="75%" onClick={this._handleSetQuantity}>75%</DropdownItem>
+                          </DropdownMenu>
+                        </ButtonDropdown>
                         <Input className={!this.state.quantity.valid ? 'is-invalid' : ''} type="text" id="quantity" placeholder="Quantity" value={this.state.quantity.value} onChange={this._handleSetValue}/>
                         <span className="input-group-addon"><small>{this.props.currency}</small></span>
                       </InputGroup>
@@ -1116,7 +1162,17 @@ render()
                     <FormGroup>
                       <Label htmlFor="total">T<small>OTAL ({totalInfo})</small></Label>
                       <InputGroup>
-                        <MaxTotalButton/>
+                        <ButtonDropdown style={{display:'buy' == this.props.orderType ? 'inline' : 'none'}} isOpen={this.state.showTotalDropdown} toggle={() => { this.setState({ showTotalDropdown: !this.state.showTotalDropdown }); }}>
+                          <DropdownToggle caret color="secondary">
+                            T<small>OTAL</small>
+                          </DropdownToggle>
+                          <DropdownMenu className={this.state.showTotalDropdown ? 'show' : ''}>
+                            <DropdownItem id="max" onClick={this._handleSetTotal}>Max</DropdownItem>
+                            <DropdownItem id="25%" onClick={this._handleSetTotal}>25%</DropdownItem>
+                            <DropdownItem id="50%" onClick={this._handleSetTotal}>50%</DropdownItem>
+                            <DropdownItem id="75%" onClick={this._handleSetTotal}>75%</DropdownItem>
+                          </DropdownMenu>
+                        </ButtonDropdown>
                         <Input className={!this.state.total.valid ? 'is-invalid' : ''} type="text" id="total" value={this.state.total.value} onChange={this._handleSetValue}/>
                         <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
                       </InputGroup>

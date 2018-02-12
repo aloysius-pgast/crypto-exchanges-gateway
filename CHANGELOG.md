@@ -9,6 +9,7 @@
 ### UI
 * Display portfolio (table + chart)
 * Display informations regarding limits for _rate_, _quantity_ & _price_ in _newOrder_ view and try to ensure we only submit order if all limits are respected
+* Possibility to choose a % of balance when placing orders
 
 ## [v1.4.0]
 ### Gateway
