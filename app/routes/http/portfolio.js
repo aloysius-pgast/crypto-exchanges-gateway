@@ -94,10 +94,23 @@ app.get('/portfolio', (req, res) => {
         coinmarketcap.tickers({}).then(function(data) {
             let tickers = {};
             _.forEach(data, (entry) => {
-                // ignore tickers without price or the one we're not interested in
-                if (null === entry.price_usd || undefined === balances[entry.symbol])
+                // ignore tickers without price
+                if (null === entry.price_usd)
                 {
                     return;
+                }
+                // ignore tickers we're not interested in
+                if (undefined === balances[entry.symbol])
+                {
+                    // try to map currency to coinmarketcap symbol
+                    switch (entry.symbol)
+                    {
+                        case 'MIOTA':
+                            entry.symbol = 'IOTA';
+                            break;
+                        default:
+                            return;
+                    }
                 }
                 tickers[entry.symbol] = entry.price_usd;
             });
