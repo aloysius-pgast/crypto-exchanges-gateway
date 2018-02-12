@@ -35,9 +35,21 @@ tickers(opt)
             {
                 params['convert'] = opt.convert;
             }
-            if (undefined !== opt.limit)
+            // no limit if we have a list of symbols
+            if (undefined !== opt.symbols && 0 != opt.symbols.length)
             {
-                params['limit'] = opt.limit;
+                params['limit'] = 0;
+            }
+            else
+            {
+                if (undefined !== opt.limit)
+                {
+                    params['limit'] = opt.limit;
+                }
+                else
+                {
+                    params['limit'] = 0;
+                }
             }
             let options = {};
             options.json = true;

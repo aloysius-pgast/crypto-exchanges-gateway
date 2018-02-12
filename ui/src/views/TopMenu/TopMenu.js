@@ -150,6 +150,10 @@ _updateStateFromRoute(props)
                     title = 'Market Overview';
                     helpId = 'marketOverview';
                     break;
+                case 'portfolio':
+                    title = 'My Portfolio';
+                    helpId = 'portfolio';
+                    break;
             }
         }
     }
@@ -221,7 +225,7 @@ render(){
             <div className="animated fadeIn" style={{paddingLeft:'30px',width:'80%'}}>
                 <br/>
                 <div style={{border:'2px solid #55595a',color:'#55595a',borderRadius:'10px',paddingTop:'15px',paddingLeft:'15px'}}>
-                    <ReactMarkdown source={this.state.help.content}/>
+                    <ReactMarkdown skipHtml={false} escapeHtml={false} source={this.state.help.content}/>
                 </div>
             </div>
         )

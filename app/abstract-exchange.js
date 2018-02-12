@@ -1,4 +1,7 @@
 "use strict";
+const logger = require('winston');
+
+const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
 
 class AbstractExchange
 {
@@ -15,6 +18,65 @@ constructor(id, name)
         cache:{}
     };
     this._subscriptionManager = null;
+}
+
+_precisionToStep(value)
+{
+    let step = 0.00000001;
+    if ('string' == typeof(value))
+    {
+        step = value.toFixed(8);
+    }
+    else
+    {
+        if (value >= 0 && value <= 8)
+        {
+            step = precisionToStep[value];
+        }
+        else
+        {
+            logger.warn(`Could not convert 'precision' to 'step' : value = '${value}'`)
+            // default will be used
+        }
+    }
+    return step;
+}
+
+// borrowed from ccxt
+_stepToPrecision(value)
+{
+    let split;
+    if ('string' == typeof(value))
+    {
+        split = value.replace(/0+$/g, '').split('.');
+    }
+    else
+    {
+        split = value.toFixed(8).replace(/0+$/g, '').split('.');
+    }
+    return (split.length > 1) ? (split[1].length) : 0;
+}
+
+_getDefaultLimits()
+{
+    return {
+        rate:{
+           min:0.00000001,
+           max:null,
+           step:0.00000001,
+           precision:8
+        },
+        quantity:{
+            min:0.00000001,
+            max:null,
+            step:0.00000001,
+            precision:8
+        },
+        price:{
+            min:0.00000001,
+            max:null
+        }
+    }
 }
 
 /**

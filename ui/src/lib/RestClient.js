@@ -336,6 +336,15 @@ coinMarketCap(limit)
     return this._sendRequest('get', url, params);
 }
 
+//-- Portfolio
+portfolio()
+{
+    let path = '/portfolio';
+    let params = {};
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url, params);
+}
+
 }
 
 export default new RestClient();

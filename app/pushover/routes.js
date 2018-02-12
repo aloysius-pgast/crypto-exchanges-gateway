@@ -1,7 +1,7 @@
 "use strict";
 const util = require('util');
 const _ = require('lodash');
-const requestHelper = require('../request-helper');
+const RequestHelper = require('../request-helper');
 const serviceRegistry = require('../service-registry');
 
 module.exports = function(app, bodyParser, config) {
@@ -11,11 +11,11 @@ if (!config.pushover.enabled)
     return;
 }
 
-// register service
-serviceRegistry.registerService('pushover', 'Push Over', []);
-
 const PushOverClass = require('./pushover');
 const pushover = new PushOverClass(config);
+
+// register service
+serviceRegistry.registerService('pushover', 'Push Over', pushover, {});
 
 /**
  * Sends a push notification
@@ -34,14 +34,14 @@ const pushover = new PushOverClass(config);
  */
 app.post('/pushover/notify', bodyParser, (req, res) => {
     let opt = {format:'html'};
-    let value = requestHelper.getParam(req, 'message');
+    let value = RequestHelper.getParam(req, 'message');
     if (undefined === value || '' === value)
     {
         res.status(400).send({origin:"gateway",error:"Missing or empty parameter 'message'"});
         return;
     }
     opt.message = value;
-    value = requestHelper.getParam(req, 'format');
+    value = RequestHelper.getParam(req, 'format');
     if (undefined !== value && '' != value)
     {
         switch (value)
@@ -56,25 +56,18 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
         }
     }
     // priority
-    value = requestHelper.getParam(req, 'priority');
+    value = RequestHelper.getParam(req, 'priority');
     if (undefined !== value && '' != value)
     {
-        switch (value)
+        if (!pushover.isPrioritySupported(value))
         {
-            case 'lowest':
-            case 'low':
-            case 'normal':
-            case 'high':
-            case 'emergency':
-                opt.priority = value;
-                break;
-            default:
-                res.status(400).send({origin:"gateway",error:util.format("Invalid value for parameter 'priority' : value = '%s'", value)});
-                return;
+            res.status(400).send({origin:"gateway",error:util.format("Invalid value for parameter 'priority' : value = '%s'", value)});
+            return;
         }
+        opt.priority = value;
         if ('emergency' == value)
         {
-            value = requestHelper.getParam(req, 'retry');
+            value = RequestHelper.getParam(req, 'retry');
             if (undefined !== value && '' != value)
             {
                 let v = parseInt(value);
@@ -85,7 +78,7 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
                 }
                 opt.retry = v;
             }
-            value = requestHelper.getParam(req, 'expire');
+            value = RequestHelper.getParam(req, 'expire');
             if (undefined !== value && '' != value)
             {
                 let v = parseInt(value);
@@ -99,7 +92,7 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
         }
     }
     // sound
-    value = requestHelper.getParam(req, 'sound');
+    value = RequestHelper.getParam(req, 'sound');
     if (undefined !== value && '' != value)
     {
         if (!pushover.isValidSoundName(value))
@@ -112,7 +105,7 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
     // in keys
     let keys = ['timestamp'];
     _.forEach(keys, function(key){
-        value = requestHelper.getParam(req, key);
+        value = RequestHelper.getParam(req, key);
         if (undefined !== value && '' != value)
         {
             let v = parseInt(value);
@@ -127,7 +120,7 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
     // string keys
     keys = ['title', 'device', 'url'];
     _.forEach(keys, function(key){
-        value = requestHelper.getParam(req, key);
+        value = RequestHelper.getParam(req, key);
         if (undefined !== value && '' != value)
         {
             opt[key] = value;
@@ -136,7 +129,7 @@ app.post('/pushover/notify', bodyParser, (req, res) => {
     // urlTitle
     if (undefined !== opt.url)
     {
-        value = requestHelper.getParam(req, 'urlTitle');
+        value = RequestHelper.getParam(req, 'urlTitle');
         if (undefined !== value && '' != value)
         {
             opt.urlTitle = value;

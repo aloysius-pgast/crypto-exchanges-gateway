@@ -327,7 +327,7 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'}
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -342,12 +342,12 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
         p = exchange.openOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getOpenOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });
@@ -570,7 +570,7 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
     let opt = {outputFormat:'custom'};
     if (undefined === req.params.orderNumber || '' == req.params.orderNumber)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrder', false);
         res.status(400).send({origin:"gateway",error:"Missing url parameter 'orderNumber'"});
         return;
     }
@@ -589,12 +589,12 @@ app.get(`/exchanges/${exchangeId}/closedOrders/:orderNumber`, (req, res) => {
         p = exchange.closedOrders(opt);
     }
     p.then(function(data) {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', true);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrder', true);
         res.send(data);
     })
     .catch(function(ex)
     {
-        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrders', false);
+        statistics.increaseExchangeStatistic(demoMode ? 'fake' : exchangeId, 'getClosedOrder', false);
         res.status(503).send({origin:"remote",error:ex.message});
     });
 });

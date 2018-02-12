@@ -305,37 +305,37 @@ pairs(opt)
     }
     let self = this;
     return this._limiterGlobal.schedule(function(){
-        let p = self._restClient.allBookTickers();
+        let p = self._restClient.exchangeInfo();
         return new Promise((resolve, reject) => {
             p.then(function(data){
-                let list = {}
-                _.forEach(data, function (entry) {
-                    // based on discussion with Binance support, currency with a price of 0 are not trading
-                    if (0 == entry.askPrice && 0 == entry.bidPrice)
+                let list = {};
+                // count active pairs
+                let activePairs = 0;
+                _.forEach(data.symbols, function (entry) {
+                    // ignore if status != 'TRADING'
+                    if ('TRADING' != entry.status)
                     {
                         return;
                     }
-                    let baseCurrency = entry.symbol.substr(-3);
+                    // ignore dummy entry
+                    if ('123456' == entry.symbol)
+                    {
+                        return;
+                    }
+                    ++activePairs;
+                    let baseCurrency = entry.quoteAsset;
                     switch (baseCurrency)
                     {
-                        // only keep BTC, ETH & USD as base currency
+                        // only keep BTC, ETH, USD & BNC as base currency
                         case 'BTC':
                         case 'ETH':
-                        case 'SDT':
+                        case 'USDT':
+                        case 'BNB':
                             break;
                         default:
                             return;
                     }
-                    let currency;
-                    if ('SDT' == baseCurrency)
-                    {
-                        baseCurrency = 'USDT';
-                        currency = entry.symbol.substr(0, entry.symbol.length - 4);
-                    }
-                    else
-                    {
-                        currency = entry.symbol.substr(0, entry.symbol.length - 3);
-                    }
+                    let currency = entry.baseAsset;
                     let pair = baseCurrency + '-' + currency;
                     if (undefined !== opt.pair)
                     {
@@ -361,17 +361,60 @@ pairs(opt)
                             return;
                         }
                     }
-                    list[pair] = {
+                    let filters = {};
+                    for (var i = 0; i < entry.filters.length; ++i)
+                    {
+                        filters[entry.filters[i].filterType] = entry.filters[i];
+                    }
+                    // add precision & limits
+                    let obj = {
                         pair:pair,
                         baseCurrency: baseCurrency,
-                        currency: currency
+                        currency: currency,
+                        limits:{
+                            rate:{
+                               min:parseFloat(filters['PRICE_FILTER'].minPrice),
+                               max:parseFloat(filters['PRICE_FILTER'].maxPrice),
+                               step:parseFloat(filters['PRICE_FILTER'].tickSize),
+                               precision:self._stepToPrecision(filters['PRICE_FILTER'].tickSize)
+                            },
+                            quantity:{
+                                min:parseFloat(filters['LOT_SIZE'].minQty),
+                                max:parseFloat(filters['LOT_SIZE'].maxQty),
+                                step:parseFloat(filters['LOT_SIZE'].stepSize),
+                                precision:self._stepToPrecision(filters['LOT_SIZE'].stepSize)
+                            },
+                            price:{
+                                min:parseFloat(filters['MIN_NOTIONAL'].minNotional),
+                                max:null
+                            }
+                        }
                     }
+                    list[pair] = obj;
                 });
-                if (updateCache)
+                // something must be wrong on exchange
+                if (0 == data.symbols.length)
                 {
-                    self._cachedPairs.cache = list;
-                    self._cachedPairs.lastTimestamp = timestamp;
-                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                    logger.warn("Received no pair from '%s' : something must be wrong with exchange", self._id);
+                }
+                else
+                {
+                    // no active pair
+                    if (0 == activePairs)
+                    {
+                        console.log(JSON.stringify(data.symbols));
+                        logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", data.symbols.length, self._id);
+                    }
+                    else
+                    {
+                        // only update cache if we have trading pairs
+                        if (updateCache)
+                        {
+                            self._cachedPairs.cache = list;
+                            self._cachedPairs.lastTimestamp = timestamp;
+                            self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                        }
+                    }
                 }
                 resolve(list);
             }).catch(function(err){
@@ -642,7 +685,8 @@ pairs(opt)
                     let rate = parseFloat(entry.p);
                     let price = parseFloat(new Big(quantity).times(rate));
                     let orderType = 'sell';
-                    if (entry.m)
+                    // seems to be reversed and when 'm' is true, entry is displayed in RED on Binance website
+                    if (false === entry.m)
                     {
                         orderType = 'buy';
                     }

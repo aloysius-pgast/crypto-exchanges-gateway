@@ -23,7 +23,7 @@ Uses CoinMarketCap _ticker_ API
 
 |limit
 |integer
-|
+|100
 |Only returns the top _limit_ results
 
 |symbols

@@ -209,7 +209,9 @@ pairs(opt)
         let p = self._client.returnTicker();
         return new Promise((resolve, reject) => {
             p.then(function(data){
-                let list = {}
+                let list = {};
+                // same limits for all pairs
+                let limits = self._getDefaultLimits();
                 _.forEach(data, function (value, key) {
                     let arr = key.split('_');
                     let pair = arr[0] + '-' + arr[1];
@@ -240,7 +242,8 @@ pairs(opt)
                     list[pair] = {
                         pair:pair,
                         baseCurrency: arr[0],
-                        currency: arr[1]
+                        currency: arr[1],
+                        limits:limits
                     }
                     if (includePairId)
                     {

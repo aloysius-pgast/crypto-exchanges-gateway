@@ -77,6 +77,7 @@ Following API are currently supported :
 * List open orders
 * List closed orders
 * Retrieve balances
+* Retrieve portfolio across all exchanges with estimated value in USD
 
 See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
 
@@ -85,6 +86,7 @@ See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of t
 ## Limitations
 
 * Margin trading is not supported (and is unlikely to be)
+* Withdrawal is not supported (and is unlikely to be)
 * _Stop loss_ & _trailing stop loss_ are not supported for the moment (although you can expect support in the future !)
 
 ## Other services
@@ -269,7 +271,7 @@ This project was made possible thanks to following projects :
 * [body-parser](https://www.npmjs.com/package/body-parser)
 * [lodash](https://www.npmjs.com/package/lodash)
 * [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
-* [binance](https://github.com/aloysius-pgast/binance)
+* [binance](https://www.npmjs.com/package/binance)
 * [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
 * [winston](https://www.npmjs.com/package/winston) (for logging)

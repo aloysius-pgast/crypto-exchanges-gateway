@@ -1,5 +1,16 @@
 # Change Log
 
+## [v1.5.0]
+### Gateway
+* New route _/portfolio_ to retrieve portfolio across all exchanges
+* Use _Binance_ WS to provide real-time tickers instead of REST API
+* _BNB_ pairs were not returned by _/pairs_ route on _Binance_
+* Provide informations regarding limits for _rate_, _quantity_ & _price_ in _/pairs_ route
+### UI
+* Display portfolio (table + chart)
+* Display informations regarding limits for _rate_, _quantity_ & _price_ in _newOrder_ view and try to ensure we only submit order if all limits are respected
+* Possibility to choose a % of balance when placing orders
+
 ## [v1.4.0]
 ### Gateway
 * Support for Klines (chart data) on Binance exchange (REST + WS)

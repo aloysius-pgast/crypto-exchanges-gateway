@@ -1,6 +1,6 @@
 {
   "name": "crypto-exchanges-gateway",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "Your gateway to the crypto world",
   "main": "gateway.js",
   "scripts": {},
@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "big.js": "^5.0.3",
-    "binance": "https://github.com/aloysius-pgast/binance#master",
+    "binance": "^1.3.3",
     "bittrex-signalr-client": "https://github.com/aloysius-pgast/bittrex-signalr-client#master",
     "body-parser": "^1.17.2",
     "bottleneck": "^1.16.0",

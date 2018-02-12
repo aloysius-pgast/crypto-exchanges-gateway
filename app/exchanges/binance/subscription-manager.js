@@ -19,6 +19,7 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 constructor(exchange)
 {
     super(exchange, {globalTickersSubscription:false, marketsSubscription:false});
+    // 2018-01-23 : not used anymore
     this._tickerLoops = {}
     // Binance WS only provides access to oder books update through WS, we need to use REST API to retrieve full order book
     this._waitingForFullOrderBooks = {};
@@ -27,7 +28,8 @@ constructor(exchange)
     this._clients = {
         orderBooks:{},
         trades:{},
-        klines:{}
+        klines:{},
+        tickers:{}
     }
 }
 
@@ -115,6 +117,7 @@ _waitingForFullOrderBook(pair, updateCseq)
 }
 
 //-- we use a timer to retrieve tickers since we don't have all data available from WS
+// 2018-01-23 : not used anymore
 _registerTickerLoop(pair)
 {
     // initialize loop information
@@ -161,6 +164,7 @@ _registerTickerLoop(pair)
     getTicker();
 }
 
+// 2018-01-23 : not used anymore
 _unregisterTickerLoop(pair)
 {
     // loop is already disabled
@@ -237,6 +241,63 @@ _unregisterOrderBookClient(pair)
     }
     this._unregisterConnection(`orderBook-${pair}`);
     this._clients.orderBooks[pair].disconnect();
+}
+
+/**
+ * @return {boolean} true if client was already connected, false otherwise
+ */
+_registerTickerClient(pair)
+{
+    let client = this._clients.tickers[pair];
+    if (undefined !== client)
+    {
+        if (!client.isConnected())
+        {
+            client.connect();
+            return false;
+        }
+        return true;
+    }
+    let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
+    let uri = BASE_WS_URI + `/${p}@ticker`;
+    let self = this;
+    client = new StreamClientClass(this._exchangeId, uri);
+    let descriptor = {entity:'ticker',pair:pair,client:client}
+    client.on('connected', function(){
+        self._registerConnection(`ticker-${pair}`, {uri:uri});
+        self._processSubscriptions.call(self, descriptor);
+    });
+    client.on('disconnected', function(){
+        self._unregisterConnection(`ticker-${pair}`);
+        // nothing to do, reconnection will be automatic
+    });
+    // no more retry left, we need to reconnect
+    client.on('terminated', function(){
+        self._unregisterConnection(`ticker-${pair}`);
+        client.reconnect(false);
+    });
+    client.on('ticker', function(evt){
+        // ignore if we don't support this pair
+        if (undefined === self._subscriptions.tickers.pairs[evt.pair])
+        {
+            return;
+        }
+        evt.exchange = self._exchangeId;
+        self.emit('ticker', evt);
+    });
+    this._clients.tickers[pair] = client;
+    client.connect();
+    return false;
+}
+
+_unregisterTickerClient(pair)
+{
+    if (undefined === this._clients.tickers[pair])
+    {
+        return;
+    }
+    this._unregisterConnection(`ticker-${pair}`);
+    this._clients.tickers[pair].disconnect();
 }
 
 _registerTradesClient(pair)
@@ -372,7 +433,7 @@ _processChanges(changes, opt)
             switch (entry.entity)
             {
                 case 'ticker':
-                    this._unregisterTickerLoop(entry.pair);
+                    this._unregisterTickerClient(entry.pair);
                     break;
                 case 'orderBook':
                     this._unregisterOrderBookClient(entry.pair);
@@ -408,7 +469,7 @@ _processChanges(changes, opt)
                 switch (entry.entity)
                 {
                     case 'ticker':
-                        this._registerTickerLoop(entry.pair);
+                        this._registerTickerClient(entry.pair);
                         break;
                     case 'orderBook':
                         this._registerOrderBookClient(entry.pair);

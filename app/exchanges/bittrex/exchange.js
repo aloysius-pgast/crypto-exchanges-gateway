@@ -188,15 +188,22 @@ pairs(opt)
     // we're using low intensity limiter but there is no official answer on this
     return this._limiterLowIntensity.schedule(function(){
         return new Promise((resolve, reject) => {
-            self._client.getmarketsummaries((response, error) => {
+            self._client.getmarkets((response, error) => {
                 if (null !== error)
                 {
                     reject(error.message);
                     return;
                 }
-                let list = {}
+                let list = {};
+                // count active pairs
+                let activePairs = 0;
                 _.forEach(response.result, function (entry) {
-                    let arr = entry.MarketName.split('-');
+                    // ignore if inactive
+                    if (!entry.IsActive)
+                    {
+                        return;
+                    }
+                    ++activePairs;
                     if (undefined !== opt.pair)
                     {
                         // ignore this pair
@@ -208,7 +215,7 @@ pairs(opt)
                     else if (undefined !== opt.currency)
                     {
                         // ignore this pair
-                        if (opt.currency != arr[1])
+                        if (opt.currency != entry.MarketCurrency)
                         {
                             return;
                         }
@@ -216,22 +223,57 @@ pairs(opt)
                     else if (undefined !== opt.baseCurrency)
                     {
                         // ignore this pair
-                        if (opt.baseCurrency != arr[0])
+                        if (opt.baseCurrency != entry.BaseCurrency)
                         {
                             return;
                         }
                     }
                     list[entry.MarketName] = {
                         pair:entry.MarketName,
-                        baseCurrency: arr[0],
-                        currency: arr[1]
+                        baseCurrency: entry.BaseCurrency,
+                        currency: entry.MarketCurrency,
+                        limits:{
+                            rate:{
+                               min:0.00000001,
+                               max:null,
+                               step:0.00000001,
+                               precision:8
+                            },
+                            quantity:{
+                                min:parseFloat(entry.MinTradeSize),
+                                max:null,
+                                step:0.00000001,
+                                precision:8
+                            },
+                            price:{
+                                min:0.00000001,
+                                max:null
+                            }
+                        }
                     }
                 });
-                if (updateCache)
+                // something must be wrong on exchange
+                if (0 == response.result)
                 {
-                    self._cachedPairs.cache = list;
-                    self._cachedPairs.lastTimestamp = timestamp;
-                    self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                    logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self._id);
+                }
+                else
+                {
+                    // no active pair
+                    if (0 == activePairs)
+                    {
+                        logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", response.result.length, self._id);
+                    }
+                    else
+                    {
+                        // only update cache if we have trading pairs
+                        if (updateCache)
+                        {
+                            self._cachedPairs.cache = list;
+                            self._cachedPairs.lastTimestamp = timestamp;
+                            self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
+                        }
+                    }
                 }
                 resolve(list);
             });
