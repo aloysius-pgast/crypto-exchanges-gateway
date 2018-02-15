@@ -121,7 +121,7 @@ tickers(opt)
                         return;
                     }
                     let data = {
-                        'id':entry.body,
+                        'id':entry.id,
                         'name':entry.name,
                         'symbol':entry.symbol,
                         'rank':parseInt(entry.rank),
