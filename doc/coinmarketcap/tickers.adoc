@@ -101,10 +101,6 @@ Result will be an array of entries such as below
 |float
 |Price change during last 7 days (in %)
 
-|percent_change_7d
-|float
-|Price change during last 7 days (in %)
-
 |last_updated
 |integer
 |Unix timestamp of last update
