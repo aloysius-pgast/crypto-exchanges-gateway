@@ -7,7 +7,7 @@ const serviceRegistry = require('../../service-registry');
 const PromiseHelper = require('../../promise-helper');
 const FakeExchangeClass = require('../../fake-exchange');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 let exchanges = {};
 _.forEach(serviceRegistry.getExchanges(), (obj, id) => {

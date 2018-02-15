@@ -4,7 +4,7 @@ const _ = require('lodash');
 const RequestHelper = require('../request-helper');
 const serviceRegistry = require('../service-registry');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 if (!config.pushover.enabled)
 {
@@ -32,7 +32,7 @@ serviceRegistry.registerService('pushover', 'Push Over', pushover, {});
  * @param {integer} opt.retry  keep notifying user every X seconds until acknowledged (optional, min = 30) (ignored if 'priority' != 'emergency')
  * @param {integer} opt.expire specifies how many seconds notification will continue to be retried for (every retry seconds). If the notification has not been acknowledged in expire seconds, it will be marked as expired and will stop being sent to the user (optional, max = 10800) (ignored if 'priority' != 'emergency')
  */
-app.post('/pushover/notify', bodyParser, (req, res) => {
+app.post('/pushover/notify', bodyParsers.urlEncoded, (req, res) => {
     let opt = {format:'html'};
     let value = RequestHelper.getParam(req, 'message');
     if (undefined === value || '' === value)

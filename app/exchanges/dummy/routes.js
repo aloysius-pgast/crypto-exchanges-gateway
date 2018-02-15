@@ -10,7 +10,7 @@ const statistics = require('../../statistics');
  Dummy exchange is a paper exchange I use for development & troubleshooting purpose
  */
 
-module.exports = function(app, bodyParser, config, exchangeId) {
+module.exports = function(app, bodyParsers, config, exchangeId) {
 
 const exchangeName = config.exchanges[exchangeId].name;
 const ExchangeClass = require('./exchange');
@@ -319,7 +319,7 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
  * @param {float} targetRate rate to use for order
  * @param {float} quantity quantity to buy/sell
  */
-app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
+app.post(`/exchanges/${exchangeId}/openOrders`, bodyParsers.urlEncoded, (req, res) => {
     let opt = {}
     let value;
     //-- order type

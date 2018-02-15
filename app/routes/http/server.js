@@ -6,7 +6,7 @@ const requestHelper = require('../../request-helper');
 const serviceRegistry = require('../../service-registry');
 const statistics = require('../../statistics');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 const startTime = parseInt(new Date().getTime() / 1000.0);
 
@@ -67,7 +67,7 @@ app.get('/server/statistics', (req, res) => {
 /**
  * Update logLevel
  */
-app.post('/server/logLevel', bodyParser, (req, res) => {
+app.post('/server/logLevel', bodyParsers.urlEncoded, (req, res) => {
     let value = requestHelper.getParam(req, 'value');
     if (undefined === value || '' == value)
     {

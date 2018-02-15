@@ -7,7 +7,7 @@ const serviceRegistry = require('../../service-registry');
 const statistics = require('../../statistics');
 const FakeExchangeClass = require('../../fake-exchange');
 
-module.exports = function(app, bodyParser, config, exchangeId) {
+module.exports = function(app, bodyParsers, config, exchangeId) {
 
 if (!config.exchanges[exchangeId].enabled)
 {
@@ -347,7 +347,7 @@ app.get(`/exchanges/${exchangeId}/openOrders/:orderNumber`, (req, res) => {
  * @param {float} targetRate rate to use for order
  * @param {float} quantity quantity to buy/sell
  */
-app.post(`/exchanges/${exchangeId}/openOrders`, bodyParser, (req, res) => {
+app.post(`/exchanges/${exchangeId}/openOrders`, bodyParsers.urlEncoded, (req, res) => {
     let opt = {outputFormat:'custom'}
     let value = RequestHelper.getParam(req, 'outputFormat');
     if ('exchange' == value)

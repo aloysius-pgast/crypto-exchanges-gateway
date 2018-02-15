@@ -4,7 +4,7 @@ const _ = require('lodash');
 const requestHelper = require('../request-helper');
 const serviceRegistry = require('../service-registry');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 if (!config.coinmarketcap.enabled)
 {

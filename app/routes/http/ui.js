@@ -7,7 +7,7 @@ const express = require('express');
 /**
  * UI routes
  */
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 if (!config.ui.enabled)
 {

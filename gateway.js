@@ -279,7 +279,10 @@ if (config.listen.ssl || config.listenWs.ssl)
 
 //-- HTTP server
 let startHttp = function(){
-    const bParser = bodyParser.urlencoded({ extended: false })
+    const bodyParsers = {
+        urlEncoded:bodyParser.urlencoded({ extended: false }),
+        json:bodyParser.json()
+    };
     const app = express();
     let server;
     if (config.listen.ssl)
@@ -313,7 +316,7 @@ let startHttp = function(){
     }
 
     // load routes
-    require('./app/routes/http')(app, bParser, config);
+    require('./app/routes/http')(app, bodyParsers, config);
 
     // start server
     let ipaddr = '0.0.0.0';

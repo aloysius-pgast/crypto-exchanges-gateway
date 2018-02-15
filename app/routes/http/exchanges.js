@@ -6,7 +6,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const pairFinder = require('../../pair-finder');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 let enabledExchanges = [];
 
@@ -24,7 +24,7 @@ _.forEach(config.exchanges, function (entry, exchangeId) {
     }
     enabledExchanges.push(exchangeId);
     // load exchange routes
-    require(file)(app, bodyParser, config, exchangeId);
+    require(file)(app, bodyParsers, config, exchangeId);
 });
 
 /**

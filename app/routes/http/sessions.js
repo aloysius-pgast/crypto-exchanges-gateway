@@ -4,7 +4,7 @@ const RequestHelper = require('../../request-helper');
 const serviceRegistry = require('../../service-registry');
 const sessionRegistry = require('../../session-registry');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 /**
  * Ensures exchange and requested pair exist
@@ -138,7 +138,7 @@ app.get('/sessions/:sid', (req, res) => {
  * @param {boolean} expires whether or not session will expire after all client connections have been closed (optional, default = false)
  * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if expires is false)
  */
-app.post(`/sessions/:sid`, bodyParser, (req, res) => {
+app.post(`/sessions/:sid`, bodyParsers.urlEncoded, (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     let opt = {expires:false};
     let value = RequestHelper.getParam(req, 'expires');
@@ -207,7 +207,7 @@ app.post(`/sessions/:sid`, bodyParser, (req, res) => {
  * @param {boolean} expires whether or not session will expire after all client connections have been closed
  * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if expires is false)
  */
-app.patch(`/sessions/:sid/expiry`, bodyParser, (req, res) => {
+app.patch(`/sessions/:sid/expiry`, bodyParsers.urlEncoded, (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)

@@ -34,6 +34,12 @@ app.use(function (err, req, res, next) {
     {
         logger.error(err);
     }
+    // probably a JSON parse error
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err)
+    {
+        res.status(400).send({origin:"gateway",error:'Invalid JSON body'});
+        return;
+    }
     // nothing more to do if we're dealing with a WS
     if (isWs)
     {
