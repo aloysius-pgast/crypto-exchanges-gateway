@@ -61,6 +61,8 @@ _registerClient(connect)
         {
             return;
         }
+        // used to round value
+        evt.data.priceChangePercent = parseFloat(evt.data.priceChangePercent.toFixed(3));
         evt.exchange = self._exchangeId;
         self.emit('ticker', evt);
     });
