@@ -403,7 +403,6 @@ pairs(opt)
                     // no active pair
                     if (0 == activePairs)
                     {
-                        console.log(JSON.stringify(data.symbols));
                         logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", data.symbols.length, self._id);
                     }
                     else
