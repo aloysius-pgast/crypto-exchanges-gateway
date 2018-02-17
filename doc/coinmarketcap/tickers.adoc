@@ -85,9 +85,13 @@ Result will be an array of entries such as below
 |float
 |_USD_ market cap
 
+|total_supply
+|float
+|The total number of coins in existence
+
 |available_supply
 |float
-|Available supply
+|The number of coins in existence available to the public
 
 |percent_change_1h
 |float

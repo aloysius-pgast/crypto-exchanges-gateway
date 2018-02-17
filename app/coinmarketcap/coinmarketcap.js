@@ -1,5 +1,4 @@
 "use strict";
-
 const Bottleneck = require('bottleneck');
 const request = require('request');
 const util = require('util');
