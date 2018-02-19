@@ -32,6 +32,8 @@ isPrioritySupported(priority)
 * @param {string} opt.message message to send
 * @param {string} opt.format message format html|text
 * @param {string} opt.title notification title (optional)
+* @param {string} opt.url a supplementary URL to show with your message (optional)
+* @param {string} opt.urlTitle title for your supplementary URL, otherwise just the URL is shown (optional, will be ignored if 'url' is not set)
 * @param {string} opt.sound sound which will be played upon receiving notification (optional)
 * @param {string} opt.device used to send notification to a single device
 * @param {string} opt.priority message priority (lowest, low, normal, high, emergency)
