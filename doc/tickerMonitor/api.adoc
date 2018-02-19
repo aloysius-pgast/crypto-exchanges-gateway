@@ -223,8 +223,8 @@ Example for *GET* _/tickerMonitor/0_
 [source,json]
 ----
 {
-	"origin": "gateway",
-	"error": "No entry with id '0'"
+    "origin": "gateway",
+    "error": "No entry with id '0'"
 }
 ----
 
@@ -517,8 +517,8 @@ Example for *PATCH* _/tickerMonitor/0_
 [source,json]
 ----
 {
-	"origin": "gateway",
-	"error": "No entry with id '0'"
+    "origin": "gateway",
+    "error": "No entry with id '0'"
 }
 ----
 

@@ -18,7 +18,7 @@ Yes, gateway provides a WS endpoint
 
 _ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. It is probably something I will try to integrate at some point (to help adding more exchanges). While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
 
-* What is the monthly fee for the service
+* What is the monthly fee for the service ?
 
 There is no monthly fee. It's free since you will be the one running the service on your own server
 
