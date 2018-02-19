@@ -3,6 +3,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const RequestHelper = require('../request-helper');
 const ConditionsParser = require('./conditions-parser');
+const Entry = require('./entry');
 const serviceRegistry = require('../service-registry');
 const monitor = require('./monitor');
 
