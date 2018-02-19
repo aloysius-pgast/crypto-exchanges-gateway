@@ -75,7 +75,7 @@ toArray(opt)
     {
         if (undefined !== this._entries[opt.id])
         {
-            list.push(this._entries[id].toHash(true === opt.forEvent));
+            list.push(this._entries[opt.id].toHash(true === opt.forEvent));
         }
     }
     else
