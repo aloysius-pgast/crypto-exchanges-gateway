@@ -45,6 +45,11 @@ app.use(function (req, res, next) {
             if (config.auth.apiKey.key != key)
             {
                 logger.warn("Unauthorized WS access from %s", req.ip)
+                if (undefined !== req.ws)
+                {
+                    req.ws.close(4401, 'UNAUTHORIZED_ACCESS');
+                    return;
+                }
                 res.status(401).end();
                 return;
             }

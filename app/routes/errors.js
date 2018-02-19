@@ -17,6 +17,11 @@ app.use(function (err, req, res, next) {
         if (isWs)
         {
             logger.warn("Forbidden WS access from %s", req.ip);
+            if (undefined !== req.ws)
+            {
+                req.ws.close(4403, 'FORBIDDEN_ACCESS');
+                return;
+            }
             res.status(403).end();
         }
         else

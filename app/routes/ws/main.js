@@ -35,7 +35,7 @@ const checkExchangeAndPair = (ws, exchangeId, pair, features) => {
     if (null === exchange)
     {
         logger.warn("Exchange '%s' is not supported", exchangeId);
-        ws.terminate();
+        ws.close(4400, 'UNSUPPORTED_EXCHANGE');
         return Promise.resolve(false);
     }
     //-- check requested features
@@ -52,7 +52,7 @@ const checkExchangeAndPair = (ws, exchangeId, pair, features) => {
         // at least one feature is not supported
         if (!result)
         {
-            ws.terminate();
+            ws.close(4400, 'UNSUPPORTED_EXCHANGE');
             return Promise.resolve(false);
         }
     }
@@ -62,7 +62,7 @@ const checkExchangeAndPair = (ws, exchangeId, pair, features) => {
             if (undefined === data[pair])
             {
                 logger.warn("Pair '%s' is not supported by exchange '%s'", pair, exchangeId);
-                ws.terminate();
+                ws.close(4400, 'UNSUPPORTED_PAIR');
                 resolve(false);
             }
             else
@@ -114,7 +114,7 @@ app.ws('/', function(ws, req) {
             else
             {
                 logger.warn("Received invalid boolean value for parameter 'expires' : client = '%s', expires = '%s'", ws._clientIpaddr, req.query.expires);
-                ws.terminate();
+                ws.close(4400, 'INVALID_PARAMETER');
                 return;
             }
             if (opt.expires)
@@ -125,7 +125,7 @@ app.ws('/', function(ws, req) {
                     if (isNaN(opt.timeout) || opt.timeout < 0)
                     {
                         logger.warn("Received invalid integer value for parameter 'timeout' : client = '%s', expires = '%s'", ws._clientIpaddr, req.query.timeout);
-                        ws.terminate();
+                        ws.close(4400, 'INVALID_PARAMETER');
                         return;
                     }
                 }
@@ -253,7 +253,7 @@ app.ws('/exchanges/:exchange/klines/:pair', function(ws, req) {
             if (!exchange.instance.isKlinesIntervalSupported(req.params.interval))
             {
                 logger.warn("Kline interval '%s' is not supported on exchange '%s'", req.params.interval, req.params.exchange);
-                ws.terminate();
+                ws.close(4400, 'INVALID_PARAMETER');
             }
             interval = req.params.interval;
         }

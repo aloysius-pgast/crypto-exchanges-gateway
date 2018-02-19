@@ -20,6 +20,11 @@ app.use(function (req, res) {
     // remove .websocket
     let pathname = u.pathname.replace('.websocket', '');
     logger.warn("Unknown WS route %s", pathname)
+    if (undefined !== req.ws)
+    {
+        req.ws.close(4404, 'UNKNOWN_ROUTE');
+        return;
+    }
     res.status(404).end();
 });
 
