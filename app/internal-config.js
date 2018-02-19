@@ -1,5 +1,4 @@
 "use strict";
-
 class InternalConfig
 {
 

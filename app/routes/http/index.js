@@ -8,6 +8,7 @@ const pushover = require('../../pushover/routes');
 const exchanges = require('./exchanges');
 const sessions = require('./sessions');
 const portfolio = require('./portfolio');
+const tickerMonitor = require('../../tickerMonitor/routes');
 const ui = require('./ui');
 
 module.exports = function(app, bodyParsers, config) {
@@ -21,6 +22,8 @@ module.exports = function(app, bodyParsers, config) {
     server(app, bodyParsers, config);
     // must be loaded after coinmarketcap
     portfolio(app, bodyParsers, config);
+    // must be loaded after pushover
+    tickerMonitor(app, bodyParsers, config);
     _default(app, config);
     errors(app, config);
 };

@@ -21,6 +21,9 @@
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
             "enabled":true,

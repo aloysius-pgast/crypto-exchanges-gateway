@@ -19,6 +19,9 @@
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
             "type":"poloniex",

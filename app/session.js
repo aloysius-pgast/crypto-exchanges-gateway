@@ -10,6 +10,7 @@ const internalConfig = require('./internal-config');
 const serviceRegistry = require('./service-registry');
 const RpcHelper = require('./rpc-helper');
 const storage = require('./storage');
+const tickerMonitor = require('./tickerMonitor/monitor');
 
 // how long should we wait to close the connection if client does not answer to ping
 // connection will be closed if we don't receive pong after timeout
@@ -76,6 +77,15 @@ constructor(sid, isRpc, isNew)
 
     // subscriptions per exchange
     this._exchanges = {}
+
+    // tickerMonitor subscription
+    this._tickerMonitor = {
+        types: {
+            active:false,
+            inactive:false
+        },
+        listener:null
+    }
 }
 
 /**
@@ -501,6 +511,7 @@ _unregisterSocket(ws)
             debug(`Session '${this._sid}' will be destroyed immediately`);
         }
         this._removeListeners();
+        this.unsubscribeFromTickerMonitor();
         this.destroy();
         return;
     }
@@ -1842,6 +1853,77 @@ unsubscribeFromAllKlines(exchangeId)
     let exchange = this._getExchange(exchangeId, true);
     let pairs = Object.keys(exchange.subscriptions.klines.pairs);
     this.unsubscribeFromKlines(exchangeId, pairs);
+}
+
+/**
+ * Subscribe to tickerMonitor events
+ *
+ * @param {object} types {active:boolean,inactive:boolean}
+ * @param {boolean} emit whether or not we should emit an event for each active|inactive entry
+ */
+subscribeToTickerMonitor(types, emit)
+{
+    let m = this._tickerMonitor;
+    m.types.active = types.active;
+    m.types.inactive = types.inactive;
+    let self = this;
+    m.listener = function(evt){
+        switch (evt.status.value)
+        {
+            case 'active':
+                if (!m.types.active)
+                {
+                    return;
+                }
+                break;
+            case 'inactive':
+                if (!m.types.inactive)
+                {
+                    return;
+                }
+                break;
+            default:
+                return;
+        }
+        self._forwardEvent.call(self, 'tickerMonitor', evt);
+    }
+    tickerMonitor.addListener('tickerMonitor', m.listener);
+    // do we need to emit events directly ?
+    if (emit)
+    {
+        let list = tickerMonitor.toArray({forEvent:true});
+        _.forEach(list, (entry) => {
+            switch (entry.status.value)
+            {
+                case 'active':
+                    if (!m.types.active)
+                    {
+                        return;
+                    }
+                    break;
+                case 'inactive':
+                    if (!m.types.inactive)
+                    {
+                        return;
+                    }
+                    break;
+                default:
+                    return;
+            }
+            self._forwardEvent.call(self, 'tickerMonitor', entry);
+        });
+    }
+}
+
+/**
+ * Unsubscribe from tickerMonitor events
+ */
+unsubscribeFromTickerMonitor()
+{
+    if (null !== this._tickerMonitor.listener)
+    {
+        tickerMonitor.removeListener('tickerMonitor', this._tickerMonitor.listener);
+    }
 }
 
 //-- WS message handlers

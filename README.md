@@ -18,6 +18,10 @@ Yes, gateway provides a WS endpoint
 
 _ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. It is probably something I will try to integrate at some point (to help adding more exchanges). While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
 
+* What is the monthly fee for the service
+
+There is no monthly fee. It's free since you will be the one running the service on your own server
+
 * Where is your service hosted ?
 
 This is a self-hosted service. You need to install it on your own server
@@ -34,6 +38,8 @@ Besides the privilege to go to bed, knowing that you did the right thing ? Not m
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
 * Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc))
+* Access to a portfolio portfolio overview across all exchanges with estimated value in USD
+* Advanced alerting system
 
 <img src="doc/ui/img/tickers.png" width="400"/>
 
@@ -77,11 +83,19 @@ Following API are currently supported :
 * List open orders
 * List closed orders
 * Retrieve balances
-* Retrieve portfolio across all exchanges with estimated value in USD
 
 See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
 
 See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the _websocket protocol_ supported (similar to _JSON-RPC_)
+
+## Alerts
+
+Have you ever wanted to receive an alert in case ALL of the following conditions are met :
+* NEO-USDT price in range [120, 135] on Binance
+* NEO-BTC price on Bittrex < 0.010
+* NEO price on CoinMarketCap > 125$
+
+Probably not ;) Anyway, you will now be able to define this kind of custom alerts. See [documentation in _doc_ directory](doc/tickerMonitor/index.adoc)
 
 ## Limitations
 

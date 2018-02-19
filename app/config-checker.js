@@ -44,6 +44,9 @@ constructor(defaultConfig)
         pushover:{
             enabled:false
         },
+        tickerMonitor:{
+            enabled:false
+        },
         exchanges:{}
     }
     if (undefined !== defaultConfig)
@@ -86,6 +89,10 @@ _check()
         valid = false;
     }
     if (!this._checkCoinMarketCap())
+    {
+        valid = false;
+    }
+    if (!this._checkTickerMonitor())
     {
         valid = false;
     }
@@ -145,6 +152,33 @@ _checkCoinMarketCap()
     else
     {
         this._finalConfig.coinmarketcap = checker.getCfg();
+    }
+    return valid;
+}
+
+_checkTickerMonitor()
+{
+    let valid = true;
+    const checkerClass = require('./tickerMonitor/config-checker');
+    let checker = new checkerClass();
+    let config = {};
+    if (undefined !== this._config.tickerMonitor)
+    {
+        config = this._config.tickerMonitor;
+    }
+    if (!checker.check(config))
+    {
+        // mark config as invalid
+        valid = false;
+        let self = this;
+        // copy errors
+        _.forEach(checker.getErrors(), function(err){
+            self._err(err);
+        });
+    }
+    else
+    {
+        this._finalConfig.tickerMonitor = checker.getCfg();
     }
     return valid;
 }

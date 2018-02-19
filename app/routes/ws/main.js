@@ -274,4 +274,64 @@ app.ws('/exchanges/:exchange/klines/:pair', function(ws, req) {
     });
 });
 
+//-- tickerMonitor route
+if (config.tickerMonitor.enabled)
+{
+    app.ws('/tickerMonitor', function(ws, req) {
+        let types = {active:true,inactive:false};
+        // whether or not we should send an event for all active|inactive entries upon connection
+        let emit = false;
+        if (undefined !== req.query)
+        {
+            if (undefined !== req.query.types && '' != req.query.types)
+            {
+                types = {active:false,inactive:false};
+                let value;
+                if (Array.isArray(req.query.types))
+                {
+                    value = req.query.types;
+                }
+                else
+                {
+                    value = req.query.types.split(',');
+                }
+                for (var i = 0; i < value.length; ++i)
+                {
+                    switch (value[i])
+                    {
+                        case 'active':
+                            types.active = true;
+                            break;
+                        case 'inactive':
+                            types.inactive = true;
+                            break;
+                    }
+                }
+            }
+            if ('true' === req.query.emit || '1' === req.query.emit)
+            {
+                emit = true;
+            }
+        }
+        updateWs(ws, req);
+        let u = url.parse(req.url);
+        // remove .websocket
+        let pathname = u.pathname.replace('.websocket', '');
+        let session = sessionRegistry.registerNonRpcSession(ws, pathname);
+        if (null === session)
+        {
+            return;
+        }
+        try
+        {
+            session.subscribeToTickerMonitor(types, emit);
+        }
+        catch (e)
+        {
+            logger.error(e.stack);
+            ws.terminate();
+        }
+    });
+}
+
 };

@@ -8,6 +8,7 @@ const https = require('https');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
 const storage = require('./app/storage');
+const internalConfig = require('./app/internal-config');
 const _ = require('lodash');
 const logger = require('winston');
 
@@ -98,6 +99,12 @@ if (config.coinmarketcap.enabled)
     logger.warn("CoinMarketCap API is enabled");
 }
 
+// add log if TickerMonitor is enabled
+if (config.tickerMonitor.enabled)
+{
+    logger.warn("TickerMonitor is enabled");
+}
+
 //-- update config based on environment (used when using docker container)
 // check env (only if custom config does not exist)
 if (!hasCustomConfig)
@@ -163,6 +170,11 @@ if (config.ui.enabled)
 }
 if (config.ui.enabled)
 {
+    // save UI endpoint in internalConfig (this requires config.listen.externalEndpoint to be defined)
+    if (undefined !== config.listen.externalEndpoint && '' != config.listen.externalEndpoint)
+    {
+        internalConfig.set('uiEndpoint', `${config.listen.externalEndpoint}/ui`);
+    }
     logger.warn("UI is enabled");
 }
 
@@ -397,7 +409,7 @@ process.on('SIGINT', function() {
 //-- check storage
 storage.checkDatabase().then(() => {
     // load data from storage
-    storage.loadData().then(() => {
+    storage.loadData(config).then(() => {
         logger.info("Data loaded successfully");
         //-- start both servers
         startHttp();

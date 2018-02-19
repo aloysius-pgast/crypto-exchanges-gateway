@@ -32,6 +32,9 @@ Below config will only give access to public API (since no key/secret combinatio
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
             "type":"poloniex",
@@ -138,6 +141,12 @@ Access will be restricted using the following :
         "user":"u9jst7bbo57zpty6n6nfa3di67ryzo",
         /* Token provided by PushOver (required if 'enabled' is 'true')
         "token":"azfdkcafb8ynexae7wwdmb4erc71as"
+    },
+    /* Ticker Monitor configuration */
+    "tickerMonitor":{
+        "enabled":true
+        /* How often (in seconds) gateway should check if conditions are met (default = 30)*/
+        "delay":30
     },
     /* exchanges configuration */
     "exchanges":{

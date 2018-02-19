@@ -67,6 +67,50 @@ Example to listen to _USDT-NEO_ trades notifications on _bittrex_ exchange
 wscat --connect '127.0.0.1:8001/exchanges/binance/klines/USDT-NEO?interval=5m'
 ----
 
+=== TickerMonitor endpoint
+
+[NOTE]
+====
+This endpoint will only be available it _tickerMonitor_ is _enabled_ in config
+====
+
+_ws://{ipaddr}:{port}/tickerMonitor?types=string&emit=boolean_
+
+This type of endpoint can be used to listen to _tickerMonitor_ event
+
+**Optional query parameters**
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Default
+|Description
+
+|types
+|string
+|active
+|Comma-separated string of types (_active_,_inactive_).
+
+* If _active_ is set, an event will be emitted whenever an entry becomes _active_
+* If _inactive_ is set, an event will be emitted whenever an entry becomes _inactive_
+
+|emit
+|boolean
+|false
+|When _true_ an event will be emitted for each _active_ and/or _inactive_ (depending on _types_ parameter) entry upon connection
+
+|===
+
+.Examples
+
+Example to receive a _tickerMonitor_ event everytime a _TickerMonitor_ entry becomes _active_
+
+[source,bash]
+----
+wscat --connect '127.0.0.1:8001/tickerMonitor?types=active
+----
+
 == RPC endpoint
 
 _ws://{ipaddr}:{port}_
