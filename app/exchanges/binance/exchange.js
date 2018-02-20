@@ -34,15 +34,15 @@ constructor(exchangeId, exchangeName, config)
 {
     super(exchangeId, exchangeType, exchangeName);
     let opt = {
-        key:config.exchanges.binance.key,
-        secret:config.exchanges.binance.secret,
-        recvWindow:config.exchanges.binance.recvWindow,
+        key:config.exchanges[exchangeId].key,
+        secret:config.exchanges[exchangeId].secret,
+        recvWindow:config.exchanges[exchangeId].recvWindow,
         timeout:15000,
         disableBeautification:true
     };
     this._restClient = new Api.BinanceRest(opt);
-    let wait = parseInt(1000 / config.exchanges.binance.throttle.global.maxRequestsPerSecond);
-    this._limiterGlobal = new Bottleneck(config.exchanges.binance.throttle.global.maxRequestsPerSecond, wait);
+    let wait = parseInt(1000 / config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
+    this._limiterGlobal = new Bottleneck(config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond, wait);
     // how many cached orders should we keep ?
     this._cachedOrdersMaxSize = 500;
     // list of order number => {pair:"X-Y", state:"open|closed", timestamp:int}

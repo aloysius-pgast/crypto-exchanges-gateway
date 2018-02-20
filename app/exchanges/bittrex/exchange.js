@@ -22,16 +22,16 @@ class Exchange extends AbstractExchangeClass
  {
     super(exchangeId, exchangeType, exchangeName);
     let opt = {
-        apikey:config.exchanges.bittrex.key,
-        apisecret:config.exchanges.bittrex.secret,
+        apikey:config.exchanges[exchangeId].key,
+        apisecret:config.exchanges[exchangeId].secret,
         verbose:false,
         stream:false,
         cleartext:false
     };
     this._client = createApiInstance(opt);
-    this._limiterLowIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.lowIntensity.minPeriod * 1000);
-    this._limiterMediumIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.mediumIntensity.minPeriod * 1000);
-    this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);
+    this._limiterLowIntensity = new Bottleneck(1, config.exchanges[exchangeId].throttle.lowIntensity.minPeriod * 1000);
+    this._limiterMediumIntensity = new Bottleneck(1, config.exchanges[exchangeId].throttle.mediumIntensity.minPeriod * 1000);
+    this._limiterHighIntensity = new Bottleneck(1, config.exchanges[exchangeId].throttle.highIntensity.minPeriod * 1000);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
     this._timeOffset = new Date().getTimezoneOffset() * -60;
