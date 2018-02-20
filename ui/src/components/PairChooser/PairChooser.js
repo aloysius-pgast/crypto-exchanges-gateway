@@ -136,8 +136,9 @@ _handleSelectFilteredPair(event)
     let arr = pair.split('-');
     let market = arr[0];
     let marketPairs = this._getMarketPairs(this.state.pairs, market);
+    let starred = starredPairs.isStarred(this.props.exchange, pair);
     this.setState((prevState, props) => {
-        return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[]};
+        return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[],starred:starred};
     }, function(){
         // update datastore
         dataStore.setExchangeData(this.props.exchange, 'pair', pair);
@@ -156,8 +157,13 @@ _handleSelectPair(event)
     {
         pair = null;
     }
+    let starred = false;
+    if (null !== pair)
+    {
+        starred = starredPairs.isStarred(this.props.exchange, pair);
+    }
     this.setState((prevState, props) => {
-        return {pair:pair};
+        return {pair:pair,starred:starred};
     }, function(){
         // update datastore
         dataStore.setExchangeData(this.props.exchange, 'pair', pair);

@@ -54,7 +54,7 @@ render()
             <thead className="thead-inverse">
               <tr>
                 <th style={{width:'10%'}}>CURRENCY</th>
-                <th className="text-right">PRICE</th>
+                <th className="text-right">VALUE</th>
                 <th className="text-right">PERCENT</th>
                 <th className="text-right">VOLUME</th>
               </tr>
@@ -67,7 +67,7 @@ render()
                   if (item.unknownPrice)
                   {
                       stylePrice={color:'#e64400'};
-                      titlePrice = 'Price is unknown';
+                      titlePrice = 'Value is unknown';
                   }
                   return <tr key={index}>
                       <td>{item.currency}</td>
