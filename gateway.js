@@ -99,12 +99,6 @@ if (config.coinmarketcap.enabled)
     logger.warn("CoinMarketCap API is enabled");
 }
 
-// add log if TickerMonitor is enabled
-if (config.tickerMonitor.enabled)
-{
-    logger.warn("TickerMonitor is enabled");
-}
-
 //-- update config based on environment (used when using docker container)
 // check env (only if custom config does not exist)
 if (!hasCustomConfig)
@@ -195,6 +189,29 @@ if (!hasCustomConfig)
 if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushover.token)
 {
     logger.warn("PushOver API is enabled");
+}
+
+//-- check tickerMonitor config
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    let enableTickerMonitor = process.env['cfg.tickerMonitor.enabled'];
+    if (undefined !== enableTickerMonitor && '' !== enableTickerMonitor)
+    {
+        if (true === enableTickerMonitor || '1' == enableTickerMonitor)
+        {
+            config.tickerMonitor.enabled = true;
+        }
+        else if (false === enableTickerMonitor || '0' == enableTickerMonitor)
+        {
+            config.tickerMonitor.enabled = false;
+        }
+    }
+}
+// add log if TickerMonitor is enabled
+if (config.tickerMonitor.enabled)
+{
+    logger.warn("TickerMonitor is enabled");
 }
 
 //-- check api key

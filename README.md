@@ -258,6 +258,7 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
+* cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
 * cfg.exchanges.poloniex.key : Poloniex user key
