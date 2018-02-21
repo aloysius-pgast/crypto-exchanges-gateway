@@ -337,10 +337,18 @@ coinMarketCap(limit)
 }
 
 //-- Portfolio
-portfolio()
+/**
+ * Loads portfolio
+ * @param {exchangeId} exchange id, if not null, overall portfolio will be retrieved
+ */
+portfolio(exchangeId)
 {
     let path = '/portfolio';
     let params = {};
+    if (null !== exchangeId)
+    {
+        params.exchanges = exchangeId;
+    }
     let url = this._getUrl(path);
     return this._sendRequest('get', url, params);
 }
