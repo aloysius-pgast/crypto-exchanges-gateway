@@ -4,17 +4,13 @@ import Big from 'big.js';
 import {
   Row,
   Col,
-  Card,
-  CardHeader,
-  CardBlock,
+  Card, CardHeader, CardBlock,
   FormGroup,
   Label,
   Input,
   InputGroup,
-  DropdownMenu,
-  DropdownItem,
-  DropdownToggle,
-  ButtonDropdown
+  DropdownMenu, DropdownItem, DropdownToggle, ButtonDropdown,
+  Modal, ModalHeader, ModalBody, ModalFooter
 } from "reactstrap";
 
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
@@ -801,7 +797,7 @@ _handleConfirmOrder(e)
     this.setState({order:{confirm:false,sending:true,sent:false,orderNumber:null,err:null}}, function(){
         let quantity = parseFloat(this.state.quantity.value);
         let rate = parseFloat(this.state.rate.value);
-        restClient.createOrder(this.props.exchange, this.props.pair, this.props.orderType, quantity, rate).then(function(data){
+        restClient.createOrder(self.props.exchange, self.props.pair, self.props.orderType, quantity, rate).then(function(data){
             self.setState({order:{confirm:false,sending:false,sent:true,orderNumber:data.orderNumber,err:null}});
         }).catch(function(err){
             let error = 'Unknown error';
@@ -873,116 +869,91 @@ render()
         return null
     }
 
-    const SuccessfulOrderBody = () => {
-        return (
-          <Row>
-            <Col>
-              <div className="text-success" style={{marginBottom:'10px'}}>Order successfully created. New order is {this.state.order.orderNumber}</div>
-            </Col>
-          </Row>
-        )
-    }
-
-    const FailedOrderBody = () => {
-        return (
-          <Row>
-            <Col>
-              <div className="text-danger" style={{marginBottom:'10px'}}>Order failed : {this.state.order.err}</div>
-            </Col>
-          </Row>
-        )
-    }
-
-    const OrderResultBody = () => {
-        // an error occurred when sending the order
-        if (null !== this.state.order.err)
+    const ConfirmationForm = () => {
+        if (!this.state.order.confirm && !this.state.order.sending && !this.state.order.sent)
         {
+            return null
+        }
+
+        const Confirm = () => {
+            if (!this.state.order.confirm)
+            {
+                return null
+            }
             return (
-                <FailedOrderBody/>
+                <div>
+                  <ModalBody>
+                    <div style={{marginBottom:'10px'}}>Do you want to {buySellAction} <strong>{this.state.quantity.value} {this.props.currency}</strong> at <strong>{this.state.rate.value} {this.props.baseCurrency}</strong> per unit, for a total of <strong>{this.state.total.value} {this.props.baseCurrency}</strong> ?</div>
+                  </ModalBody>
+                  <ModalFooter>
+                    <button type="button" className="btn btn-secondary" style={{marginRight:'5px'}} onClick={this._handleConfirmOrder}>Y<small>ES</small></button>
+                    <button type="button" className="btn btn-secondary" onClick={this._handleCancelOrder}>N<small>O</small></button>
+                  </ModalFooter>
+                </div>
             )
         }
-        // successful order
-        return <SuccessfulOrderBody/>
-    }
 
-    const OrderResult = () => {
-        return (
-          <form noValidate>
-            <Row>
-              <Col>
-                <Card>
-                  <CardHeader>
-                    <strong>{orderType}</strong>
-                    <small> {this.props.currency}</small>
-                  </CardHeader>
-                  <CardBlock className="card-body">
-                    <OrderResultBody/>
-                    <Row>
-                      <Col>
-                        <div className="float-right">
-                          <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>LOSE</small></button>
-                        </div>
-                      </Col>
-                    </Row>
-                  </CardBlock>
-                </Card>
-              </Col>
-            </Row>
-          </form>
-       )
-    }
+        const Sending = () => {
+            if (!this.state.order.sending)
+            {
+                return null
+            }
+            return (
+                <div>
+                  <ModalBody>
+                    <center><i className="ml-auto mr-auto fa fa-spinner fa-spin" style={{fontSize:'2.0rem'}}/></center>
+                  </ModalBody>
+                  <ModalFooter/>
+                </div>
+            )
+        }
 
-    const ConfirmationForm = () => {
+        const OrderResult = () => {
+            // an error occurred when sending the order
+            if (null !== this.state.order.err)
+            {
+                return (
+                    <div className="text-danger" style={{marginBottom:'10px'}}>Order failed : {this.state.order.err}</div>
+                )
+            }
+            // successful order
+            return (
+                <div className="text-success" style={{marginBottom:'10px'}}>Order successfully created. New order is {this.state.order.orderNumber}</div>
+            )
+        }
+
+        const Sent = () => {
+            if (!this.state.order.sent)
+            {
+                return null
+            }
+            return (
+                <div>
+                  <ModalBody>
+                    <OrderResult/>
+                  </ModalBody>
+                  <ModalFooter>
+                    <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>LOSE</small></button>
+                  </ModalFooter>
+                </div>
+            )
+        }
+
         return (
             <form noValidate>
-                <Row>
-                  <Col>
-                    <Card>
-                      <CardHeader>
-                        <strong>{orderType}</strong>
-                        <small> {this.props.currency}</small>
-                        <div className="float-right"><small>{this._balance.value} {this.props.balanceCurrency} AVAIL</small></div>
-                      </CardHeader>
-                      <CardBlock className="card-body">
-                        <Row>
-                          <Col>
-                              <div style={{marginBottom:'10px'}}>Do you want to {buySellAction} <strong>{this.state.quantity.value} {this.props.currency}</strong> at <strong>{this.state.rate.value} {this.props.baseCurrency}</strong> per unit, for a total of <strong>{this.state.total.value} {this.props.baseCurrency}</strong> ?</div>
-                          </Col>
-                        </Row>
-                        <Row>
-                          <Col>
-                            <div className="float-right">
-                              <button type="button" className="btn btn-secondary" style={{marginRight:'5px'}} onClick={this._handleConfirmOrder}>Y<small>ES</small></button>
-                              <button type="button" className="btn btn-secondary" onClick={this._handleCancelOrder}>N<small>O</small></button>
-                            </div>
-                          </Col>
-                        </Row>
-                      </CardBlock>
-                    </Card>
-                  </Col>
-                </Row>
+              <Modal isOpen={true} fade={this.state.order.confirm}>
+                <CardHeader>
+                  <strong>{orderType}</strong>
+                  <small> {this.props.currency}</small>
+                </CardHeader>
+                <Confirm/>
+                <Sending/>
+                <Sent/>
+              </Modal>
             </form>
         )
     }
 
-    if (this.state.order.confirm)
-    {
-        return (
-            <ConfirmationForm/>
-        )
-    }
-    if (this.state.order.sending)
-    {
-        return (
-            <ComponentLoadingSpinner/>
-        )
-    }
-    if (this.state.order.sent)
-    {
-        return (
-            <OrderResult/>
-        )
-    }
     let balanceClassnames = "float-right";
     if (this._balance.floatValue.eq(0))
     {
@@ -1089,6 +1060,7 @@ render()
         totalInfo = 'AFTER SUBSTRACTING FEES';
     }
     return (
+        <div>
         <form noValidate>
         <Row>
           <Col>
@@ -1192,6 +1164,8 @@ render()
           </Col>
         </Row>
         </form>
+        <ConfirmationForm/>
+        </div>
     )
 }
 

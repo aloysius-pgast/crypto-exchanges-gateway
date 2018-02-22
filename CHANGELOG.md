@@ -4,6 +4,8 @@
 ### Gateway
 * Support for multiple instances of same exchange (might not be supported for all exchanges)
 * Support for alerts based on _price_, _volume_ using _Ticker Monitor_ module...
+### UI
+* Use modal to display confirmation form when creating new orders
 
 ## [v1.5.0]
 ### Gateway
