@@ -152,6 +152,7 @@ constructor(props)
                 }
                 rawTotal.value = this._formatFloat(rawTotal.floatValue);
                 total.value = this._formatFloat(total.floatValue);
+                finalTotal.value = total.value;
                 fees.floatValue = total.floatValue.minus(rawTotal.floatValue);
                 fees.value = this._formatFloat(fees.floatValue);
             }
@@ -186,6 +187,7 @@ constructor(props)
                 rawTotal.value = this._formatFloat(rawTotal.floatValue);
                 fees.value = this._formatFloat(fees.floatValue);
                 total.value = this._formatFloat(total.floatValue);
+                finalTotal.value = total.value;
             }
         }
     }
