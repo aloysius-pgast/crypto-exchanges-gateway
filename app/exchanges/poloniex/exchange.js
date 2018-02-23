@@ -20,7 +20,7 @@ class Exchange extends AbstractExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    super(exchangeId, exchangeName);
+    super(exchangeId, exchangeType, exchangeName, config.exchanges[exchangeId].feesPercent);
     this._client = new Api(config.exchanges[exchangeId].key, config.exchanges[exchangeId].secret);
     let wait = parseInt(1000 / config.exchanges[exchangeId].throttle.publicApi.maxRequestsPerSecond);
     this._limiterPublic = new Bottleneck(config.exchanges[exchangeId].throttle.publicApi.maxRequestsPerSecond, wait);

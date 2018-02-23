@@ -20,7 +20,7 @@ class Exchange extends AbstractExchangeClass
  */
  constructor(exchangeId, exchangeName, config)
  {
-    super(exchangeId, exchangeType, exchangeName);
+    super(exchangeId, exchangeType, exchangeName, config.exchanges[exchangeId].feesPercent);
     let opt = {
         apikey:config.exchanges[exchangeId].key,
         apisecret:config.exchanges[exchangeId].secret,

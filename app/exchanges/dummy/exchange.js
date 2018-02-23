@@ -23,7 +23,7 @@ class Exchange extends AbstractExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    super(exchangeId, exchangeType, exchangeName);
+    super(exchangeId, exchangeType, exchangeName, config.exchanges[exchangeId].feesPercent);
     let baseHttpUri = config.exchanges[exchangeId].baseHttpUri;
     let baseWsUri = config.exchanges[exchangeId].baseWsUri
     this._client = new HttpClient(baseHttpUri);
