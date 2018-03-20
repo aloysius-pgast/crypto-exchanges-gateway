@@ -4,6 +4,7 @@
 ### Gateway
 * Support for multiple instances of same exchange (might not be supported for all exchanges)
 * Support for alerts based on _price_, _volume_ using _Ticker Monitor_ module...
+* Use bittrex-signalr-client v1.0.9 to better bypass CloudFare protection
 ### UI
 * Use modal to display confirmation form when creating new orders
 
