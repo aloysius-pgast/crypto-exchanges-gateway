@@ -38,7 +38,6 @@ _registerClient(connect)
     }
     let self = this;
     let client = new SignalRClient({
-        userAgent:internalConfig.get('userAgent'),
         pingTimeout:internalConfig.get('keepalive').exchanges,
         logger:logger,
         reconnectAfterUnsubscribingFromMarkets:{reconnect:false}
