@@ -3,3 +3,5 @@
 include::currencies.adoc[leveloffset=1]
 
 include::tickers.adoc[leveloffset=1]
+
+include::history.adoc[leveloffset=1]

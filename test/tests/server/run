@@ -1,0 +1,3 @@
+#!/bin/bash
+MY_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+$MY_DIR/../../../node_modules/mocha/bin/mocha --bail --delay --exit "$@"

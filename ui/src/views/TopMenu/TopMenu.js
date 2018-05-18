@@ -86,7 +86,7 @@ _buildExchangeNavList(route, viewNames)
 {
     let navList = [];
     let routes = routeRegistry.getExchangesRoutes(route.exchange)[route.exchange];
-    let routeNames = ['prices','orderBooks','myOrders','newOrder','myBalances'];
+    let routeNames = ['prices','orderBooks','myOrders','allMyOrders','newOrder','myBalances'];
     _.forEach(routeNames, function(name){
         if (route.name == name || undefined === routes[name] || undefined === viewNames[name])
         {
@@ -122,6 +122,7 @@ _updateStateFromRoute(props)
                 'prices':'Prices',
                 'orderBooks':'Order Books',
                 'myOrders':'My Orders',
+                'allMyOrders':'All My Orders',
                 'newOrder':'New Orders',
                 'myBalances':'My Balances'
             }
@@ -138,6 +139,10 @@ _updateStateFromRoute(props)
         else if ('service' == route.type)
         {
             title = serviceRegistry.getServiceName(route.service);
+            if (undefined !== route.name && 'default' !== route.name)
+            {
+                title = route.name;
+            }
         }
         else if (undefined !== route.name)
         {
@@ -153,6 +158,10 @@ _updateStateFromRoute(props)
                 case 'portfolio':
                     title = 'My Portfolio';
                     helpId = 'portfolio';
+                    break;
+                case 'alerts':
+                    title = 'Alerts';
+                    helpId = 'alerts';
                     break;
             }
         }

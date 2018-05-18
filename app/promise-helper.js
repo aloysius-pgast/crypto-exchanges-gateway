@@ -1,5 +1,4 @@
 "use strict";
-const util = require('util');
 const logger = require('winston');
 
 const reflect = (descriptor, opt) => {
@@ -8,7 +7,21 @@ const reflect = (descriptor, opt) => {
     }).catch(function(err){
         if (opt.logError)
         {
-            logger.error('%s => %s', JSON.stringify(descriptor.context), JSON.stringify(err));
+            let message;
+            // not a BaseError
+            if (err instanceof Error && undefined === err.errorType)
+            {
+                message = err.message;
+            }
+            else
+            {
+                message = JSON.stringify(err);
+            }
+            logger.error(`${JSON.stringify(descriptor.context)} => ${message}`);
+            if (undefined !== err && undefined !== err.stack)
+            {
+                logger.error(err.stack);
+            }
         }
         if (!opt.stopOnError)
         {
@@ -23,8 +36,8 @@ class PromiseHelper
 
 /**
  * Each array entry can be either a Promise object or an object {promise:Promise, context:{}} (data will be used when logging errors)
- * opt.logError : log promise error
- * opt.stopOnError : stop after one error (like default Promise.all behaviour)
+ * opt.logError : log promise error (default = true)
+ * opt.stopOnError : stop after one error (like default Promise.all behaviour) (default = false)
  */
 static all(arr, opt)
 {

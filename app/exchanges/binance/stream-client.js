@@ -292,7 +292,7 @@ _processKline(data)
         pair:pair,
         interval:data.k.i,
         data:{
-            timestamp:parseFloat(data.k.t / 1000.0),
+            timestamp:parseInt(data.k.t / 1000.0),
             open:parseFloat(data.k.o),
             close:parseFloat(data.k.c),
             high:parseFloat(data.k.h),

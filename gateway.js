@@ -306,6 +306,9 @@ if (config.listen.ssl || config.listenWs.ssl)
     });
 }
 
+// update default user-agent
+internalConfig.set('userAgent', config.userAgent.value);
+
 //-- HTTP server
 let startHttp = function(){
     const bodyParsers = {

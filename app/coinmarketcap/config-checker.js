@@ -7,13 +7,14 @@ class ConfigChecker extends AbstractConfigCheckerClass
 {
 
 // how many seconds should we wait between 2 public methods
-static get PUBLIC_API_MIN_REQUEST_PERIOD() { return  6 };
+static get PUBLIC_API_MIN_REQUEST_PERIOD() { return  2 };
 
 constructor()
 {
     // default config
     let cfg = {
         enabled:true,
+        history:true,
         throttle:{
             publicApi:{
                 minPeriod:ConfigChecker.PUBLIC_API_MIN_REQUEST_PERIOD
@@ -44,6 +45,20 @@ _check()
         return true;
     }
     let valid = true;
+
+    //-- is history support enabled ?
+    if (undefined !== this._config.history)
+    {
+        if (!this._isValidBoolean(this._config.history))
+        {
+            this._invalid('history');
+            return false;
+        }
+        else
+        {
+            this._finalConfig.history = this._config.history;
+        }
+    }
 
     //-- update throttle config
     if (undefined !== this._config.throttle)

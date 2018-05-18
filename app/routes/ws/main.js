@@ -58,7 +58,7 @@ const checkExchangeAndPair = (ws, exchangeId, pair, features) => {
     }
     //-- check pair
     return new Promise((resolve, reject) => {
-        exchange.instance.pairs({useCache:true}).then(function(data){
+        exchange.instance.getPairs(true).then(function(data){
             if (undefined === data[pair])
             {
                 logger.warn("Pair '%s' is not supported by exchange '%s'", pair, exchangeId);

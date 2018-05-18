@@ -1,12 +1,24 @@
 # Change Log
 
+*THIS IS AN EXPERIMENTAL BRANCH*
+
 ## [v1.6.0]
 ### Gateway
+* Refactoring of code related to exchanges & services
+* Support for retrieving history from Coin Market Cap (see [here](doc/coinmarketcap) for documentation and changes)
 * Support for multiple instances of same exchange (might not be supported for all exchanges)
-* Support for alerts based on _price_, _volume_ using _Ticker Monitor_ module...
-* Use bittrex-signalr-client v1.0.9 to better bypass CloudFare protection
+* Better error handling (see [here](docs/errors.adoc) for documentation)
+* Indicate _fees_ when listing closed orders
+* Support for klines retrieval on _Binance_, _Bittrex_ and _Poloniex_
+* New route to test order creation and ensure _quantity_, _rate_ & _price_ match exchange filters (ie: min values, precision, step...)
+* New route to retrieve a single order (open or closed using its order number)
+* Support for alerts based on _price_, _volume_ using _Ticker Monitor_ module
+* Unit tests (see [here](doc/unitTests.adoc) for documentation)
 ### UI
 * Use modal to display confirmation form when creating new orders
+* Indicate gateway version in _Home_ view
+* _My Orders_ view will now display orders for a single currency
+* _All My Orders_ view will display orders for all currencies
 
 ## [v1.5.0]
 ### Gateway

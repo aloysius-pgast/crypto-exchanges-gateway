@@ -1,5 +1,14 @@
 = Portfolio
 
+[NOTE]
+====
+Those routes will only be available if :
+
+* at least one exchange has _balances_ feature enabled
+* _coinmarketcap_ service is enabled
+
+====
+
 == Retrieve portfolio across all exchanges
 
 *GET* _/portfolio_

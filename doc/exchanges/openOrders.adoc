@@ -1,0 +1,390 @@
+= Open orders
+
+[NOTE]
+====
+Those routes require the feature _openOrders_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "openOrders":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Retrieve a list of open orders
+
+[NOTE]
+====
+Some exchange require to retrieve _open orders_ for each pair separately. This is indicated in feature _openOrders_
+
+[source,json]
+----
+{
+    "features":{
+        "openOrders":{
+            "enabled":true,
+            "withoutPair":false,
+            "requirePair":false
+        }
+    }
+}
+----
+====
+
+*GET* _/exchanges/{exchangeId}/openOrders_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pairs
+|string (comma-separated)
+|
+|Comma-separated list of pairs to retrieve open orders for (will be needed if _requirePair_ is _true_)
+
+|===
+
+=== Result
+
+Result will be a dictionary using order number as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_orderNumber_
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair (_X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderNumber
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderType
+|string (_buy_,_sell_)
+|Order type
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity to buy/sell
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}remainingQuantity
+|float
+|Remaining quantity to buy/sell
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetRate
+|float
+|Expected per-unit price for the trades
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
+|float
+|Expected total price (_quantity_ * _targetRate_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was open
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/openOrders_
+
+[source,json]
+----
+{
+    "14250e18-ac45-4742-9647-5ee3d5acc6b1":{
+        "pair":"BTC-WAVES",
+        "orderType":"sell",
+        "orderNumber":"14250e18-ac45-4742-9647-5ee3d5acc6b1",
+        "targetRate":0.00248,
+        "quantity":110.80552162,
+        "remainingQuantity":110.80552162,
+        "openTimestamp":1498945578.120,
+        "targetPrice":0.2747976936176
+    },
+    "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
+        "pair":"USDT-NEO",
+        "orderType":"buy",
+        "orderNumber":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
+        "targetRate":12,
+        "quantity":2.33488048,
+        "remainingQuantity":2.33488048,
+        "openTimestamp":1502095438.130,
+        "targetPrice":28.01856576
+    },
+    ...
+}
+----
+
+== Retrieve a single open order
+
+*GET* _/exchanges/{exchangeId}/openOrders/{orderNumber}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{orderNumber}
+|string
+|Unique identifier of the order to retrieve
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string (X-Y)
+|
+|Used to optimize request by indicating the pair used for this order
+
+|===
+
+[NOTE]
+====
+Some exchanges require to retrieve open orders _per pair_. Passing the _pair_ parameter will make request execute faster (will be needed if _requirePair_ is _true_).
+====
+
+=== Result
+
+Result will be a dictionary containing a single entry
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_orderNumber_
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair (_X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderNumber
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderType
+|string (_buy_,_sell_)
+|Order type
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity to buy/sell
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}remainingQuantity
+|float
+|Remaining quantity to buy/sell
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetRate
+|float
+|Expected per-unit price for the trades
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}targetPrice
+|float
+|Expected total price (_quantity_ * _targetRate_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was open
+
+|===
+
+[NOTE]
+====
+In case order does not exists, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/openOrders/d3af561a-c3ac-4452-bf0e-a32854b558e5_
+
+[source,json]
+----
+{
+    "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
+        "pair":"USDT-NEO",
+        "orderType":"buy",
+        "orderNumber":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
+        "targetRate":12,
+        "quantity":2.33488048,
+        "remainingQuantity":2.33488048,
+        "openTimestamp":1502095438.130,
+        "targetPrice":28.01856576
+    }
+}
+----
+
+Example for *GET* _/exchanges/bittrex/openOrders/INVALID_
+
+[source,json]
+----
+{
+}
+----
+
+== Create a new order
+
+*POST* _/exchanges/{exchangeId}/openOrders_
+
+[NOTE]
+====
+Query parameters can be sent in one of the following format :
+
+* directly in the url (as usually done in GET requests)
+* in the body (_application/x-www-form-urlencoded_)
+====
+
+=== Mandatory query parameters
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|pair
+|string
+|Pair (_X-Y_)
+
+|orderType
+|string (_buy_,_sell_)
+|Order type to create
+
+|quantity
+|float
+|Quantity to buy/sell
+
+|targetRate
+|float
+|Expected per-unit price for the trades
+
+|===
+
+=== Result
+
+Result will be as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|orderNumber
+|string
+|Unique identifier of the new order
+
+|===
+
+.Examples
+
+Example for *POST* _/exchanges/bittrex/openOrders?orderType=buy&pair=USDT-ETH&quantity=5&targetRate=220_
+
+[source,json]
+----
+{
+    "orderNumber": "d3af561a-c3ac-4452-be0e-a32854b558e5"
+}
+----
+
+[NOTE]
+====
+Exchanges usually have limitations such as :
+
+* minimum quantity & precision
+* minimum price
+* ...
+
+Route *GET* _/exchanges/{exchangeId}/testOrder_ can be used to ensure correct values are used
+====
+
+== Cancel an order
+
+*DELETE* _/exchanges/{exchangeId}/openOrders/{orderNumber}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{orderNumber}
+|string
+|Unique identifier of the order to cancel
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string (X-Y)
+|
+|Used to optimize request by indicating the pair used for this order (will be needed if _requirePair_ is _true_)
+
+|===
+
+[NOTE]
+====
+Some exchanges require the _pair_ to be passed when cancelling an order. Passing the _pair_ parameter will make request execute faster (will be needed if _requirePair_ is _true_).
+====
+
+=== Result
+
+Result will be an empty dictionary
+
+.Examples
+
+Example for *DELETE* _/exchanges/bittrex/openOrders/d3af561a-c3ac-4452-be0e-a32854b558e5_
+
+[source,json]
+----
+{
+}
+----

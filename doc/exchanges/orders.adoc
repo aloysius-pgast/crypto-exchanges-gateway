@@ -1,0 +1,261 @@
+= Orders
+
+[NOTE]
+====
+Those routes require the feature _orders_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "orders":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Retrieve a single order
+
+[NOTE]
+====
+Some exchange require to provide the _pair_ when retrieving an order. This is indicated in feature _orders_
+
+[source,json]
+----
+{
+    "features":{
+        "openOrders":{
+            "enabled":true,
+            "withoutPair":false,
+            "requirePair":false
+        }
+    }
+}
+----
+====
+
+*GET* _/exchanges/{exchangeId}/{orderNumber}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{orderNumber}
+|string
+|Unique identifier of the order to cancel
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string (X-Y)
+|
+|Used to optimize request by indicating the pair used for this order (will be needed if _requirePair_ is _true_)
+
+|===
+
+[NOTE]
+====
+Some exchanges require the _pair_ to be passed when retrieving an order. Passing the _pair_ parameter will make request execute faster (will be needed if _requirePair_ is _true_).
+====
+
+=== Result
+
+==== Result in case order is _open_
+
+Result will be such as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|pair
+|string
+|Pair (_X-Y_)
+
+|orderNumber
+|string
+|Unique identifier of the order
+
+|orderType
+|string (_buy_,_sell_)
+|Order type
+
+|quantity
+|float
+|Quantity to buy/sell
+
+|remainingQuantity
+|float
+|Remaining quantity to buy/sell
+
+|targetRate
+|float
+|Expected per-unit price for the trades
+
+|targetPrice
+|float
+|Expected total price (_quantity_ * _targetRate_)
+
+|openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was open
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/orders/99ba78c7-444a-41e0-883f-6d06ebcb1496_
+
+[source,json]
+----
+{
+    "pair":"BTC-PTC",
+    "orderType":"sell",
+    "orderNumber":"99ba78c7-444a-41e0-883f-6d06ebcb1496",
+    "openTimestamp":1526383362,
+    "quantity":100,
+    "targetRate":0.000009,
+    "remainingQuantity":100,
+    "targetPrice":0.0009
+}
+----
+
+==== Result in case order is _closed_
+
+Result will be such as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_orderNumber_
+|string
+|Unique identifier of the order
+
+|pair
+|string
+|Pair (_X-Y_)
+
+|orderNumber
+|string
+|Unique identifier of the order
+
+|orderType
+|string (_buy_,_sell_)
+|Order type
+
+|quantity
+|float
+|Quantity bought/sold
+
+|actualRate
+|float
+|Actual per-unit price used in the trades
+
+|actualPrice
+|float
+|Total price (_quantity_ * _actualPrice_)
+
+|fees
+|object
+|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}amount
+|float
+|Fees amount
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency used to pay fees
+
+|finalPrice
+|float
+|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+
+|finalRate
+|float
+|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+
+|openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was created (might not be supported by all exchanges, will be _null_ if not supported)
+
+|closedTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was closed (ie: last trade performed) (might not be supported by all exchanges, will be _null_ if not supported)
+
+|===
+
+.Examples
+
+Example for *GET* _exchanges/bittrex/orders/fe86e255-f440-4f17-ba05-8c708bcd08a3_
+
+[source,json]
+----
+{
+    "pair":"BTC-PTC",
+    "orderType":"sell",
+    "orderNumber":"fe86e255-f440-4f17-ba05-8c708bcd08a3",
+    "openTimestamp":1526382451,
+    "quantity":120,
+    "actualRate":0.00000439,
+    "closedTimestamp":1526382451,
+    "fees":{
+        "amount":0.00000131,
+        "currency":"BTC"
+    },
+    "actualPrice":0.0005268,
+    "finalPrice":0.00052549,
+    "finalRate":0.00000438
+}
+----
+
+==== Result in case order does not exist
+
+An _ExchangeError.InvalidRequest.OrderError.OrderNotFound_ error will be returned
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/orders/00000000-0000-0000-0000-000000000001_
+
+[source,json]
+----
+{
+    "origin":"remote",
+    "error":"Order '00000000-0000-0000-0000-000000000001' was not found on exchange 'bittrex'",
+    "route":{
+        "method":"GET",
+        "path":"/exchanges/bittrex/orders/00000000-0000-0000-0000-000000000001"
+    },
+    "extError":{
+        "errorType":"ExchangeError.InvalidRequest.OrderError.OrderNotFound",
+        "message":"Order '00000000-0000-0000-0000-000000000001' was not found on exchange 'bittrex'",
+        "data":{
+            "exchange":"bittrex",
+            "orderNumber":"00000000-0000-0000-0000-000000000001"
+        }
+    }
+}
+----

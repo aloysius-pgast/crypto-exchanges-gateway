@@ -16,6 +16,9 @@ constructor()
     this._db = null;
 }
 
+/**
+ * @return {Promise} which will resolve to the id in case of success or reject to false
+ */
 storeTickerMonitorEntry(id, name, enabled, obj)
 {
     let query;
@@ -50,6 +53,7 @@ storeTickerMonitorEntry(id, name, enabled, obj)
     });
 }
 
+// we don't need promise here
 removeTickerMonitorEntry(id)
 {
     let query = 'DELETE FROM tickerMonitor WHERE id = $id';
@@ -62,6 +66,7 @@ removeTickerMonitorEntry(id)
     });
 }
 
+// we don't need promise here
 storeSession(sid, obj)
 {
     let query = 'INSERT OR REPLACE INTO sessions(sid, data) VALUES($sid, $data)';
@@ -74,6 +79,7 @@ storeSession(sid, obj)
     });
 }
 
+// we don't need promise here
 removeSession(sid)
 {
     let query = 'DELETE FROM sessions WHERE sid = $sid';

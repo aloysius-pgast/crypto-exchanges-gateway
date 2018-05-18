@@ -1,11 +1,27 @@
 "use strict";
 const _ = require('lodash');
 const logger = require('winston');
+const Joi = require('../custom-joi');
+const JoiHelper = require('../joi-helper');
+const Errors = require('../errors');
 const RequestHelper = require('../request-helper');
 const ConditionsParser = require('./conditions-parser');
 const Entry = require('./entry');
 const serviceRegistry = require('../service-registry');
+const statistics = require('../statistics');
 const monitor = require('./monitor');
+
+/**
+ * Sends an http error to client
+ *
+ * @param {string} serviceId exchange identifier
+ * @param {object} res express response object
+ * @param {string|object} err error message or exception
+ * @return {false}
+ */
+const sendError = (serviceId, res, err) => {
+    return Errors.sendHttpError(res, err, serviceId);
+}
 
 module.exports = function(app, bodyParsers, config) {
 
@@ -15,7 +31,9 @@ if (!config.tickerMonitor.enabled)
 }
 
 // register service
-serviceRegistry.registerService('tickerMonitor', 'Ticker Monitor', monitor, {});
+const serviceId = 'tickerMonitor';
+let cfg = {delay:parseInt(monitor.getDelay() / 1000)};
+serviceRegistry.registerService(serviceId, 'Ticker Monitor', monitor, {}, false, cfg);
 
 let pushover = serviceRegistry.getService('pushover');
 if (null !== pushover)
@@ -23,38 +41,70 @@ if (null !== pushover)
     pushover = pushover.instance;
 }
 
-/**
- * List existing entries
- *
- * @param {string} name, used to filter by name
- */
-app.get('/tickerMonitor', (req, res) => {
-    let opt = {};
-    let value;
-    value = RequestHelper.getParam(req, 'name');
-    if (undefined !== value && '' != value)
-    {
-        opt.name = value;
-    }
-    let list = monitor.toArray(opt);
-    res.send(list);
-});
+/*
+List existing entries
+*/
+(function(){
+    const schema = Joi.object({
+        name: Joi.string().empty('').default('')
+    });
 
-/**
- * Retrieves a single entry
- *
- * @param {string} name, used to filter by name
- */
-app.get('/tickerMonitor/:id', (req, res) => {
-    let list = monitor.toArray({id:req.params.id});
-    // not found
-    if (0 == list.length)
-    {
-        res.status(404).send({origin:"gateway",error:`No entry with id '${req.params.id}'`});
-        return;
-    }
-    res.send(list[0]);
-});
+    /**
+     * List existing entries
+     *
+     * @param {string} name, used to filter by name
+     */
+    app.get('/tickerMonitor', (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true});
+        if (null !== params.error)
+        {
+            statistics.increaseStatistic(serviceId, 'getEntries', false);
+            return sendError(serviceId, res, params.error);
+        }
+        let opt = {};
+        if ('' != params.value.name)
+        {
+            opt.name = params.value.name;
+        }
+        let list = monitor.toArray(opt);
+        statistics.increaseStatistic(serviceId, 'getEntries', true);
+        return res.send(list);
+    });
+})();
+
+/*
+Retrieves a single entry
+*/
+(function(){
+
+    const schema = Joi.object({
+        id: Joi.number().integer().positive()
+    });
+
+    /**
+     * Retrieves a single entry
+     *
+     * @param {string} name, used to filter by name
+     */
+    app.get('/tickerMonitor/:id', (req, res) => {
+        const params = JoiHelper.validate(schema, req, {params:true});
+        if (null !== params.error)
+        {
+            statistics.increaseStatistic(serviceId, 'getEntry', false);
+            return sendError(serviceId, res, params.error);
+        }
+        let list = monitor.toArray({id:req.params.id});
+        // not found
+        if (0 == list.length)
+        {
+            statistics.increaseStatistic(serviceId, 'getEntry', false);
+            let extErr = new Errors.GatewayError.InvalidRequest.ObjectNotFound(`No entry with id '${req.params.id}'`);
+            return sendError(serviceId, res, extErr);
+        }
+        statistics.increaseStatistic(serviceId, 'getEntry', true);
+        return res.send(list[0]);
+    });
+})();
 
 /**
  * Checks base properties (name, enabled, any, pushover)
@@ -70,8 +120,8 @@ const checkBaseProperties = (req, res, isCreation) => {
     {
         if (undefined === req.body.name)
         {
-            res.status(400).send({origin:"gateway",error:"Missing parameter 'name'"});
-            return false;
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('name');
+            return sendError(serviceId, res, extErr);
         }
     }
     if (undefined !== req.body.name)
@@ -79,8 +129,8 @@ const checkBaseProperties = (req, res, isCreation) => {
         req.body.name = req.body.name.trim();
         if ('' == req.body.name)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'name' cannot not be empty"});
-            return false;
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('name', req.body.name, "Parameter 'name' cannot not be empty");
+            return sendError(serviceId, res, extErr);
         }
     }
     // enabled
@@ -88,8 +138,8 @@ const checkBaseProperties = (req, res, isCreation) => {
     {
         if (true !== req.body.enabled && false !== req.body.enabled)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'enabled' should be a boolean"});
-            return;
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('enabled', req.body.enabled, "Parameter 'enabled' should be a boolean");
+            return sendError(serviceId, res, extErr);
         }
     }
     // any
@@ -97,8 +147,8 @@ const checkBaseProperties = (req, res, isCreation) => {
     {
         if (true !== req.body.any && false !== req.body.any)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'any' should be a boolean"});
-            return;
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('enabled', req.body.any, "Parameter 'any' should be a boolean");
+            return sendError(serviceId, res, extErr);
         }
     }
     // pushover (if supported)
@@ -106,13 +156,13 @@ const checkBaseProperties = (req, res, isCreation) => {
     {
         if (undefined === req.body.pushover.enabled)
         {
-            res.status(400).send({origin:"gateway",error:"Missing parameter 'pushover[enabled]'"});
-            return;
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('pushover[enabled]');
+            return sendError(serviceId, res, extErr);
         }
         if (false !== req.body.pushover.enabled && true !== req.body.pushover.enabled)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'pushover.enabled' should be a boolean"});
-            return;
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('pushover[enabled]', req.body.pushover.enabled, "Parameter 'pushover[enabled]' should be a boolean");
+            return sendError(serviceId, res, extErr);
         }
         if (req.body.pushover.enabled)
         {
@@ -120,16 +170,16 @@ const checkBaseProperties = (req, res, isCreation) => {
             {
                 if (!pushover.isPrioritySupported(req.body.pushover.priority))
                 {
-                    res.status(400).send({origin:"gateway",error:`Invalid value for parameter 'pushover[priority]' : value = '${req.body.pushover.priority}'`});
-                    return;
+                    let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('pushover[priority]', req.body.pushover.priority);
+                    return sendError(serviceId, res, extErr);
                 }
             }
             if (undefined !== req.body.pushover.minDelay)
             {
                 if (isNaN(req.body.pushover.minDelay) || req.body.pushover.minDelay < 0)
                 {
-                    res.status(400).send({origin:"gateway",error:`Parameter 'pushover[minDelay]' should be an integer >= 0 : value = '${req.body.pushover.minDelay}'`});
-                    return;
+                    let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('pushover[minDelay]', req.body.pushover.minDelay, "Parameter 'pushover[minDelay]' should be an integer >= 0");
+                    return sendError(serviceId, res, extErr);
                 }
             }
         }
@@ -151,8 +201,8 @@ const checkConditions = (req, res, isCreation) => {
         {
             if (isCreation)
             {
-                res.status(400).send({origin:"gateway",error:"Missing parameter 'conditions'"});
-                return reject(false);
+                let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('conditions');
+                return reject(sendError(serviceId, res, extErr));
             }
             else
             {
@@ -161,27 +211,14 @@ const checkConditions = (req, res, isCreation) => {
         }
         if (!Array.isArray(req.body.conditions) || 0 == req.body.conditions.length)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'conditions' should be a non-empty array"});
-            return reject(false);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('conditions', req.body.conditions, "Parameter 'conditions' should be a non-empty array");
+            return reject(sendError(serviceId, res, extErr));
         }
         let parser = new ConditionsParser(req.body.conditions);
         parser.checkConditions().then(function(list){
-            resolve(list);
+            return resolve(list);
         }).catch (function(err){
-            if (undefined !== err.stack)
-            {
-                logger.error(err.stack);
-                res.status(503).send({origin:"gateway",error:'An error occurred'});
-                return reject(false);
-            }
-            if (undefined !== err.origin && 'remote' == err.origin)
-            {
-                res.status(503).send(err);
-                return reject(false);
-                return;
-            }
-            res.status(404).send({origin:"gateway",error:err});
-            return reject(false);
+            return reject(sendError(serviceId, res, err));
         });
     });
 }
@@ -191,7 +228,7 @@ const checkConditions = (req, res, isCreation) => {
  *
  * @param {string} name to give a name to this alert
  * @param {boolean} enabled whether or not alert should be automatically enabled (optional, default = true)
- * @param {boolean} any, if true an alert will be triggered if any of the condition match (optional, default = false)
+ * @param {boolean} any, if true an alert will be triggered if any of the condition matches (optional, default = false)
  * @param {boolean} pushover.enabled whether or not pushover should be enabled (optional, default = false)
  * @param {string} pushover.priority (push over priority, default = normal)
  * @param {string} pushover.minDelay (minimum number of seconds between 2 notifications, to avoid spamming) (optional, default = 300, 5 min)
@@ -200,11 +237,13 @@ const checkConditions = (req, res, isCreation) => {
 app.post(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
     if (!req.is('json'))
     {
-        res.status(400).send({origin:"gateway",error:"Content-Type should be 'application/json'"});
-        return;
+        statistics.increaseStatistic(serviceId, 'createEntry', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.UnknownError("Content-Type should be 'application/json'");
+        return sendError(serviceId, res, extErr);
     }
     if (!checkBaseProperties(req, res, true))
     {
+        statistics.increaseStatistic(serviceId, 'createEntry', false);
         return;
     }
     checkConditions(req, res, true).then(function(conditions){
@@ -233,7 +272,7 @@ app.post(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
             opt.pushover.enabled = req.body.pushover.enabled;
             if (opt.pushover.enabled)
             {
-                opt.pushover.priority = Entry.DEFAULT_PUSH_PRIORITY;
+                opt.pushover.priority = Entry.DEFAULT_PUSH_OVER_PRIORITY;
                 opt.pushover.minDelay = Entry.DEFAULT_PUSH_OVER_MIN_DELAY;
                 if (undefined !== req.body.pushover.priority)
                 {
@@ -246,12 +285,18 @@ app.post(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
             }
         }
         monitor.createEntry(opt).then(function(id){
-            res.send({id:id});
+            statistics.increaseStatistic(serviceId, 'createEntry', true);
+            return res.send({id:id});
         }).catch (function(){
-            res.status(503).send({origin:"gateway",error:'An error occurred'});
+            // entry could not be saved
+            statistics.increaseStatistic(serviceId, 'createEntry', false);
+            let extErr = new Errors.GatewayError.InternalError();
+            return sendError(serviceId, res, extErr);
         });
     }).catch(function(){
-        // already handled
+        // http error was already sent
+        statistics.increaseStatistic(serviceId, 'createEntry', false);
+        return;
     });
 });
 
@@ -270,16 +315,19 @@ app.post(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
 app.patch(`/tickerMonitor/:id`, bodyParsers.json, (req, res) => {
     if (!req.is('json'))
     {
-        res.status(400).send({origin:"gateway",error:"Content-Type should be 'application/json'"});
-        return;
+        statistics.increaseStatistic(serviceId, 'updateEntry', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.UnknownError("Content-Type should be 'application/json'");
+        return sendError(serviceId, res, extErr);
     }
     if (!monitor.hasEntry(req.params.id))
     {
-        res.status(404).send({origin:"gateway",error:`No entry with id '${req.params.id}'`});
-        return;
+        statistics.increaseStatistic(serviceId, 'updateEntry', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.ObjectNotFound(`No entry with id '${req.params.id}'`);
+        return sendError(serviceId, res, extErr);
     }
     if (!checkBaseProperties(req, res, false))
     {
+        statistics.increaseStatistic(serviceId, 'updateEntry', false);
         return;
     }
     checkConditions(req, res).then(function(conditions){
@@ -324,12 +372,18 @@ app.patch(`/tickerMonitor/:id`, bodyParsers.json, (req, res) => {
             opt.conditions = conditions;
         }
         monitor.updateEntry(req.params.id, opt).then(function(){
-            res.send({});
+            statistics.increaseStatistic(serviceId, 'updateEntry', true);
+            return res.send({});
         }).catch (function(err){
-            res.status(503).send({origin:"gateway",error:'An error occurred'});
+            // entry could not be saved
+            statistics.increaseStatistic(serviceId, 'updateEntry', false);
+            let extErr = new Errors.GatewayError.InternalError();
+            return sendError(serviceId, res, extErr);
         });
     }).catch(function(){
-        // already handled
+        // http error was already sent
+        statistics.increaseStatistic(serviceId, 'updateEntry', false);
+        return;
     });
 });
 
@@ -343,8 +397,9 @@ app.patch(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
     let enabled = RequestHelper.getParam(req, 'enabled');
     if (undefined === enabled)
     {
-        res.status(400).send({origin:"gateway",error:"Missing parameter 'enabled'"});
-        return;
+        statistics.increaseStatistic(serviceId, 'enableEntries', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('enabled');
+        return sendError(serviceId, res, extErr);
     }
     if (true !== enabled && false !== enabled)
     {
@@ -361,21 +416,24 @@ app.patch(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
                 enabled = false;
                 break;
             default:
-                res.status(400).send({origin:"gateway",error:"Parameter 'enabled' should be a boolean"});
-                return;
+                statistics.increaseStatistic(serviceId, 'enableEntries', false);
+                let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter('enabled', enabled, `Parameter 'enabled' should be a boolean`);
+                return sendError(serviceId, res, extErr);
         }
     }
     let list = RequestHelper.getParam(req, 'list');
     if (undefined === list)
     {
-        res.status(400).send({origin:"gateway",error:"Missing parameter 'list'"});
-        return;
+        statistics.increaseStatistic(serviceId, 'enableEntries', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('list');
+        return sendError(serviceId, res, extErr);
     }
     // support both array and comma-separated string
     if (!Array.isArray(list))
     {
         list = list.split(',');
     }
+    let arr = [];
     _.forEach(list, (id) => {
         let entry = monitor.getEntry(id);
         if (null === entry)
@@ -383,9 +441,24 @@ app.patch(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
             return;
         }
         entry.enable(enabled);
-        entry.store();
+        arr.push(entry.store());
     });
-    res.send({});
+    // no entry to enable/disable
+    if (0 == arr.length)
+    {
+        statistics.increaseStatistic(serviceId, 'enableEntries', true);
+        return res.send({});
+    }
+    // process entries
+    Promise.all(arr).then(function(){
+        statistics.increaseStatistic(serviceId, 'enableEntries', true);
+        return res.send({});
+    }).catch (function(){
+        // at least one entry could not be saved
+        statistics.increaseStatistic(serviceId, 'enableEntries', false);
+        let extErr = new Errors.GatewayError.InternalError();
+        return sendError(serviceId, res, extErr);
+    });
 });
 
 /**
@@ -397,8 +470,9 @@ app.delete(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
     let list = RequestHelper.getParam(req, 'list');
     if (undefined === list)
     {
-        res.status(400).send({origin:"gateway",error:"Missing parameter 'list'"});
-        return;
+        statistics.increaseStatistic(serviceId, 'deleteEntries', false);
+        let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters('list');
+        return sendError(serviceId, res, extErr);
     }
     // support both array and comma-separated string
     if (!Array.isArray(list))
@@ -412,7 +486,8 @@ app.delete(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
         }
         monitor.deleteEntry(id);
     });
-    res.send({});
+    statistics.increaseStatistic(serviceId, 'deleteEntries', true);
+    return res.send({});
 });
 
 };

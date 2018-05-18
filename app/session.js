@@ -12,6 +12,8 @@ const RpcHelper = require('./rpc-helper');
 const storage = require('./storage');
 const tickerMonitor = require('./tickerMonitor/monitor');
 
+const SUPPORTED_SUBSCRIPTIONS = ['tickers','orderBooks','trades','klines'];
+
 // how long should we wait to close the connection if client does not answer to ping
 // connection will be closed if we don't receive pong after timeout
 const PING_TIMEOUT = internalConfig.get('keepalive').clients;
@@ -196,11 +198,10 @@ getExpiryTimestamp()
  */
 getSubscriptions()
 {
-    let entities = ['tickers','orderBooks','trades','klines'];
     let subscriptions = {};
     _.forEach(this._exchanges, (exchange, exchangeId) => {
         let exchangeSubscriptions = {};
-        _.forEach(entities, (entity) => {
+        _.forEach(SUPPORTED_SUBSCRIPTIONS, (entity) => {
             if (undefined !== exchange.subscriptions[entity] && null !== exchange.subscriptions[entity].timestamp)
             {
                 exchangeSubscriptions[entity] = {
@@ -406,11 +407,12 @@ registerSocket(ws, path)
 
     this._sockets[ws._socketId] = ws;
     this._socketsCount = Object.keys(this._sockets).length;
-    // add listeners back if we only have one socket
-    if (1 == this._socketsCount)
+    if (debug.enabled)
     {
-        this._addListeners();
+        debug(`Socket count is now ${this._socketsCount} for session '${this._sid}'`);
     }
+    // add listeners back if necessary
+    this._addListeners();
 
     let self = this;
 
@@ -590,7 +592,7 @@ _forwardEvent(name, evt)
 destroy()
 {
     this._destroyed = true;
-    this.unsubscribe();
+    this.unsubscribe({remove:true});
     // close sockets
     _.forEach(this._sockets, (ws, id) => {
         ws.terminate();
@@ -735,7 +737,7 @@ _checkPairs(obj, ws)
             return;
         }
         let self = this;
-        obj._exchange.instance.pairs({useCache:true}).then(function(data){
+        obj._exchange.instance.getPairs(true).then(function(data){
             let result = true;
             _.forEach(obj.p.pairs, (pair, index) => {
                 if ('string' != typeof pair)
@@ -824,7 +826,7 @@ _getExchange(exchangeId, addListeners)
         }
         //-- define event callbacks
         // ticker callback
-        exchange.listeners['ticker'] = function(evt){
+        exchange.listeners['ticker'] = {enabled:false,cb:function(evt){
             // ignore if we don't support this pair
             if (undefined === exchange.subscriptions.tickers.pairs[evt.pair])
             {
@@ -835,14 +837,10 @@ _getExchange(exchangeId, addListeners)
                 debug(`Received 'ticker' event from exchange '${evt.exchange}' for pair '${evt.pair}' : ${JSON.stringify(evt.data)}`)
             }
             self._forwardEvent.call(self, 'ticker', evt);
-        };
-        if (addListeners)
-        {
-            manager.addListener('ticker', exchange.listeners['ticker']);
-        }
+        }};
 
         // orderBook callback
-        exchange.listeners['orderBook'] = function(evt){
+        exchange.listeners['orderBook'] = {enabled:false,cb:function(evt){
             // ignore if we don't support this pair
             if (undefined === exchange.subscriptions.orderBooks.pairs[evt.pair])
             {
@@ -858,14 +856,10 @@ _getExchange(exchangeId, addListeners)
                 debug(`Received 'orderBook' event from exchange '${evt.exchange}' for pair '${evt.pair}' : ${JSON.stringify(obj)}`);
             }
             self._forwardEvent.call(self, 'orderBook', evt);
-        };
-        if (addListeners)
-        {
-            manager.addListener('orderBook', exchange.listeners['orderBook']);
-        }
+        }};
 
         // orderBookUpdate callback
-        exchange.listeners['orderBookUpdate'] = function(evt){
+        exchange.listeners['orderBookUpdate'] = {enabled:false,cb:function(evt){
             // ignore if we don't support this pair
             if (undefined === exchange.subscriptions.orderBooks.pairs[evt.pair])
             {
@@ -881,14 +875,10 @@ _getExchange(exchangeId, addListeners)
                 debug(`Received 'orderBookUpdate' event from exchange '${evt.exchange}' for pair '${evt.pair}' : ${JSON.stringify(obj)}`);
             }
             self._forwardEvent.call(self, 'orderBookUpdate', evt);
-        };
-        if (addListeners)
-        {
-            manager.addListener('orderBookUpdate', exchange.listeners['orderBookUpdate']);
-        }
+        }};
 
         // trades callback
-        exchange.listeners['trades'] = function(evt){
+        exchange.listeners['trades'] = {enabled:false,cb:function(evt){
             // ignore if we don't support this pair
             if (undefined === exchange.subscriptions.trades.pairs[evt.pair])
             {
@@ -899,14 +889,10 @@ _getExchange(exchangeId, addListeners)
                 debug(`Received 'trades' event from exchange '${evt.exchange}' for pair '${evt.pair}' : ${evt.data.length} trades`);
             }
             self._forwardEvent.call(self, 'trades', evt);
-        };
-        if (addListeners)
-        {
-            manager.addListener('trades', exchange.listeners['trades']);
-        }
+        }};
 
         // klines callback
-        exchange.listeners['kline'] = function(evt){
+        exchange.listeners['kline'] = {enabled:false,cb:function(evt){
             // ignore if we don't support this pair/interval
             if (undefined === exchange.subscriptions.klines.pairs[evt.pair] || undefined === exchange.subscriptions.klines.pairs[evt.pair][evt.interval])
             {
@@ -917,13 +903,17 @@ _getExchange(exchangeId, addListeners)
                 debug(`Received 'kline' event from exchange '${evt.exchange}' for pair '${evt.pair}' (${evt.interval})`);
             }
             self._forwardEvent.call(self, 'kline', evt);
-        };
-        if (addListeners)
-        {
-            manager.addListener('kline', exchange.listeners['kline']);
-        }
-
+        }};
         this._exchanges[exchangeId] = exchange;
+    }
+    // add listeners if necessary
+    if (addListeners)
+    {
+        // do nothing if we don't have any connected socket
+        if (0 != this._socketsCount)
+        {
+            this._addListeners();
+        }
     }
     return this._exchanges[exchangeId];
 }
@@ -933,9 +923,23 @@ _getExchange(exchangeId, addListeners)
  */
 _removeListeners()
 {
+    if (debug.enabled)
+    {
+        debug(`Removing listeners for session '${this._sid}'`);
+    }
     _.forEach(this._exchanges, (exchange, id) => {
-        _.forEach(exchange.listeners, (cb, eventName) => {
-            exchange.manager.removeListener(eventName, cb);
+        _.forEach(exchange.listeners, (obj, eventName) => {
+            // do nothing if listener is not enabled
+            if (!obj.enabled)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Removing '${eventName} (${id})' listener for session '${this._sid}'`);
+            }
+            exchange.manager.removeListener(eventName, obj.cb);
+            obj.enabled = false;
         })
     });
 }
@@ -945,9 +949,23 @@ _removeListeners()
  */
 _addListeners()
 {
+    if (debug.enabled)
+    {
+        debug(`Adding listeners for session '${this._sid}'`);
+    }
     _.forEach(this._exchanges, (exchange, id) => {
-        _.forEach(exchange.listeners, (cb, eventName) => {
-            exchange.manager.addListener(eventName, cb);
+        _.forEach(exchange.listeners, (obj, eventName) => {
+            // do nothing if listener is elready enabled
+            if (obj.enabled)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Adding '${eventName} (${id})' listener for session '${this._sid}'`);
+            }
+            exchange.manager.addListener(eventName, obj.cb);
+            obj.enabled = true;
         })
     });
 }
@@ -1189,7 +1207,11 @@ subscribeToTickers(exchangeId, pairs, reset, connect)
         exchange.subscriptions.tickers.timestamp = timestamp;
         // store session
         this._store();
-        exchange.manager.updateTickersSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        // do nothing if we don't have any socket
+        if (0 != this._socketsCount)
+        {
+            exchange.manager.updateTickersSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        }
     }
 }
 
@@ -1231,7 +1253,11 @@ subscribeToTickers(exchangeId, pairs, reset, connect)
          exchange.subscriptions.tickers.timestamp = timestamp;
          // store session
          this._store();
-         exchange.manager.updateTickersSubscriptions(this._sid, [], changes.unsubscribe, false);
+         // do nothing if we don't have any socket (unless session has been destroyed)
+         if (0 != this._socketsCount || this._destroyed)
+         {
+             exchange.manager.updateTickersSubscriptions(this._sid, [], changes.unsubscribe, false);
+         }
      }
  }
 
@@ -1394,7 +1420,11 @@ subscribeToOrderBooks(exchangeId, pairs, reset, connect)
             // store session
             this._store();
         }
-        exchange.manager.updateOrderBooksSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, changes.resync, connect);
+        // do nothing if we don't have any socket
+        if (0 != this._socketsCount)
+        {
+            exchange.manager.updateOrderBooksSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, changes.resync, connect);
+        }
     }
 }
 
@@ -1436,7 +1466,11 @@ unsubscribeFromOrderBooks(exchangeId, pairs)
         exchange.subscriptions.orderBooks.timestamp = timestamp;
         // store session
         this._store();
-        exchange.manager.updateOrderBooksSubscriptions(this._sid, [], changes.unsubscribe, [], false);
+        // do nothing if we don't have any socket (unless session has been destroyed)
+        if (0 != this._socketsCount || this._destroyed)
+        {
+            exchange.manager.updateOrderBooksSubscriptions(this._sid, [], changes.unsubscribe, [], false);
+        }
     }
 }
 
@@ -1602,7 +1636,11 @@ subscribeToTrades(exchangeId, pairs, reset, connect)
         exchange.subscriptions.trades.timestamp = timestamp;
         // store session
         this._store();
-        exchange.manager.updateTradesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        // do nothing if we don't have any socket
+        if (0 != this._socketsCount)
+        {
+            exchange.manager.updateTradesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        }
     }
 }
 
@@ -1771,7 +1809,11 @@ subscribeToKlines(exchangeId, pairs, interval, reset, connect)
         exchange.subscriptions.klines.timestamp = timestamp;
         // store session
         this._store();
-        exchange.manager.updateKlinesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        // do nothing if we don't have any socket
+        if (0 != this._socketsCount)
+        {
+            exchange.manager.updateKlinesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+        }
     }
 }
 
@@ -1935,7 +1977,7 @@ _handleGetPairs(obj, ws)
         return;
     }
     let self = this;
-    let opt = {useCache:true};
+    let opt = {};
     if (undefined !== obj.p.filter)
     {
         if (undefined !== obj.p.filter.currency && '' != obj.p.filter.currency)
@@ -1947,7 +1989,7 @@ _handleGetPairs(obj, ws)
             opt.baseCurrency = obj.p.filter.baseCurrency;
         }
     }
-    obj._exchange.instance.pairs(opt).then(function(data){
+    obj._exchange.instance.getPairs(true, opt).then(function(data){
         RpcHelper.replySuccess(ws, obj, data)
     }).catch (function(err){
         RpcHelper.replyErrorInternal(ws, obj, undefined, err);

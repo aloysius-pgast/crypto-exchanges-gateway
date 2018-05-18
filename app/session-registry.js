@@ -34,7 +34,7 @@ restoreSession(sid, obj)
  * Registers an RPC session
  *
  * @param {string} session id (a new session id will be generated if null)
- * @param {WebSocket} websocket object (can be undefined if session is registered through http client)
+ * @param {WebSocket} ws websocket object (can be undefined if session is registered through http client)
  * @param {boolean} markAsNew mark session as new if it's a new one (optional, default = true)
  */
 registerRpcSession(sid, ws, markAsNew)

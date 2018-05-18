@@ -1,8 +1,7 @@
 "use strict";
-
 const _ = require('lodash');
 const Big = require('big.js');
-const logger = require('winston');
+const Errors = require('../../errors');
 const serviceRegistry = require('../../service-registry');
 const PromiseHelper = require('../../promise-helper');
 const FakeExchangeClass = require('../../fake-exchange');
@@ -63,16 +62,20 @@ app.get('/portfolio', (req, res) => {
                 }
             });
         }
+        if (0 == filteredList.length)
+        {
+            return res.send({balances:{},price:0.0});
+        }
     }
-    // by default query all supported exchanges
-    if (0 == filteredList.length)
+    else
     {
+        // by default query all supported exchanges
         filteredList = Object.keys(exchanges);
     }
     let arr = [];
     _.forEach(filteredList, (id) => {
-        let p = exchanges[id].balances({outputFormat:'custom'});
-        arr.push({promise:p, context:{exchange:id,api:'balances'}});
+        let p = exchanges[id].getBalances();
+        arr.push({promise:p, context:{exchange:id,api:'getBalances'}});
     });
     let balances = {};
     PromiseHelper.all(arr).then(function(data){
@@ -90,8 +93,19 @@ app.get('/portfolio', (req, res) => {
                 balances[currency].volume += e.total;
             });
         });
+        let symbols = [];
+        _.forEach(Object.keys(balances), (s) => {
+            let symbol = s;
+            switch (s)
+            {
+                case 'IOTA':
+                    symbol = 'MIOTA';
+                    break;
+            }
+            symbols.push(symbol);
+        });
         // get data from coinmarketcap
-        coinmarketcap.tickers({}).then(function(data) {
+        coinmarketcap.getTickers({symbols:symbols}).then(function(data) {
             let tickers = {};
             _.forEach(data, (entry) => {
                 // ignore tickers without price
@@ -114,9 +128,9 @@ app.get('/portfolio', (req, res) => {
                 }
                 tickers[entry.symbol] = entry.price_usd;
             });
-            sendPortfolio(res, balances, tickers);
+            return sendPortfolio(res, balances, tickers);
         }).catch(function(err) {
-            res.status(503).send({origin:"remote",error:err});
+            return Errors.sendHttpError(res, err, 'portfolio');
         });
     });
 });
@@ -137,7 +151,7 @@ const sendPortfolio = (res, balances, tickers) => {
     _.forEach(balances, (entry, currency) => {
         entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPrice).toFixed(2));
     });
-    res.send({balances:balances,price:parseFloat(totalPrice.toFixed(4))});
+    return res.send({balances:balances,price:parseFloat(totalPrice.toFixed(4))});
 }
 
 };

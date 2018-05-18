@@ -97,7 +97,7 @@ _registerClient(connect)
 {
     if (null !== this._client)
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             return;
         }
@@ -281,7 +281,7 @@ _processChanges(changes, opt)
     // do we need to disconnect client ?
     if (!this.hasSubscriptions())
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             this._unregisterConnection('default');
             this._client.disconnect();
@@ -312,7 +312,7 @@ _retrieveMarkets(initial, connect)
     }
     let timeout = 0;
     let self = this;
-    this._exchangeInstance.pairs({includePairId:true}).then(function(data){
+    this._exchangeInstance.getPairsById().then(function(data){
         let marketsById = {};
         _.forEach(data, (entry) => {
             marketsById[entry.id] = {pair:entry.pair, ignore:true};

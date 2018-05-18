@@ -17,16 +17,18 @@ import DashBoard from './views/DashBoard/';
 import TopMenu from './views/TopMenu/';
 
 //-- exchanges views
-import MarketOverview from './views/MarketOverview';
-import Portfolio from './views/Portfolio';
 import Prices from './views/Prices';
 import OrderBooks from './views/OrderBooks';
 import MyOrders from './views/MyOrders';
+import AllMyOrders from './views/AllMyOrders';
 import NewOrder from './views/NewOrder';
 import MyBalances from './views/MyBalances';
 
 //-- services views
+import MarketOverview from './views/MarketOverview';
+import Portfolio from './views/Portfolio';
 import CoinMarketCap from './views/CoinMarketCap/';
+import Alerts from './views/Alerts/';
 
 class App extends Component {
 
@@ -68,14 +70,27 @@ _addExchangeRoutes(obj)
         });
     }
     // MyOrders view
-    if (obj.features['openOrders'].enabled)
+    if (obj.features['openOrders'].enabled || obj.features['closedOrders'].enabled)
     {
         let path = '/exchanges/' + obj.id + '/myOrders';
         routeRegistry.registerExchangeRoute(path, obj.id, 'myOrders', true);
+        path += '/:pair?';
         this._routes.push({
             path:path,
             exact:true,
             component:MyOrders,
+            data:{exchange:obj.id}
+        });
+    }
+    // AllMyOrders view
+    if (obj.features['openOrders'].enabled || obj.features['closedOrders'].enabled)
+    {
+        let path = '/exchanges/' + obj.id + '/allMyOrders';
+        routeRegistry.registerExchangeRoute(path, obj.id, 'allMyOrders', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:AllMyOrders,
             data:{exchange:obj.id}
         });
     }
@@ -143,6 +158,18 @@ _loadRoutes()
     //-- remaining routes
     let path;
 
+    // Portfolio requires coinmarket cap & support for 'balances' features in exchanges
+    if (undefined !== services['coinmarketcap'] && 0 != exchangesWithBalancesSupport.length)
+    {
+        path = '/services/portfolio';
+        routeRegistry.registerRoute(path, 'portfolio', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:Portfolio
+        });
+    }
+
     // Market Overview (requires local storage)
     if (window.ctx.hasLocalStorage)
     {
@@ -155,15 +182,15 @@ _loadRoutes()
         });
     }
 
-    // Portfolio requires coinmarket cap & support for 'balances' features in exchanges
-    if (undefined !== services['coinmarketcap'] && 0 != exchangesWithBalancesSupport.length)
+    // alerts route
+    if (undefined !== services['tickerMonitor'])
     {
-        path = '/services/portfolio';
-        routeRegistry.registerRoute(path, 'portfolio', true);
+        let path = '/services/alerts';
+        routeRegistry.registerRoute(path, 'alerts', true);
         this._routes.push({
             path:path,
             exact:true,
-            component:Portfolio
+            component:Alerts
         });
     }
 

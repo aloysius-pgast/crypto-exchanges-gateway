@@ -63,7 +63,11 @@ In order to have a full experience, just follow [installation steps](#installati
 
 Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
 
-A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
+A _Node.js_ client is available
+
+TODO : update CLI
+
+[here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
 
 ## Available Exchanges
 
@@ -80,13 +84,19 @@ Following API are currently supported :
 * Retrieve tickers
 * Retrieve order book
 * Retrieve last executed trades
+* Retrieve klines (charts data)
 * List open orders
 * List closed orders
+* Retrieve a single order
+* Test an order (to ensure quantity and price match exchange filters)
+* Create an order
 * Retrieve balances
 
 See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
 
-See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the _websocket protocol_ supported (similar to _JSON-RPC_)
+See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the supported _websocket protocol_ (similar to _JSON-RPC_)
+
+See [documentation in _doc_ directory](doc/unitTests.adoc) for informations regarding unit tests
 
 ## Alerts
 
@@ -105,10 +115,18 @@ Probably not ;) Anyway, you will now be able to define this kind of custom alert
 
 ## Other services
 
-Currently supports following services :
+### Coin Market Cap
 
-* [CoinMarket](https://coinmarketcap.com/) (see [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API)
-* [PushOver](https://pushover.net/) (see [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
+[CoinMarket](https://coinmarketcap.com/) (see [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API)
+
+* Tickers
+* History (history of USD prices)
+
+### Push Over
+
+[PushOver](https://pushover.net/) (see [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
+
+* Push notifications
 
 ## Rate limiting
 
@@ -282,20 +300,27 @@ docker run --rm -p 8000:8000 -p 8001:8001 --name ceg -e cfg.exchanges.bittrex.ke
 
 This project was made possible thanks to following projects :
 
-* [express](https://www.npmjs.com/package/express)
-* [body-parser](https://www.npmjs.com/package/body-parser)
-* [lodash](https://www.npmjs.com/package/lodash)
-* [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
-* [binance](https://www.npmjs.com/package/binance)
-* [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
-* [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
-* [winston](https://www.npmjs.com/package/winston) (for logging)
-* [chump](https://www.npmjs.com/package/chump) (for PushOver)
-* [uuid](https://www.npmjs.com/package/uuid)
-* [ws](https://www.npmjs.com/package/ws)
-* [express-ws](https://www.npmjs.com/package/express-ws)
-* [sqlite3](https://www.npmjs.com/package/sqlite3)
 * [big.js](https://www.npmjs.com/package/big.js)
+* [binance](https://www.npmjs.com/package/binance)
+* [body-parser](https://www.npmjs.com/package/body-parser)
+* [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
+* [chump](https://www.npmjs.com/package/chump) (for PushOver)
+* [css-select](https://www.npmjs.com/package/css-select) (for HTML parsing)
+* [express](https://www.npmjs.com/package/express)
+* [express-ws](https://www.npmjs.com/package/express-ws)
+* [htmlparser2](https://www.npmjs.com/package/htmlparser2) (for HTML parsing)
+* [joi](https://www.npmjs.com/package/joi) (for JSON schema validation)
+* [lodash](https://www.npmjs.com/package/lodash)
+* [mocha](https://www.npmjs.com/package/mocha) (for unit tests)
+* [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
+* [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
+* [retry](https://www.npmjs.com/package/retry) (for custom retry strategies upon network failure)
+* [request](https://www.npmjs.com/package/request)
+* [sqlite3](https://www.npmjs.com/package/sqlite3) (for data storage)
+* [uuid](https://www.npmjs.com/package/uuid)
+* [winston](https://www.npmjs.com/package/winston) (for logging)
+* [ws](https://www.npmjs.com/package/ws)
+* [yargs](https://www.npmjs.com/package/yargs) (for CLI commands)
 
 ## Donate
 

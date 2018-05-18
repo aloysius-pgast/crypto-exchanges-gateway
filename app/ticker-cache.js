@@ -6,8 +6,8 @@ const serviceRegistry = require('./service-registry');
 
 const SID = 'internal.ticker-cache';
 
-// request ticker update every 5min (coinmarketcap API is updated every 5min)
-const COINMARKETCAP_TICKER_LOOP_PERIOD = 300 * 1000;
+// request ticker update every 3min (coinmarketcap API is updated every 5min and result are cached by CoinMarketCap module for 6 min)
+const COINMARKETCAP_TICKER_LOOP_PERIOD = 180 * 1000;
 // in case of failure, retry after 30s
 const COINMARKETCAP_TICKER_LOOP_PERIOD_AFTER_FAILURE = 30 * 1000;
 
@@ -73,7 +73,7 @@ _getExchange(exchangeId)
             }
             // cache value
             exchange.cache[evt.pair] = {
-                timestamp:(new Date().getTime()) / 1000.0,
+                timestamp:Date.now() / 1000.0,
                 data:evt.data
             }
         };
@@ -83,7 +83,7 @@ _getExchange(exchangeId)
     return this._exchanges[exchangeId];
 }
 
-_getCoinmarketcap()
+_getCoinMarketCap()
 {
     let obj = serviceRegistry.getService('coinmarketcap');
     let service = {
@@ -116,7 +116,7 @@ _getService(serviceId)
         switch (serviceId)
         {
             case 'coinmarketcap':
-                this._services[serviceId] = this._getCoinmarketcap();
+                this._services[serviceId] = this._getCoinMarketCap();
                 break;
             default:
                 return null;
@@ -131,7 +131,7 @@ _getService(serviceId)
  * @param {integer} subscribeId caller id
  * @param {float} timestamp timestamp of the first subscription
  */
-_initializeCoinmarketcapSymbol(subscribeId, timestamp)
+_initializeCoinMarketCapSymbol(subscribeId, timestamp)
 {
     let obj = {
         // last time subscriptions for current pair have changed
@@ -177,7 +177,7 @@ subscribeToExchangeTicker(subscribeId, exchangeId, pair)
         logger.error(`Exchange '${exchangeId}' does not exist`);
         return false;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let updated = false;
     if (undefined === exchange.subscriptions.pairs[pair])
     {
@@ -215,7 +215,7 @@ unsubscribeFromExchangeTicker(subscribeId, exchangeId, pair)
         logger.error(`Exchange '${exchangeId}' does not exist`);
         return false;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let updated = false;
     // no subscription for this pair, do nothing
     if (undefined === exchange.subscriptions.pairs[pair] || undefined === exchange.subscriptions.pairs[pair].subscribeId[subscribeId])
@@ -290,19 +290,20 @@ getExchangeTickerData(exchangeId, pair)
     return this._exchanges[exchangeId].cache[pair];
 }
 
-_startCoinmarketcapTickerLoop()
+_startCoinMarketCapTickerLoop()
 {
     if (debug.enabled)
     {
-        debug('Coinmarketcap ticker loop will be started');
+        debug('CoinMarketCap ticker loop will be started');
     }
     let serviceId = 'coinmarketcap';
     let service = this._services[serviceId];
     let requestId = ++service.loop.requestId;
     service.loop.enabled = true;
     service.cache = {};
+    let symbols = Object.keys(service.subscriptions.symbols[symbol]);
     const getTicker = function(){
-        service.instance.tickers({}).then(function(data){
+        service.instance.getTickers({symbols:symbols}).then(function(data){
             // loop has been disabled
             if (!service.loop.enabled)
             {
@@ -323,8 +324,12 @@ _startCoinmarketcapTickerLoop()
                 {
                     return;
                 }
+                if (null === entry.last_updated)
+                {
+                    return;
+                }
                 cache[entry.symbol] = {
-                    timestamp:(new Date().getTime()) / 1000.0,
+                    timestamp:entry.last_updated,
                     data:entry
                 }
             });
@@ -354,11 +359,11 @@ _startCoinmarketcapTickerLoop()
     getTicker();
 }
 
-_stopCoinmarketcapTickerLoop()
+_stopCoinMarketCapTickerLoop()
 {
     if (debug.enabled)
     {
-        debug('Coinmarketcap ticker loop will be stopped');
+        debug('CoinMarketCap ticker loop will be stopped');
     }
     let serviceId = 'coinmarketcap';
     let service = this._services[serviceId];
@@ -375,7 +380,7 @@ _stopCoinmarketcapTickerLoop()
  * @param {string} symbol symbol to subscribe to
  * @return {boolean} true if subscription was performed successfully, false otherwise
  */
-subscribeToCoinmarketcapTicker(subscribeId, symbol)
+subscribeToCoinMarketCapTicker(subscribeId, symbol)
 {
     let serviceId = 'coinmarketcap';
     let service = this._getService(serviceId);
@@ -384,12 +389,12 @@ subscribeToCoinmarketcapTicker(subscribeId, symbol)
         logger.error(`Service '${serviceId}' does not exist`);
         return false;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let updated = false;
     if (undefined === service.subscriptions.symbols[symbol])
     {
         updated = true;
-        service.subscriptions.symbols[symbol] = this._initializeCoinmarketcapSymbol(subscribeId, timestamp);
+        service.subscriptions.symbols[symbol] = this._initializeCoinMarketCapSymbol(subscribeId, timestamp);
     }
     else
     {
@@ -403,7 +408,46 @@ subscribeToCoinmarketcapTicker(subscribeId, symbol)
         service.subscriptions.timestamp = timestamp;
         if (!service.loop.enabled)
         {
-            this._startCoinmarketcapTickerLoop();
+            this._startCoinMarketCapTickerLoop();
+        }
+        // only request a single symbol
+        else
+        {
+            let serviceId = 'coinmarketcap';
+            let service = this._services[serviceId];
+            service.instance.getTickers({symbols:[symbol]}).then(function(data){
+                // loop has been disabled
+                if (!service.loop.enabled)
+                {
+                    return;
+                }
+                // no data ?
+                if (0 == data.length)
+                {
+                    return;
+                }
+                if (undefined === service.subscriptions.symbols[symbol])
+                {
+                    return;
+                }
+                if (null === data[0].last_updated)
+                {
+                    return;
+                }
+                service.cache[symbol] = {
+                    timestamp:data[0].last_updated,
+                    data:data[0]
+                }
+            }).catch(function(err){
+                if (undefined !== err.stack)
+                {
+                    logger.error(err.stack);
+                }
+                else
+                {
+                    logger.error(`Could not retrieve coinmarketcap ticker for '${symbol}' : ${JSON.stringify(err)}`);
+                }
+            });
         }
     }
     return true;
@@ -416,7 +460,7 @@ subscribeToCoinmarketcapTicker(subscribeId, symbol)
  * @param {string} symbol symbol to subscribe to
  * @return {boolean} true if unsubscription was performed successfully, false otherwise
  */
-unsubscribeFromCoinmarketcapTicker(subscribeId, symbol)
+unsubscribeFromCoinMarketCapTicker(subscribeId, symbol)
 {
     let serviceId = 'coinmarketcap';
     let service = this._getService(serviceId);
@@ -425,7 +469,7 @@ unsubscribeFromCoinmarketcapTicker(subscribeId, symbol)
         logger.error(`Service '${serviceId}' does not exist`);
         return false;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let updated = false;
     // no subscription for this pair, do nothing
     if (undefined === service.subscriptions.symbols[symbol] || undefined === service.subscriptions.symbols[symbol].subscribeId[subscribeId])
@@ -446,7 +490,7 @@ unsubscribeFromCoinmarketcapTicker(subscribeId, symbol)
         // no more subscriptions ? => stop ticker loop
         if (_.isEmpty(service.subscriptions.symbols))
         {
-            this._stopCoinmarketcapTickerLoop();
+            this._stopCoinMarketCapTickerLoop();
         }
     }
     return true;
@@ -457,10 +501,10 @@ unsubscribeFromCoinmarketcapTicker(subscribeId, symbol)
  *
  * @param {string} symbol symbol to retrieve value for (ex: NEO)
  * @param {string} field attribute to retrieve value for (ex: price_usd)
- * @param {string} mnTimestamp if timestamp of cached value is less than this value, it will be considered as missing (to ensure we don't use data which is too old) (optional)
+ * @param {string} minTimestamp if timestamp of cached value is less than this value, it will be considered as missing (to ensure we don't use data which is too old) (optional)
  * @return {float} value or null if no value exists
  */
-getCoinmarketcapTickerField(symbol, field, minTimestamp)
+getCoinMarketCapTickerField(symbol, field, minTimestamp)
 {
     let serviceId = 'coinmarketcap';
     if (undefined === this._services[serviceId])
@@ -490,7 +534,7 @@ getCoinmarketcapTickerField(symbol, field, minTimestamp)
  * @param {string} symbol symbol to retrieve value for (ex: NEO)
  * @return {object} {timestamp:float,data:{}} or null if no data exists
  */
-getCoinmarketcapTickerData(symbol)
+getCoinMarketCapTickerData(symbol)
 {
     let serviceId = 'coinmarketcap';
     if (undefined === this._services[serviceId])

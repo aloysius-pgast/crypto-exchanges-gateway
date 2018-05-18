@@ -1,5 +1,10 @@
 = Currencies
 
+[NOTE]
+====
+Those routes will only be available if _coinmarketcap_ service is enabled
+====
+
 == Retrieve all symbols
 
 *GET* _/coinmarketcap/symbols_
@@ -33,9 +38,9 @@ Example for *GET* _/coinmarketcap/symbols_
 ]
 ----
 
-== Retrieve all currencies which can be used to convert tickers
+== Retrieve all currencies which can be used to convert tickers to fiat
 
-*GET* _/coinmarketcap/convertCurrencies_
+*GET* _/coinmarketcap/fiatCurrencies_
 
 === Result
 
@@ -43,7 +48,7 @@ Result will be an array of currency names
 
 .Examples
 
-Example for *GET* _/coinmarketcap/convertCurrencies_
+Example for *GET* _/coinmarketcap/fiatCurrencies_
 
 [source,json]
 ----
@@ -52,15 +57,32 @@ Example for *GET* _/coinmarketcap/convertCurrencies_
     "BRL",
     "CAD",
     "CHF",
+    "CLP",
     "CNY",
+    "CZK",
+    "DKK",
     "EUR",
     "GBP",
     "HKD",
+    "HUF",
     "IDR",
+    "ILS",
     "INR",
     "JPY",
     "KRW",
     "MXN",
-    "RUB"
+    "MYR",
+    "NOK",
+    "NZD",
+    "PHP",
+    "PKR",
+    "PLN",
+    "RUB",
+    "SEK",
+    "SGD",
+    "THB",
+    "TRY",
+    "TWD",
+    "ZAR"
 ]
 ----

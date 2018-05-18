@@ -2,6 +2,7 @@
 const util = require('util');
 const _ = require('lodash');
 const logger = require('winston');
+const Errors = require('../errors');
 
 /**
  * Default error handler
@@ -27,7 +28,8 @@ app.use(function (err, req, res, next) {
         else
         {
             logger.warn("Forbidden HTTP access from %s", req.ip);
-            res.status(403).send({origin:"gateway",error:'Forbidden access'});
+            let extError = new Errors.GatewayError.Forbidden('Forbidden access');
+            return Errors.sendHttpError(res, extError);
         }
         return;
     }
@@ -42,16 +44,16 @@ app.use(function (err, req, res, next) {
     // probably a JSON parse error
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err)
     {
-        res.status(400).send({origin:"gateway",error:'Invalid JSON body'});
-        return;
+        let extError = new Errors.GatewayError.InvalidRequest.UnknownError('Invalid JSON body');
+        return Errors.sendHttpError(res, extError);
     }
     // nothing more to do if we're dealing with a WS
     if (isWs)
     {
         return;
     }
-    res.status(503).send({origin:"gateway",error:'An error occurred'});
-    return;
+    let extError = new Errors.GatewayError.InternalError();
+    return Errors.sendHttpError(res, extError);
 });
 
 };
