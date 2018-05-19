@@ -135,8 +135,8 @@ Access will be restricted using the following :
         /* rate limiting to comply with CoinMarketCap */
         "throttle":{
             "publicApi":{
-                /* one request every 6 seconds */
-                "minPeriod":6
+                /* one request every 2 seconds */
+                "minPeriod":2
             }
         }
     },
