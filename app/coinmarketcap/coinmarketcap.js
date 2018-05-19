@@ -1,13 +1,12 @@
 "use strict";
 const _ = require('lodash');
 const request = require('request');
+const debug = require('debug')('CEG:CoinMarketCap');
 const Big = require('big.js');
 const Errors = require('../errors');
 const AbstractServiceClass = require('../abstract-service');
 const PromiseHelper = require('../promise-helper');
 const Scraper = require('./historical-data-scraper');
-
-// TODO : cache result of first page for 5 min since it's likely everybody is gonna make use of it (we're all sheep)
 
 const DEFAULT_SOCKETTIMEOUT = 60 * 1000;
 
@@ -75,6 +74,14 @@ constructor(config)
         cachePeriod:360 * 1000,
         cache:{}
     };
+    // we should retrieve first page at least every N seconds (N = ${tickers cache period}/2)
+    // we cache result of first page since it's likely first 100 symbols are gonna be queried more often (we're all sheep after all)
+    this._firstPage = {
+        lastTimestamp:0,
+        nextTimestamp:0,
+        cachePeriod:Math.floor(this._cachedTickers.cachePeriod / 2.0),
+        promise:null
+    };
     this._cachedSymbols = {
         lastTimestamp:0,
         nextTimestamp:0,
@@ -111,12 +118,48 @@ async isValidSymbol(symbol)
 }
 
 /**
+ * Internal function used to refresh first page
+ *
+ * @param {boolean} forceRefresh if true page will be refreshed even if it's not expired
+ * @return {Promise} which resolves to true on success, false otherwise
+ */
+async _refreshFirstPage(forceRefresh)
+{
+    let timestamp = Date.now();
+    if (!forceRefresh && timestamp < this._firstPage.nextTimestamp)
+    {
+        return true;
+    }
+    if (null === this._firstPage.promise)
+    {
+        this._firstPage.promise = new Promise((resolve, reject) => {
+            this._getTickersPage(1).then((list) => {
+                // only update cache if list is not empty
+                if (0 != list.length)
+                {
+                    timestamp = Date.now();
+                    this._firstPage.lastTimestamp = timestamp;
+                    this._firstPage.nextTimestamp = timestamp + this._firstPage.cachePeriod;
+                }
+                this._firstPage.promise = null;
+                return resolve(true);
+            }).catch ((e) => {
+                this._firstPage.promise = null;
+                this._logError(e, '_refreshFirstPage');
+                return resolve(false);
+            });
+        });
+    }
+    return this._firstPage.promise;
+}
+
+/**
  * Internal function used to update cached symbols
  *
  * @param {boolean} forceRefresh if true cache will be refreshed even if it's not expired
  * @return {Promise} which resolves to true on success, false otherwise
  */
-_refreshCachedSymbols(forceRefresh)
+async _refreshCachedSymbols(forceRefresh)
 {
     let timestamp = Date.now();
     if (!forceRefresh && timestamp < this._cachedSymbols.nextTimestamp)
@@ -186,6 +229,10 @@ _getSymbols()
             options.timeout = DEFAULT_SOCKETTIMEOUT;
             options.method = 'GET';
             options.url = `${BASE_URL}/listings`;
+            if (debug.enabled)
+            {
+                debug('Retrieving symbols');
+            }
             request(options, function (error, response, body) {
                 if (null !== error)
                 {
@@ -259,29 +306,37 @@ async getTickers(opt)
 
     if (undefined !== opt.symbols && 0 != opt.symbols.length)
     {
-        let arr = [];
+        let symbols = [];
         _.forEach(opt.symbols, (symbol) => {
             // unknown symbol
             if (undefined === this._cachedSymbols.cache[symbol])
             {
                 return;
             }
-            let p = this._getTicker(symbol);
-            arr.push({promise:p, context:{api:'_getTicker',symbol:symbol}});
+            symbols.push(symbol);
         });
-        let data = await PromiseHelper.all(arr);
-        _.forEach(data, function (entry) {
-            // could not retrieve specific ticker
-            if (!entry.success || null === entry.value)
-            {
-                return;
-            }
-            list.push(entry.value);
-        });
-        // sort by rank
-        list = list.sort((a,b) => {
-            return a.rank < b.rank ? -1 : 1;
-        });
+        if (0 != symbols.length)
+        {
+            await this._refreshFirstPage(false);
+            let arr = [];
+            _.forEach(symbols, (symbol) => {
+                let p = this._getTicker(symbol);
+                arr.push({promise:p, context:{api:'_getTicker',symbol:symbol}});
+            });
+            let data = await PromiseHelper.all(arr);
+            _.forEach(data, function (entry) {
+                // could not retrieve specific ticker
+                if (!entry.success || null === entry.value)
+                {
+                    return;
+                }
+                list.push(entry.value);
+            });
+            // sort by rank
+            list = list.sort((a,b) => {
+                return a.rank < b.rank ? -1 : 1;
+            });
+        }
     }
     else
     {
@@ -410,6 +465,10 @@ async _getTicker(symbol)
             options.method = 'GET';
             options.url = `${BASE_URL}/ticker/${id}`;
             options.qs = params;
+            if (debug.enabled)
+            {
+                debug(`Retrieving ticker for '${symbol}'`);
+            }
             request(options, function (error, response, body) {
                 if (null !== error)
                 {
@@ -472,6 +531,10 @@ _getTickersPage(page)
             options.method = 'GET';
             options.url = `${BASE_URL}/ticker`;
             options.qs = params;
+            if (debug.enabled)
+            {
+                debug(`Retrieving tickers (page ${page})`);
+            }
             request(options, function (error, response, body) {
                 if (null !== error)
                 {
@@ -502,8 +565,18 @@ _getTickersPage(page)
                     return reject(new Errors.ServiceError.NetworkError.UnknownError(self.getId(), "Missing 'data' in response"));
                 }
                 let list = [];
+                let timestamp = Date.now();
                 _.forEach(body.data, (e) => {
-                    list.push(self._formatTicker(e));
+                    let entry = self._formatTicker(e);
+                    if (1 == page)
+                    {
+                        self._cachedTickers.cache[entry.symbol] = {
+                            entry:entry,
+                            lastTimestamp:timestamp,
+                            nextTimestamp:timestamp + self._cachedTickers.cachePeriod
+                        };
+                    }
+                    list.push(entry);
                 });
                 // we need to sort result by rang since CoinMarketCap returns an object and order will be messed up after JSON parsing
                 return resolve(list.sort((a,b) => {
@@ -541,6 +614,10 @@ async _getUSDRate(symbol)
             options.method = 'GET';
             options.url = `${BASE_URL}/ticker/${id}`;
             options.qs = params;
+            if (debug.enabled)
+            {
+                debug(`Retrieving USD rate for ${symbol}`);
+            }
             request(options, function (error, response, body) {
                 if (null !== error)
                 {

@@ -1,6 +1,7 @@
 "use strict";
 const htmlparser2 = require('htmlparser2');
 const CSSselect = require('css-select');
+const debug = require('debug')('CEG:CoinMarketCap');
 const _ = require('lodash');
 const request = require('request');
 const util = require('util');
@@ -115,8 +116,8 @@ get(currency, opt)
 /**
  * Retrieve data for a given currency
  * @param {string} currency to retrieve data for
- * @param {string} from start date (yyyy-mm-dd)
- * @param {string} to to date (yyyy-mm-dd)
+ * @param {string} from start date (yyyymmdd)
+ * @param {string} to to date (yyyymmdd)
  * @param {boolean} sortDesc if true, newest will be first
  * @return {Promise}
  */
@@ -159,6 +160,10 @@ _get(currency, from, to, sortDesc)
     options.qs = {start:from,end:to};
     let self = this;
     return new Promise((resolve, reject) => {
+        if (debug.enabled)
+        {
+            debug(`Retrieving history for ${JSON.stringify(options.qs)}`);
+        }
         request(options, function (error, response, body) {
             if (null !== error || 200 != response.statusCode)
             {
