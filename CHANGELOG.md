@@ -3,7 +3,7 @@
 ## [v1.6.0]
 ### Gateway
 * Refactoring of code related to exchanges & services
-* Support for retrieving history from Coin Market Cap (see [here](doc/coinmarketcap) for documentation and changes)
+* Support for retrieving history from Coin Market Cap (see [here](doc/coinmarketcap) for documentation and changes) (enabled by default)
 * Support for multiple instances of same exchange (might not be supported for all exchanges)
 * Better error handling (see [here](doc/errors.adoc) for documentation)
 * Indicate _fees_ when listing closed orders

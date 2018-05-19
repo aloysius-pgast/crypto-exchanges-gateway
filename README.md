@@ -281,6 +281,8 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor)
+* cfg.coinmarketcap.enabled : enable/disable CoinMarketCap module (value should be set to _1_ to enable CoinMarketCap module, _0_ to disable CoinMarketCap module)
+* cfg.coinmarketcap.history : enable/disable CoinMarketCap history feature (value should be set to _1_ to enable CoinMarketCap history, _0_ to disable CoinMarketCap history) (will be ignored if CoinMarketCap is disabled)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
 * cfg.exchanges.poloniex.key : Poloniex user key
