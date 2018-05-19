@@ -3,7 +3,7 @@ const logger = require('winston');
 const _ = require('lodash');
 const Big = require('big.js');
 const Errors = require('../../errors');
-const HttpClient = require('crypto-exchanges-http-client');
+const HttpClient = require('./http-client');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
@@ -41,7 +41,7 @@ constructor(exchangeId, exchangeName, config)
     super(exchangeId, exchangeType, exchangeName, supportedFeatures, config);
     let baseHttpUri = config.exchanges[exchangeId].baseHttpUri;
     let baseWsUri = config.exchanges[exchangeId].baseWsUri
-    this._client = new HttpClient(baseHttpUri);
+    this._client = new HttpClient(exchangeId, baseHttpUri);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
 }
@@ -56,12 +56,11 @@ async _getPairs()
     let data;
     try
     {
-        data = await this._client.pairs('dummy');
+        data = await this._client.makeRequest('GET', 'pairs');
     }
     catch (e)
     {
-        console.log(e);
-        throw new Errors.ExchangeError.NetworkError.UnknownError(this.getId(), e);
+        throw e;
     }
     let list = {};
     // same limits for all pairs
@@ -82,230 +81,101 @@ async _getPairs()
  *
  * @return {Promise}
  */
-async _getTickers()
+_getTickers()
 {
-    let data;
-    try
-    {
-        data = await this._client.tickers('dummy');
-    }
-    catch (e)
-    {
-        throw new Errors.ExchangeError.NetworkError.UnknownError(this.getId(), e);
-    }
-    return data;
+    return this._client.makeRequest('GET', 'tickers');
 }
 
 /**
- * Returns order book
- *
- * Result will be as below
- *
- * {
- *     "buy":[
- *         {
- *             "quantity":0.006,
- *             "rate":271.66292
- *         },
- *         {
- *             "quantity":96.61178755,
- *             "rate":269.65000001
- *         },...
- *     ],
- *     "sell":[
- *         {
- *             "quantity":0.01537121,
- *             "rate":271.663
- *         },
- *         {
- *             "quantity":15.52871902,
- *             "rate":271.999
- *         },...
- *     ]
- * }
- *
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
+ * Retrieve order book for a single pair
+
+ * @param {string} pair pair to retrieve order book for
+ * @param {integer} opt.limit maximum number of entries (for both ask & bids) (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
  * @return {Promise}
  */
-orderBook(opt) {
-    return this._client.orderBook('dummy', opt.pair);
+_getOrderBook(pair, opt)
+{
+    return this._client.makeRequest('GET', `orderBooks/${pair}`);
 }
 
 /**
  * Returns last trades
  *
- * Result will be as below
- *
- * [
- *     {
- *         "id":113534972,
- *         "quantity":0.19996545,
- *         "rate":0.07320996,
- *         "price":0.01463946,
- *         "orderType":"sell",
- *         "timestamp":1505726820.53
- *     },
- *     {
- *         "id":113534957,
- *         "quantity":0.14025718,
- *         "rate":0.07320997,
- *         "price":0.01026822,
- *         "orderType":"buy",
- *         "timestamp":1505726816.57
- *     }
- * ]
- *
- * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional)
- * @param {string} opt.pair pair to retrieve trades for (X-Y)
+ * @param {string} pair pair to retrieve trades for
+ * @param {integer} opt.limit maximum number of entries (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
  * @return {Promise}
  */
-trades(opt) {
-    return this._client.trades('dummy', opt.pair, opt.afterTradeId);
-}
-
-/**
- * Returns open orders
- *
- * Result will be as below
- *
- * {
- *     "14250e18-ac45-4742-9647-5ee3d5acc6b1":{
- *         "pair":"BTC-WAVES",
- *         "orderType":"sell",
- *         "orderNumber":"14250e18-ac45-4742-9647-5ee3d5acc6b1",
- *         "targetRate":0.00248,
- *         "quantity":110.80552162,
- *         "remainingQuantity":110.80552162,
- *         "openTimestamp":1498945578.53,
- *         "targetPrice":0.2747976936176
- *     },
- *     "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
- *         "pair":"USDT-NEO",
- *         "orderType":"buy",
- *         "orderNumber":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
- *         "targetRate":12,
- *         "quantity":2.33488048,
- *         "remainingQuantity":2.33488048,
- *         "openTimestamp":1502095438.57,
- *         "targetPrice":28.01856576
- *     },...
- * }
- *
- * @param {string} opt.orderNumber used to query a single order (optional, if not set all orders will be returned)
- * @param {string} opt.pairs used to restrict results to only a list of pairs
- * @return {Promise}
- */
-openOrders(opt) {
-    if (undefined !== opt.orderNumber)
-    {
-        return this._client.openOrder('dummy', opt.orderNumber);
-    }
-    return this._client.openOrders('dummy', opt.pairs);
-}
-
-/**
- * Returns closed orders
- *
- * Result will be as below
- *
- * {
- *     "dee7c058-3f48-4e6c-bb69-e54d7faf9f98":{
- *         "pair":"USDT-NEO",
- *         "orderNumber":"dee7c058-3f48-4e6c-bb69-e54d7faf9f98",
- *         "orderType":"sell",
- *         "quantity":5.00033725,
- *         "actualPrice":100.19204559,
- *         "actualRate":20.0003706,
- *         "closedTimestamp":1500488953,
- *     },
- *     "62d4368c-4363-4c9e-b992-9852189141eb":{
- *         "pair":"USDT-ANS",
- *         "orderNumber":"62d4368c-4363-4c9e-b992-9852189141eb",
- *         "orderType":"buy",
- *         "quantity":2.4927,
- *         "actualPrice":40.72509999,
- *         "actualRate":16.12999999
- *         "closedTimestamp":1498939537
- *     },...
- * }
- *
- * @param {string} opt.orderNumber used to query a single order (optional, if not set all orders will be returned)
- * @param {string} opt.pairs used to restrict results to only a list of pairs
- * @return {Promise}
- */
-closedOrders(opt)
+_getTrades(pair, opt)
 {
-    if (undefined !== opt.orderNumber)
-    {
-        return this._client.closedOrder('dummy', opt.orderNumber);
-    }
-    return this._client.closedOrders('dummy', opt.pairs);
+    return this._client.makeRequest('GET', `trades/${pair}`);
+}
+
+/**
+ * Retrieve open orders for all pairs
+ *
+ * @return {Promise}
+ */
+_getOpenOrders()
+{
+    return this._client.makeRequest('GET', `openOrders`);
+}
+
+/**
+ * Retrieve closed orders for all pairs
+ *
+ * @param {boolean} opt.completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
+ * @return {Promise}
+ */
+_getClosedOrders(opt)
+{
+    return this._client.makeRequest('GET', `closedOrders`);
 }
 
 /**
  * Creates a new order
  *
- * Result will be as below
- *
- * {
- *     "orderNumber": "103b190f-0ff8-4418-9377-7b8bcbcdf1ec"
- * }
- *
- * @param {string} opt.pair pair to create order for
- * @param {string} opt.orderType (buy|sell) order type
- * @param {float} opt.quantity quantity to buy/sell
- * @param {float} opt.targetRate price per unit
- * @return {Promise}
+ * @param {string} orderType (buy|sell)
+ * @param {string} pair pair to buy/sell
+ * @param {float} targetRate expected buy/sell price
+ * @param {float} quantity quantity to buy/sell
+ * @return {Promise} Promise which will resolve to the number of the new order
  */
-addOrder(opt) {
-    return this._client.newOrder('dummy', opt.pair, opt.orderType, opt.quantity, opt.targetRate);
-}
-
-/**
- * Cancels an order
- *
- * Result will be an empty object
- *
- * {
- * }
- *
- * @param {string} opt.orderNumber unique identifier of the order to cancel
- * @return {Promise}
- */
-cancelOrder(opt) {
-    return this._client.cancelOrder('dummy', opt.orderNumber);
-}
-
-/**
- * Return balances
- *
- * Result will be as below (currencies with a 0 balance will be filtered out)
- *
- * {
- *     "BTC":{
- *         "currency":"BTC",
- *         "total":0.73943812,
- *         "available":0.73943812,
- *         "onOrders":0
- *     },
- *     "NEO":{
- *         "currency":"NEO",
- *         "total":5.70415443,
- *         "available":5.70415443,
- *         "onOrders":0
- *     },...
- * }
- *
- * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
- * @return {Promise}
- */
-balances(opt)
+async _createOrder(orderType, pair, targetRate, quantity)
 {
-    if (undefined !== opt.currencies)
+
+    try
     {
-        return this._client.balance('dummy', opt.currencies[0]);
+        let data = await this._client.makeRequest('POST', `openOrders`, {orderType:orderType, pair:pair, targetRate:targetRate, quantity:quantity});
+        return data.orderNumber;
     }
-    return this._client.balances('dummy');
+    catch (e)
+    {
+        throw e;
+    }
+ }
+
+ /**
+  * Cancels an existing order
+  *
+  * @param {string} orderNumber number of the order to cancel
+  * @param {string} pair pair (ex: USDT-NEO) (if exchange supports retrieving an order without the pair, value will be undefined)
+  * @return {Promise} Promise which will resolve to true in case of success
+  */
+_cancelOrder(orderNumber, pair)
+{
+    return this._client.makeRequest('DELETE', `openOrders/${orderNumber}`);
+}
+
+/**
+ * Return balances for all currencies (currencies with balance = 0 should be filtered out)
+ *
+ * @return {Promise}
+ */
+_getBalances()
+{
+    return this._client.makeRequest('GET', `balances`);
 }
 
 }

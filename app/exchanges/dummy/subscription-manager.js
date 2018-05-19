@@ -407,7 +407,7 @@ _processChanges(changes, opt)
     }
 }
 
-_processChangesForRpc(changes)
+_processChangesForRpc(changes, opt)
 {
     //-- this is where we will forward subscriptions
     let messages = [];

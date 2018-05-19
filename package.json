@@ -18,7 +18,6 @@
     "bottleneck": "^2.3.0",
     "chump": "^1.2.0",
     "compression": "^1.7.1",
-    "crypto-exchanges-http-client": "^1.0.0",
     "css-select": "^2.0.0",
     "debug": "^3.1.0",
     "express": "^4.15.3",
