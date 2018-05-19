@@ -1,1 +1,1 @@
-Gives you an overview of your assets repartition across exchanges
+It will give you an overview of your assets repartition across all exchanges
