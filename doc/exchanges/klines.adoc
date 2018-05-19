@@ -1,0 +1,164 @@
+= Klines
+
+[NOTE]
+====
+Those routes require the feature _klines_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "klines":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Retrieves charts data for a given pair
+
+*GET* _/exchanges/{exchangeId}/klines/{pair}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{pair}
+|string
+|Pair to retrieve last trades for (_X-Y_)
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|interval
+|string
+|_depends on exchange_
+|Klines interval (supported interval depends on exchange)
+
+|fromTimestamp
+|float
+|
+|Used to only retrieve klines with a timestamp >= _fromTimestamp_
+
+|toTimestamp
+|float
+|
+|Used to only retrieve klines with a timestamp <= _toTimestamp_
+
+|===
+
+[NOTE]
+====
+By default, only 500 points will be returned, using current timestamp for _toTimestamp_.
+A maximum of 5000 points can be returned by service
+====
+
+=== Result
+
+Result will be an array of klines object (*the first one being the oldest*)
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|open
+|float
+|Open price
+
+|close
+|float
+|Close price
+
+|high
+|float
+|Highest price (last 24H)
+
+|low
+|float
+|Lowest price (last 24H)
+
+|volume
+|float
+|Volume
+
+|timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/binance/klines/USDT-NEO_
+
+[source,json]
+----
+[
+    {
+        "timestamp":1515267600,
+        "open":98.103,
+        "high":98.5,
+        "low":98.103,
+        "close":98.5,
+        "volume":110.45
+    },
+    {
+        "timestamp":1515267900,
+        "open":98.399,
+        "high":98.782,
+        "low":98.399,
+        "close":98.399,
+        "volume":20.776
+    },
+    {
+        "timestamp":1515268200,
+        "open":98.399,
+        "high":98.782,
+        "low":98.104,
+        "close":98.759,
+        "volume":34.548
+    },
+    {
+        "timestamp":1515268500,
+        "open":98.276,
+        "high":98.98,
+        "low":97.773,
+        "close":98.907,
+        "volume":90.266
+    },
+    {
+        "timestamp":1515268800,
+        "open":98.907,
+        "high":99,
+        "low":98.759,
+        "close":99,
+        "volume":618.428
+    },
+    {
+        "timestamp":1515269100,
+        "open":99,
+        "high":99,
+        "low":98.759,
+        "close":99,
+        "volume":582.186
+    }
+]
+----

@@ -155,6 +155,15 @@ isConnected()
     return this._connection.isConnected()
 }
 
+isConnecting()
+{
+    if (null === this._connection)
+    {
+        return false;
+    }
+    return this._connection.isConnecting()
+}
+
 /**
  * Adds a list of object to the queue
  */
@@ -260,7 +269,7 @@ reconnect(immediate)
 /**
  * Creates a new connection
  *
- * @param {integer} delay delay in ms before creating the connection
+ * @param {integer} delay delay in ms before connecting (optional, default = no delay)
  */
 _createConnection(delay)
 {

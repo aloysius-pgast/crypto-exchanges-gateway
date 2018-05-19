@@ -1,6 +1,8 @@
 "use strict";
+const logger = require('winston');
 const _ = require('lodash');
 const Big = require('big.js');
+const Errors = require('../../errors');
 const HttpClient = require('crypto-exchanges-http-client');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
@@ -10,6 +12,19 @@ const SubscriptionManagerClass = require('./subscription-manager');
  */
 
 const exchangeType = 'dummy';
+
+// list of all possible features (should be enabled by default if supported by class)
+const supportedFeatures = {
+    'pairs':{enabled:true},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true},
+    'klines':{enabled:false}, 'wsKlines':{enabled:false},
+    'orders':{enabled:true, withoutPair:true},
+    'openOrders':{enabled:true, withoutPair:true},
+    'closedOrders':{enabled:true, withoutPair:true, completeHistory:true},
+    'balances':{enabled:true, withoutCurrency:true}
+};
 
 class Exchange extends AbstractExchangeClass
 {
@@ -23,7 +38,7 @@ class Exchange extends AbstractExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    super(exchangeId, exchangeType, exchangeName, config.exchanges[exchangeId].feesPercent);
+    super(exchangeId, exchangeType, exchangeName, supportedFeatures, config);
     let baseHttpUri = config.exchanges[exchangeId].baseHttpUri;
     let baseWsUri = config.exchanges[exchangeId].baseWsUri
     this._client = new HttpClient(baseHttpUri);
@@ -32,125 +47,53 @@ constructor(exchangeId, exchangeName, config)
 }
 
 /**
-* Returns ticker for all currencies
-*
-*  Result will be as below
-*
-* {
-*     "BITCNY-BTC":{
-*         "pair":"BITCNY-BTC",
-*         "last":21802.21999999,
-*         "priceChangePercent":2.5,
-*         "sell":21802.21999999,
-*         "buy":21802.20000021,
-*         "high":23400.00099998,
-*         "low":21000.03,
-*         "volume":2.12833311,
-*         "timestamp":1502120848.53
-*      },...
-* }
-*
-* @param {string} opt.pairs used to retrieve ticker for only a list of pairs (optional)
-* @return {Promise}
-*/
-tickers(opt)
+ * Returns all active pairs
+ *
+ * @return {Promise}
+ */
+async _getPairs()
 {
-    let self = this;
-    return this._client.tickers('dummy', opt.pairs);
+    let data;
+    try
+    {
+        data = await this._client.pairs('dummy');
+    }
+    catch (e)
+    {
+        console.log(e);
+        throw new Errors.ExchangeError.NetworkError.UnknownError(this.getId(), e);
+    }
+    let list = {};
+    // same limits for all pairs
+    let limits = this._getDefaultLimits();
+    _.forEach(data, function (entry) {
+        list[entry.pair] = {
+            pair:entry.pair,
+            baseCurrency: entry.baseCurrency,
+            currency: entry.currency,
+            limits:limits
+        }
+    });
+    return list;
 }
 
 /**
- * Returns existing pairs
+ * Retrieve tickers for all pairs
  *
- * Result will be as below
- *
- * {
- *     "X-Y":{
- *         "pair":"X-Y",
- *         "baseCurrency":"X",
- *         "currency":"Y"
- *     },...
- * }
- *
- * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
- * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
- * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
- * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  * @return {Promise}
  */
-pairs(opt)
+async _getTickers()
 {
-    let timestamp = parseInt(new Date().getTime() / 1000.0);
-    let updateCache = true;
-    let useCache = false;
-    if (undefined !== opt)
+    let data;
+    try
     {
-        if (undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
-        {
-            useCache = true;
-        }
-        // don't use cache if user asked for a list currencies / base currencies
-        if (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency)
-        {
-            updateCache = false;
-            useCache = false;
-        }
+        data = await this._client.tickers('dummy');
     }
-    if (useCache)
+    catch (e)
     {
-        return new Promise((resolve, reject) => {
-            resolve(this._cachedPairs.cache);
-        });
+        throw new Errors.ExchangeError.NetworkError.UnknownError(this.getId(), e);
     }
-    let self = this;
-    return new Promise((resolve, reject) => {
-        self._client.pairs('dummy').then(function(data){
-            let list = {};
-            // same limits for all pairs
-            let limits = self._getDefaultLimits();
-            _.forEach(data, function (entry) {
-                if (undefined !== opt.pair)
-                {
-                    // ignore this pair
-                    if (opt.pair != entry.pair)
-                    {
-                        return;
-                    }
-                }
-                else if (undefined !== opt.currency)
-                {
-                    // ignore this pair
-                    if (opt.currency != entry.currency)
-                    {
-                        return;
-                    }
-                }
-                else if (undefined !== opt.baseCurrency)
-                {
-                    // ignore this pair
-                    if (opt.baseCurrency != entry.baseCurrency)
-                    {
-                        return;
-                    }
-                }
-                list[entry.pair] = {
-                    pair:entry.pair,
-                    baseCurrency: entry.baseCurrency,
-                    currency: entry.currency,
-                    limits:limits
-                }
-            });
-            if (updateCache)
-            {
-                self._cachedPairs.cache = list;
-                self._cachedPairs.lastTimestamp = timestamp;
-                self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
-            }
-            resolve(list);
-        }).catch (function(e){
-            reject(e);
-        });
-    });
+    return data;
 }
 
 /**

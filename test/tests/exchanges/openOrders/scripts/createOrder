@@ -1,0 +1,976 @@
+#!/usr/bin/env node
+"use strict";
+const yargs = require('yargs')
+const _ = require('lodash');
+const Big = require('big.js');
+const RestClient = require('../../../../lib/rest-client');
+const assert = require('assert');
+const Mocha = require('mocha');
+
+// define command arguments
+const argv = yargs
+    .locale('en')
+    .options({
+        'exchange':{
+            alias:'e',
+            describe:'exchange identifier',
+            requiresArg:true,
+            demandOption:true
+        },
+        'orderType':{
+            alias:'t',
+            describe:'orderType (buy|sell)',
+            choices:['buy','sell'],
+            requiresArg:true,
+            demandOption:true
+        },
+        'pair':{
+            alias:'p',
+            describe:'pair (X-Y)',
+            coerce:function(val){
+                let valid = true;
+                if (!(/^[A-Z0-9]+-[A-Z0-9]+$/.test(val)))
+                {
+                    throw new Error("argument '--pair, -p' should be a pair (X-Y)");
+                }
+                return val;
+            },
+            requiresArg:true,
+            demandOption:true
+        },
+        'targetRate':{
+            alias:'r',
+            describe:'target rate (float)',
+            coerce:function(val){
+                let valid = true;
+                let value;
+                if (!(/^[0-9]+(\.[0-9]+)*$/.test(val)))
+                {
+                    valid = false;
+                }
+                else
+                {
+                    value = parseFloat(val);
+                    if (value <= 0)
+                    {
+                        valid = false;
+                    }
+                }
+                if (!valid)
+                {
+                    throw new Error("argument '--targetRate, -r' should be a float > 0");
+                }
+                return value;
+            },
+            requiresArg:true,
+            demandOption:false
+        },
+        'quantity':{
+            alias:'q',
+            describe:'quantity to buy/sell (float)',
+            coerce:function(val){
+                let valid = true;
+                let value;
+                if (!(/^[0-9]+(\.[0-9]+)*$/.test(val)))
+                {
+                    valid = false;
+                }
+                else
+                {
+                    value = parseFloat(val);
+                    if (value <= 0)
+                    {
+                        valid = false;
+                    }
+                }
+                if (!valid)
+                {
+                    throw new Error("argument '--quantity, -q' should be a float > 0");
+                }
+                return value;
+            },
+            requiresArg:true,
+            demandOption:false
+        },
+        'uri':{
+            alias:'u',
+            describe:'base gateway uri (http://{host}:{port})',
+            default:'http://127.0.0.1:8000',
+            coerce:function(val){
+                let valid = true;
+                if (!val.startsWith('http://') && !val.startsWith('https://'))
+                {
+                    throw new Error("argument '--uri, -u' should start with 'http://' or 'https://'");
+                }
+                return val;
+            },
+            requiresArg:true,
+            demandOption:false
+        },
+        'apiKey':{
+            alias:'k',
+            describe:'API key declared on gateway',
+            requiresArg:true,
+            demandOption:false
+        },
+        'dry':{
+            describe:'only simulate orders',
+            requiresArg:false,
+            demandOption:false
+        },
+        'help':{
+            alias:'h',
+            describe:'display help',
+            requiresArg:false,
+            demandOption:false
+        }
+    })
+    .version(false)
+    .argv
+
+if (argv['help'])
+{
+    yargs.showHelp();
+    process.exit(1);
+}
+
+// create rest client instance
+let opt = {};
+if (undefined !== argv['u'])
+{
+    opt.baseUri = argv['u'];
+}
+if (undefined !== argv['k'])
+{
+    opt.apiKey = argv['k'];
+}
+const client = new RestClient(opt);
+const runner = new Mocha({timeout:client.getTimeout(),bail:true});
+const mainSuite = Mocha.Suite.create(runner.suite, `Create '${argv['t']}' order for '${argv['p']}' pair on '${argv['e']}' exchange`);
+
+// will contain the order number upon successful order creation
+let orderNumber;
+
+/**
+ * Retrieves the list of services
+ *
+ * @return {object} list of services on success, exit on error
+ */
+const getServices = async () => {
+    let path = `/server/services`;
+    let result = await client.makeRequest('GET', path);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.log('ERR');
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve services (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve services`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Retrieves the list of pairs for a given exchange
+ *
+ * @param {string} exchangeId exchange identifier
+ * @return {object} list of pairs on success, exit on error
+ */
+const getPairs = async (exchangeId) => {
+    let path = `/exchanges/${exchangeId}/pairs`;
+    let params = {useCache:true};
+    let result = await client.makeRequest('GET', path, params);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.log('ERR');
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve pairs on '${exchangeId}' exchange (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve pairs on '${exchangeId} exchange`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Retrieve balances
+ *
+ * @param {string} exchangeId exchange identifier
+ * @return {object} list of pairs on success, exit on error
+ */
+const getBalances = async (exchangeId) => {
+    let path = `/exchanges/${exchangeId}/balances`;
+    let result = await client.makeRequest('GET', path);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.log('ERR');
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve balances on '${exchangeId}' exchange (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve balances on '${exchangeId} exchange`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Retrieve order book
+ *
+ * @param {string} exchangeId exchange identifier
+ * @param {string} pair pair to retrieve order book for
+ * @return {object} order book on success, exit on error
+ */
+const getOrderBook = async (exchangeId, pair) => {
+    let path = `/exchanges/${exchangeId}/orderBooks/${pair}`;
+    let result = await client.makeRequest('GET', path);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.log('ERR');
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve order book for '${pair}'on '${exchangeId}' exchange (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.log('ERR');
+        console.error(`Could not retrieve order book for '${pair}' pair on '${exchangeId}' exchange`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Checks if an exchange exists in the list of services
+ *
+ * @param {object} services list of services
+ * @param {string} exchangeId exchange identifier
+ * @return {boolean} true if exchange exist, false otherwise
+ */
+const checkExchange = (services, exchangeId) => {
+    if (undefined === services.exchanges[exchangeId])
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Checks if a list of features are enabled for a given exchange
+ *
+ * @param {object} services list of services
+ * @param {string} exchangeId exchange identifier
+ * @param {string[]} features features to check
+ * @return {string[]} array of unsupported features
+ */
+const checkExchangeFeatures = (services, exchangeId, features) => {
+    if (!checkExchange(services, exchangeId))
+    {
+        return features;
+    }
+    let unsupportedFeatures = [];
+    _.forEach(features, (f) => {
+        if (undefined === services.exchanges[exchangeId].features[f] || !services.exchanges[exchangeId].features[f].enabled)
+        {
+            unsupportedFeatures.push(f);
+        }
+    });
+    return unsupportedFeatures;
+}
+
+/**
+ * Build the suite description for a given REST request
+ *
+ * @param {string} method REST request
+ * @param {string} path request path
+ * @param {object} params request parameters (optional)
+ * @return {string}
+ */
+const getTestSuiteDescription = (method, path, params) => {
+    let description = `${method} ${path}`;
+    if (undefined !== params && !_.isEmpty(params))
+    {
+        description += ` ${JSON.stringify(params)}`;
+    }
+    return description;
+}
+
+/**
+ * Creates an order
+ *
+ * @param {string} exchangeId exchange identifier
+ * @param {string} orderType (buy|sell)
+ * @param {float} targetRate
+ * @param {float} quantity
+ * @param {string} pair (X-Y)
+ * @param {object[]} list of invalid fields (ie: which won't match exchange filters) (will be ignored unless 'dry' mode is enabled)
+ * @return {Promise} Promise which will resolve to an object {error:Error,httpCode:integer,body:object}
+ */
+const createOrder = (exchangeId, orderType, pair, targetRate, quantity, invalidFields) => {
+    let path = `/exchanges/${exchangeId}/openOrders`;
+    let params = {orderType:orderType,pair:pair,targetRate:targetRate,quantity:quantity};
+    if (argv['dry'])
+    {
+        return new Promise((resolve,reject) => {
+            setTimeout(function(){
+                if (0 == invalidFields.length)
+                {
+                    return resolve({httpCode:200,body:{orderNumber:'xxxxxxxxxxxxxxxxxxxx'}});
+                }
+                let fields = [];
+                _.forEach(invalidFields, (e) => {
+                    fields.push(e.field);
+                });
+                let error;
+                let data = {exchange:argv['e'],pair:argv['p']}
+                if (-1 != fields.indexOf('quantity'))
+                {
+                    error = 'InvalidQuantity';
+                    data.quantity = quantity;
+                }
+                else if (-1 != fields.indexOf('targetRate'))
+                {
+                    error = 'InvalidRate';
+                    data.rate = targetRate;
+                }
+                else if (-1 != fields.indexOf('targetPrice'))
+                {
+                    error = 'InvalidPrice';
+                    data.quantity = quantity;
+                    data.rate = targetRate;
+                    data.price =  parseFloat(new Big(quantity).times(targetRate));
+                }
+                else if (-1 != fields.indexOf('balance'))
+                {
+                    error = 'InsufficientFunds';
+                    data.quantity = quantity;
+                    data.rate = targetRate;
+                    data.price =  parseFloat(new Big(quantity).times(targetRate));
+                }
+                let errorType = `ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.${error}`;
+                return resolve({
+                    httpCode:400,
+                    body:{
+                        origin:"exchange",
+                        error:"Fake error",
+                        route:{method:"POST",path:"/exchanges/binance/openOrders"},
+                        extError:{
+                            errorType:errorType,
+                            message:"Fake error",
+                            data:data
+                        }
+                    }
+                });
+            }, 100);
+        });
+    }
+    return client.makeRequest('POST', path, params);
+}
+
+/**
+ * Cancels an order
+ *
+ * @param {string} exchangeId exchange identifier
+ * @param {string} pair (X-Y)
+ * @param {string} orderNumber order number
+ * @return {Promise} Promise which will resolve to an object {error:Error,httpCode:integer,body:object}
+ */
+const cancelOrder = (exchangeId, pair, orderNumber) => {
+    let path = `/exchanges/${exchangeId}/openOrders/${orderNumber}`;
+    let params = {pair:pair};
+    if (argv['dry'])
+    {
+        return new Promise((resolve, reject) => {
+            resolve({httpCode:200,body:{}});
+        });
+    }
+    return client.makeRequest('DELETE', path, params);
+}
+
+/**
+ * Retrieve order
+ *
+ * @param {string} exchangeId exchange identifier
+ * @param {string} orderNumber order number to retrieve
+ * @param {string} pair (X-Y)
+ * @return {Promise} Promise which will resolve to an object {error:Error,httpCode:integer,body:object}
+ */
+const getOrder = (exchangeId, orderNumber, pair) => {
+    let path = `/exchanges/${exchangeId}/orders/${orderNumber}`;
+    let params = {pair:pair};
+    return client.makeRequest('GET', path, params);
+}
+
+/**
+ * Check whether or not a given float value has correct precision (ie: <= expectedPrecision)
+ *
+ * @param {float} value value to check
+ * @param {integer} maxPrecision max supported precision
+ * @return {boolean}
+ */
+const isValidPrecision = (value, maxPrecision) => {
+    let split = value.toFixed(8).replace(/0+$/g, '').split('.');
+    let precision = split.length > 1 ? (split[1].length) : 0;
+    return precision <= maxPrecision;
+}
+
+/**
+ * Check whether or not a given float value has correct step (ie: multiple of step)
+ *
+ * @param {float} value value to check
+ * @param {float} expectedStep step supported on exchange
+ * @return {boolean}
+ */
+const isValidStep = (value, expectedStep) => {
+    let floatValue = new Big(value);
+    // ensure we have a multiple of step
+    let mod = floatValue.mod(expectedStep);
+    return mod.eq(0);
+}
+
+
+/**
+ * Checks whether or not an order will be accepted
+ *
+ * @param {float} feesPercent % fees (0-100)
+ * @param {object} pairs exchange pairs
+ * @param {object} balances list of balances
+ * @param {float} targetRate order rate
+ * @param {string} quantity quantity to buy/sell
+ * @return {object} {valid:boolean,invalidFields:[]} (invalidFields can contain objects {field:string,value:float,message:string}, where field can be one of [targetRate,quantity,targetPrice])
+ */
+const checkOrder = (feesPercent, pairs, balances, targetRate, quantity) => {
+    let result = {valid:true, invalidFields:[]};
+    let targetPrice = parseFloat(new Big(targetRate).times(quantity).toFixed(8));
+    let fields = {
+        'targetRate':{value:targetRate,limitsField:'rate'},
+        'quantity':{value:quantity,limitsField:'quantity'},
+        'targetPrice':{value:targetPrice,limitsField:'price'}
+    }
+    _.forEach(fields, (obj, field) => {
+        _.forEach(['min','max','step','precision'], (k) => {
+            if (undefined !== pairs[argv['p']].limits[obj.limitsField][k] && null !== pairs[argv['p']].limits[obj.limitsField][k])
+            {
+                switch (k)
+                {
+                    case 'min':
+                        if (obj.value < pairs[argv['p']].limits[obj.limitsField][k])
+                        {
+                            result.invalidFields.push({field:field,value:obj.value,message:`'${field}' should be >= ${pairs[argv['p']].limits[obj.limitsField][k]}`});
+                            return false;
+                        }
+                        break;
+                    case 'max':
+                        if (obj.value > pairs[argv['p']].limits[obj.limitsField][k])
+                        {
+                            result.invalidFields.push({field:field,value:obj.value,message:`'${field}' should be <= ${pairs[argv['p']].limits[obj.limitsField][k]}`});
+                            return false;
+                        }
+                        break;
+                    case 'step':
+                        if (!isValidStep(obj.value, pairs[argv['p']].limits[obj.limitsField][k]))
+                        {
+                            let step = new Big(pairs[argv['p']].limits[obj.limitsField][k]).toFixed();
+                            result.invalidFields.push({field:field,value:obj.value,message:`'${field}' should be a multiple of ${step}`});
+                            return false;
+                        }
+                        break;
+                    case 'precision':
+                        if (!isValidPrecision(obj.value, pairs[argv['p']].limits[obj.limitsField][k]))
+                        {
+                            result.invalidFields.push({field:field,value:obj.value,message:`maximum precision for '${field}' is ${pairs[argv['p']].limits[obj.limitsField][k]}`});
+                            return false;
+                        }
+                        break;
+                }
+            }
+        });
+    });
+    let splittedPair = argv['p'].split('-');
+    if ('buy' == argv['t'])
+    {
+        let maxTargetPrice = new Big(0);
+        let maxFinalPrice = new Big(0);
+        let fees = new Big(0);
+        if (undefined !== balances[splittedPair[0]])
+        {
+            let feesFactor = new Big(feesPercent).div(10).plus(1);
+            maxFinalPrice = new Big(balances[splittedPair[0]].available);
+            maxTargetPrice = maxFinalPrice.div(feesFactor);
+            fees = maxFinalPrice.minus(maxTargetPrice);
+        }
+        // compute max targetPrice
+        if (maxTargetPrice.lt(targetPrice))
+        {
+            result.invalidFields.push({field:'targetPrice',value:targetPrice,message:`'targetPrice' cannot be > ${maxTargetPrice} (balances[${splittedPair[0]}] = ${maxFinalPrice}, fees = ${fees.toFixed(8)})`});
+            result.invalidFields.push({field:'balance',value:maxFinalPrice,message:`balances[${splittedPair[0]}] is not enough`});
+        }
+    }
+    // check quantity
+    else
+    {
+        let balance = new Big(0);
+        if (undefined !== balances[splittedPair[1]])
+        {
+            balance = new Big(balances[splittedPair[1]].available);
+        }
+        if (balance.lt(quantity))
+        {
+            result.invalidFields.push({field:'quantity',value:quantity,message:`'quantity' cannot be > ${balance} (balances[${splittedPair[1]}] = ${balance.toFixed()})`});
+            result.invalidFields.push({field:'balance',value:balance,message:`balances[${splittedPair[1]}] is not enough`});
+        }
+    }
+    if (0 != result.invalidFields.length)
+    {
+        result.valid = false;
+    }
+    return result;
+}
+
+/**
+ * Tries to compute a quantity which is < min
+ *
+ * @param {object} exchange pairs
+ * @return {float} invalid quantity or undefined if it was not possible to compute quantity
+ */
+const computeInvalidQuantity = (pairs) => {
+    if (undefined === pairs[argv['p']].limits.quantity.min)
+    {
+        return undefined;
+    }
+    // we cannot compute a lower value
+    if (pairs[argv['p']].limits.quantity.min <= 0.00000001)
+    {
+        return undefined;
+    }
+    return parseFloat(new Big(pairs[argv['p']].limits.quantity.min).div(2).toFixed(8));
+}
+
+/**
+ * Used to ensure a float value matches correct precision & step
+ *
+ * @param {float} value float value to round
+ * @param {integer} precision
+ * @param {float} step
+ * @return {Big}
+ */
+const getRoundedFloat = (value, precision, step) => {
+    if (undefined === precision)
+    {
+        precision = 8;
+    }
+    let type = typeof value;
+    let str;
+    if ('string' == type)
+    {
+        str = parseFloat(value).toFixed(precision + 1);
+    }
+    else if ('number' == type)
+    {
+        str = value.toFixed(precision + 1);
+    }
+    // probably a big number
+    else
+    {
+        str = value.toFixed(precision + 1);
+    }
+    if (precision > 0)
+    {
+        // remove last digit
+        str = str.substring(0, str.length - 1);
+    }
+    else
+    {
+        // remove . + last digit
+        str = str.substring(0, str.length - 2);
+    }
+    // ensure we're using correct step
+    if (undefined !== step)
+    {
+        let floatValue = new Big(str);
+        // ensure we have a multiple of step
+        let mod = floatValue.mod(step);
+        // not a multiple of step
+        if (!mod.eq(0))
+        {
+            floatValue = floatValue.minus(mod);
+        }
+        str = floatValue.toFixed(precision);
+    }
+    return new Big(str);
+}
+
+/**
+ * Tries to compute a targetRate which won't be executed
+ *
+ * @param {object} exchange pairs
+ * @return {float} rate or undefined if it was not possible to compute rate
+ */
+const computeImpossibleTargetRate = (pairs, orderBook) => {
+    if (0 === orderBook.buy.length || 0 === orderBook.sell.length)
+    {
+        return undefined;
+    }
+    // for buy order return the lowest possible rate
+    if ('buy' == argv['t'])
+    {
+        // by default, try to request lowest ask / 10
+        let rate = getRoundedFloat(new Big(orderBook.sell[0].rate).div(10));
+        let maxRate = new Big(orderBook.sell[0].rate).div(5);
+        // if rate is higher than maxRate or lower than min, abort
+        if (rate.gt(maxRate) || rate.lt(pairs[argv['p']].limits.rate.min))
+        {
+            return undefined;
+        }
+        return parseFloat(rate.toFixed(pairs[argv['p']].limits.rate.precision));
+    }
+    // for sell orders return the max possible rate
+    else
+    {
+        // by default, use higher bid * 10
+        let rate = new Big(orderBook.buy[0].rate).times(10);
+        // we have a max value
+        if (undefined !== pairs[argv['p']].limits.rate.max && null !== pairs[argv['p']].limits.rate.max)
+        {
+            // if rate is greater than max, abort
+            if (rate.gt(pairs[argv['p']].limits.rate.max))
+            {
+                return undefined;
+            }
+        }
+        return parseFloat(rate.toFixed(pairs[argv['p']].limits.rate.precision));
+    }
+    return undefined;
+}
+
+/**
+ * Tries to compute a targetRate which will be invalid
+ *
+ * @param {object} exchange pairs
+ * @return {float} rate or undefined if it was not possible to compute rate
+ */
+const computeInvalidTargetRate = (pairs, orderBook) => {
+    if (0 === orderBook.buy.length || 0 === orderBook.sell.length)
+    {
+        return undefined;
+    }
+    // for buy order return the lowest possible rate
+    if ('buy' == argv['t'])
+    {
+        return 0.00000001;
+    }
+    // for sell orders return the max possible rate
+    else
+    {
+        // we have a max value, return max value * 2
+        if (undefined !== pairs[argv['p']].limits.rate.max && null !== pairs[argv['p']].limits.rate.max)
+        {
+            return 2 * pairs[argv['p']].limits.rate.max;
+        }
+        // use higher bid * 100000
+        let rate = new Big(orderBook.buy[0].rate).times(100000);
+        return parseFloat(rate.toFixed(pairs[argv['p']].limits.rate.precision));
+    }
+    return undefined;
+}
+
+/**
+ * Ensure we have expected error
+ *
+ * @param {object} result result returned by rest client
+ * @param {function} done Mocha callback
+ */
+const checkError = (result, done) => {
+    // we're supposed to have an error
+    if (400 != result.httpCode)
+    {
+        done(new Error(`HTTP code should be 400`));
+    }
+    else if (undefined === result.body || undefined === result.body.extError || 0 !== result.body.extError.errorType.indexOf('ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition'))
+    {
+        done(new Error(`Error type should be 'ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition'`));
+    }
+    else
+    {
+        done();
+    }
+    console.log(JSON.stringify(result.body, null, 4));
+}
+
+/**
+ * Ensure we successfully created order
+ *
+ * @param {object} result result returned by rest client
+ * @param {function} done Mocha callback
+ */
+const checkSuccess = (result, done) => {
+    if (200 != result.httpCode)
+    {
+        done(new Error(`HTTP code should be 200`));
+    }
+    else if (undefined === result.body || undefined === result.body.orderNumber)
+    {
+        done(new Error(`Body should contain 'orderNumber'`));
+    }
+    else
+    {
+        orderNumber = result.body.orderNumber;
+        done();
+    }
+    console.log(JSON.stringify(result.body, null, 4));
+}
+
+/**
+ * Creates a suite using valid quantity
+ *
+ * @param {object} services list of services
+ * @param {object} pairs exchange pairs
+ * @param {object} orderBook order book for current pair
+ * @param {object} balances available balances
+ */
+const createSuiteForInvalidOrderCreation = (services, pairs, orderBook, balances) => {
+    let suite = Mocha.Suite.create(mainSuite, `Create INVALID order`);
+    let targetRate = argv['r'];
+    let quantity = argv['q'];
+    if (undefined === quantity)
+    {
+        quantity = computeInvalidQuantity(pairs);
+        if (undefined === quantity)
+        {
+            suite.addTest(new Mocha.Test("could not compute invalid quantity (please provide 'quantity')"));
+            return;
+        }
+    }
+    if (undefined === targetRate)
+    {
+        targetRate = computeInvalidTargetRate(pairs, orderBook);
+        if (undefined === targetRate)
+        {
+            suite.addTest(new Mocha.Test("could not compute invalid targetRate (please provide 'rate')"));
+            return;
+        }
+    }
+    let result = checkOrder(services.exchanges[argv['e']].feesPercent, pairs, balances, targetRate, quantity);
+    // we didn't manage to generate an invalid order
+    if (result.valid)
+    {
+        suite.addTest(new Mocha.Test("could not compute invalid order (please provide 'quantity' and 'rate')"));
+        return;
+    }
+    let path = `/exchanges/${argv['e']}/openOrders`;
+    let params = {orderType:argv['t'],pair:argv['p'],targetRate:targetRate,quantity:quantity};
+    let description = getTestSuiteDescription('POST', path, params);
+    suite = Mocha.Suite.create(suite, description);
+    // we expect a failure
+    let message = "it should fail with a 400 error (ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition) because :";
+    _.forEach(result.invalidFields, (e) => {
+        message += `\n- ${e.message} (${e.field} = ${e.value.toFixed(8)})`;
+    });
+    suite.addTest(new Mocha.Test(message, function(done){
+        createOrder(argv['e'], params.orderType, params.pair, params.targetRate, params.quantity, result.invalidFields).then(function(result){
+            checkError(result, done);
+        });
+    }));
+}
+
+/**
+ * Creates a suite using invalid quantity
+ *
+ * @param {object} services list of services
+ * @param {object} pairs exchange pairs
+ * @param {object} orderBook order book for current pair
+ * @param {object} balances available balances
+ */
+const createSuiteForValidOrderCreation = (services, pairs, orderBook, balances) => {
+    let suite = Mocha.Suite.create(mainSuite, `Create VALID order`);
+    let targetRate = argv['r'];
+    let quantity = argv['q'];
+    if (undefined === quantity)
+    {
+        quantity = pairs[argv['p']].limits.quantity.min;
+    }
+    if (undefined === targetRate)
+    {
+        targetRate = computeImpossibleTargetRate(pairs, orderBook);
+        if (undefined === targetRate)
+        {
+            suite.addTest(new Mocha.Test("could not compute rate (please provide 'rate')"));
+            return;
+        }
+    }
+    let result = checkOrder(services.exchanges[argv['e']].feesPercent, pairs, balances, targetRate, quantity);
+    // we didn't manage to generate a valid order
+    if (!result.valid)
+    {
+        let message = "could not compute valid order (please provide 'quantity' and 'rate') :";
+        _.forEach(result.invalidFields, (e) => {
+            message += `\n- ${e.message} (${e.field} = ${e.value.toFixed(8)})`;
+        });
+        suite.addTest(new Mocha.Test(message));
+        return;
+    }
+    let path = `/exchanges/${argv['e']}/openOrders`;
+    let params = {orderType:argv['t'],pair:argv['p'],targetRate:targetRate,quantity:quantity};
+    let description = getTestSuiteDescription('POST', path, params);
+    suite = Mocha.Suite.create(suite, description);
+    // we expect a success
+    let message = "it should successfully create an order";
+    suite.addTest(new Mocha.Test(message, function(done){
+        createOrder(argv['e'], params.orderType, params.pair, params.targetRate, params.quantity, result.invalidFields).then(function(result){
+            checkSuccess(result, done);
+        });
+    }));
+}
+
+/**
+ * Creates a suite based on rate & quantity provided by user
+ *
+ * @param {object} services list of services
+ * @param {object} pairs exchange pairs
+ * @param {object} orderBook order book for current pair
+ * @param {object} balances available balances
+ */
+const createSuiteForCustomOrderCreation = (services, pairs, orderBook, balances) => {
+    let suite = Mocha.Suite.create(mainSuite, `Create CUSTOM order`);
+    let path = `/exchanges/${argv['e']}/openOrders`;
+    let params = {orderType:argv['t'],pair:argv['p'],targetRate:argv['r'],quantity:argv['q']};
+    let description = getTestSuiteDescription('POST', path, params);
+    suite = Mocha.Suite.create(suite, description);
+    let result = checkOrder(services.exchanges[argv['e']].feesPercent, pairs, balances, argv['r'], argv['q']);
+    if (!result.valid)
+    {
+        let message = "it should fail with a 400 error (ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition) because :";
+        _.forEach(result.invalidFields, (e) => {
+            message += `\n- ${e.message} (${e.field} = ${e.value})`;
+        });
+        suite.addTest(new Mocha.Test(message, function(done){
+            createOrder(argv['e'], params.orderType, params.pair, params.targetRate, params.quantity, result.invalidFields).then(function(result){
+                checkError(result, done);
+            });
+        }));
+        return;
+    }
+    let message = "it should successfully create an order";
+    suite.addTest(new Mocha.Test(message, function(done){
+        createOrder(argv['e'], params.orderType, params.pair, params.targetRate, params.quantity, result.invalidFields).then(function(result){
+            checkSuccess(result, done);
+        });
+    }));
+}
+
+/**
+ * Creates all tests
+ *
+ * @param {object} services list of services
+ * @param {object} pairs exchange pairs
+ * @param {object} orderBook order book for current pair
+ * @param {object} balances available balances
+ */
+const createSuites = async (services, pairs, orderBook, balances) => {
+    // user provided rate & quantity
+    if (undefined !== argv['r'] && undefined !== argv['q'])
+    {
+        createSuiteForCustomOrderCreation(services, pairs, orderBook, balances);
+    }
+    // generate an invalid order, followed by a valid order
+    else
+    {
+        createSuiteForInvalidOrderCreation(services, pairs, orderBook, balances);
+        createSuiteForValidOrderCreation(services, pairs, orderBook, balances);
+    }
+}
+
+const main = async () => {
+    process.stdout.write('Please wait while test suite is being built...');
+    const services = await getServices();
+    if (!checkExchange(services, argv['e']))
+    {
+        console.log('ERR');
+        console.error(`'${argv['e']}' exchange is not supported`);
+        process.exit(1);
+    }
+    const unsupportedFeatures = checkExchangeFeatures(services, argv['e'], ['openOrders','balances','orders', 'orderBooks']);
+    if (0 != unsupportedFeatures.length)
+    {
+        console.log('ERR');
+        console.error(`'${argv['e']}' exchange has no supported for features [${unsupportedFeatures.join(',')}]`);
+        process.exit(1);
+    }
+    const pairs = await getPairs(argv['e']);
+    if (undefined === pairs[argv['p']])
+    {
+        console.log('ERR');
+        console.error(`'${argv['p']}' pair is not supported on '${argv['e']}' exchange`);
+        process.exit(1);
+    }
+    const balances = await getBalances(argv['e']);
+    const orderBook = await getOrderBook(argv['e'], argv['p']);
+    await createSuites(services, pairs, orderBook, balances);
+    console.log('OK');
+    runner.run(async function(){
+        if (undefined === orderNumber)
+        {
+            console.log('No order to cancel');
+            return;
+        }
+        // cancel order
+        process.stdout.write(`Cancelling order '${orderNumber}'...`);
+        let result = await cancelOrder(argv['e'], argv['p'], orderNumber);
+        if (undefined === result.error && 200 == result.httpCode)
+        {
+            console.log('OK');
+            return;
+        }
+        console.log('ERR');
+        if (undefined === result.body)
+        {
+            console.error('No body received in response');
+        }
+        else
+        {
+            console.error(JSON.stringify(result.body, null, 4));
+        }
+    });
+}
+
+main();

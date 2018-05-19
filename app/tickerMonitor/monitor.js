@@ -4,6 +4,7 @@ const logger = require('winston');
 const debug = require('debug')('CEG:TickerMonitor');
 const EventEmitter = require('events');
 const serviceRegistry = require('../service-registry');
+const Errors = require('../errors');
 const Entry = require('./entry');
 
 const DEFAULT_DELAY = 30 * 1000;
@@ -35,6 +36,11 @@ initializePushOverInstance()
     {
         this._pushoverInstance = pushover.instance;
     }
+}
+
+getDelay()
+{
+    return this._delay;
 }
 
 setDelay(delay)
@@ -116,6 +122,8 @@ deleteEntry(id)
 
 /**
  * Creates a new entry
+ *
+ * @return {Promise}
  */
 createEntry(opt)
 {
@@ -136,7 +144,7 @@ createEntry(opt)
         }
         catch (e)
         {
-            logger.error(e.stack);
+            Errors.logError(e, 'tickerMonitor');
             return reject(false);
         }
         // store entry
@@ -151,7 +159,7 @@ createEntry(opt)
             }
             catch (e)
             {
-                logger.error(err.stack);
+                Errors.logError(e, 'tickerMonitor');
             }
             return reject(false);
         });
@@ -191,7 +199,7 @@ updateEntry(id, opt)
         }
         catch (e)
         {
-            logger.error(e.stack);
+            Errors.logError(e, 'tickerMonitor');
             return reject(false);
         }
         // store entry
@@ -212,7 +220,7 @@ restoreEntry(id, name, enabled, obj)
     let entry;
     try
     {
-        entry = new Entry(false);
+        entry = new Entry();
         if (null === this._pushoverInstance)
         {
             obj.pushover.enabled = false;
@@ -224,11 +232,13 @@ restoreEntry(id, name, enabled, obj)
         entry.enable(enabled);
         // we don't want to consider this entry as new
         entry.setNew(false);
+        // after restoring an entry, no need to store it unless it changes
+        entry._disableStorage();
         this._entries[id] = entry;
     }
     catch (e)
     {
-        logger.error(e.stack);
+        Errors.logError(e, 'tickerMonitor');
     }
 }
 

@@ -18,9 +18,10 @@ constructor(props)
         loaded:false,
         loadedTimestamp:0,
         err: null,
+        pair:props.pair,
         data:[]
     };
-    this._allPairs = true;
+    this._withoutPair = true;
     this._pricesBaseUrl = '#';
     this._newOrderBaseUrl = '#';
     this._handleManualRefresh = this._handleManualRefresh.bind(this);
@@ -65,12 +66,20 @@ _reloadData()
 _loadData()
 {
     let self = this;
-    let pairs = undefined;
-    if (!this._allPairs)
+    let pairs;
+    // no pair
+    if (undefined === this.state.pair)
     {
-        pairs = _.map(starredPairs.getStarredPairs({exchange:this.props.exchange}), (e) => {
-            return e.pair;
-        });
+        if (!this._withoutPair)
+        {
+            pairs = _.map(starredPairs.getStarredPairs({exchange:this.props.exchange}), (e) => {
+                return e.pair;
+            });
+        }
+    }
+    else
+    {
+        pairs = [this.state.pair];
     }
     restClient.getOpenOrders(this.props.exchange, pairs).then(function(data){
         if (!self._isMounted)
@@ -107,13 +116,22 @@ componentWillUnmount()
     this._isMounted = false;
 }
 
-componentWillReceiveProps(nextProps) {}
+componentWillReceiveProps(nextProps)
+{
+    this.setState(function(prevState, props){
+        return {
+            pair:props.pair
+        };
+    }, function(){
+        this._loadData();
+    });
+}
 
 componentDidMount()
 {
     this._isMounted = true;
     let features = serviceRegistry.getExchangeFeatures(this.props.exchange, ['openOrders']);
-    this._allPairs = features['openOrders'].allPairs;
+    this._withoutPair = features['openOrders'].withoutPair;
     this._getBaseUrls(this.props.exchange);
     this._loadData();
 }
@@ -150,7 +168,7 @@ render()
     }
 
     const RetrieveOnlyStarredPairs = () => {
-        if (this._allPairs)
+        if (this._withoutPair)
         {
             return null
         }

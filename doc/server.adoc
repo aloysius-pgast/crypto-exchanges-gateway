@@ -18,6 +18,10 @@ Result will be a dictionary
 |integer
 |Uptime in seconds
 
+|version
+|string
+|Gateway version
+
 |===
 
 .Examples
@@ -27,7 +31,8 @@ Example for *GET* _/server/uptime_
 [source,json]
 ----
 {
-    "uptime":"debug"
+    "uptime":36,
+    "version":"1.5.0"
 }
 ----
 
@@ -67,7 +72,9 @@ Example for *GET* _/server/services_
                 "tickers":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving tickers for all pairs with a single request */
-                    "allPairs":false
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
                 },
                 "wsTickers":{
                     "enabled":true
@@ -90,7 +97,9 @@ Example for *GET* _/server/services_
                 "klines":{
                     "enabled":true,
                     /* supported kline intervals */
-                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
+                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
                 },
                 "wsKlines":{
                     "enabled":true,
@@ -100,17 +109,28 @@ Example for *GET* _/server/services_
                 "openOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving open orders for all pairs using a single request */
-                    "allPairs":false
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
                 },
                 "closedOrders":{
                     "enabled":true,
-                    /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
-                    "allPairs":false
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
+                },
+                "orders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving an order using only its order number */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve order using only its order number */
+                    "requirePair":false
                 },
                 "balances":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving balances for all pairs using a single request */
-                    "allCurrencies":true
+                    "withoutCurrency":true
                 }
             },
             "demo":false,
@@ -126,7 +146,7 @@ Example for *GET* _/server/services_
                 "tickers":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving tickers for all pairs with a single request */
-                    "allPairs":true
+                    "withoutPair":true
                 },
                 "wsTickers":{
                     "enabled":true
@@ -147,7 +167,11 @@ Example for *GET* _/server/services_
                     "enabled":true
                 },
                 "klines":{
-                    "enabled":false
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","5m","30m","1h","1d"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
                 },
                 "wsKlines":{
                     "enabled":false
@@ -155,17 +179,22 @@ Example for *GET* _/server/services_
                 "openOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving open orders for all pairs using a single request */
-                    "allPairs":true
+                    "withoutPair":true
                 },
                 "closedOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
-                    "allPairs":true
+                    "withoutPair":true
+                },
+                "orders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving an order using only its order number */
+                    "withoutPair":true
                 },
                 "balances":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving balances for all pairs using a single request */
-                    "allCurrencies":true
+                    "withoutCurrency":true
                 }
             },
             "demo":false,
@@ -181,7 +210,7 @@ Example for *GET* _/server/services_
                 "tickers":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving tickers for all pairs with a single request */
-                    "allPairs":true
+                    "withoutPair":true
                 },
                 "wsTickers":{
                     "enabled":true
@@ -202,7 +231,11 @@ Example for *GET* _/server/services_
                     "enabled":true
                 },
                 "klines":{
-                    "enabled":false
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["5m","15m","30m","2h","4h","1d"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
                 },
                 "wsKlines":{
                     "enabled":false
@@ -210,17 +243,22 @@ Example for *GET* _/server/services_
                 "openOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving open orders for all pairs using a single request */
-                    "allPairs":true
+                    "withoutPair":true
                 },
                 "closedOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
-                    "allPairs":true
+                    "withoutPair":true
+                },
+                "orders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving an order using only its order number */
+                    "withoutPair":true
                 },
                 "balances":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving balances for all pairs using a single request */
-                    "allCurrencies":true
+                    "withoutCurrency":true
                 }
             },
             "demo":false,
@@ -233,6 +271,9 @@ Example for *GET* _/server/services_
             "id":"coinmarketcap",
             "name":"Coin Market Cap",
             "features":{
+                "history":true
+            },
+            "cfg": {
 
             },
             "demo":false
@@ -243,7 +284,21 @@ Example for *GET* _/server/services_
             "features":{
 
             },
+            "cfg": {
+
+            },
             "demo":false
+        },
+        "tickerMonitor":{
+            "id":"tickerMonitor",
+            "name":"Ticker Monitor",
+            "features":{
+
+            },
+            "demo":false,
+            "cfg":{
+                "delay":30
+            }
         }
     }
 }
@@ -273,32 +328,279 @@ Example for *GET* _/server/statistics_
 ----
 {
     "exchanges":{
-        "fakeExchange":{
-            "getBalances":{
-                "success":2,
-                "failure":0
-            }
-        },
-        "poloniex":{
+        "bittrex":{
             "getPairs":{
-                "success":3,
-                "failure":0
-            },
-            "getOrderBooks":{
-                "success":1,
-                "failure":0
-            },
-            "getTrades":{
-                "success":1,
+                "success":6,
                 "failure":0
             },
             "getTickers":{
                 "success":2,
                 "failure":0
+            },
+            "getTicker":{
+                "success":2,
+                "failure":0
+            },
+            "getOrderBook":{
+                "success":3,
+                "failure":1
+            },
+            "getTrades":{
+                "success":7,
+                "failure":2
+            },
+            "getKlines":{
+                "success":4,
+                "failure":1
+            },
+            "getOpenOrders":{
+                "success":5,
+                "failure":0
+            },
+            "getOpenOrder":{
+                "success":2,
+                "failure":0
+            },
+            "testOrder":{
+                "success":14,
+                "failure":0
+            },
+            "getClosedOrders":{
+                "success":3,
+                "failure":0
+            },
+            "getClosedOrder":{
+                "success":1,
+                "failure":0
+            },
+            "getBalances":{
+                "success":1,
+                "failure":0
+            },
+            "getBalance":{
+                "success":1,
+                "failure":0
+            }
+        },
+        "binance":{
+            "getPairs":{
+                "success":6,
+                "failure":0
+            },
+            "getTickers":{
+                "success":1,
+                "failure":1
+            },
+            "getTicker":{
+                "success":3,
+                "failure":0
+            },
+            "getOrderBook":{
+                "success":3,
+                "failure":1
+            },
+            "getTrades":{
+                "success":7,
+                "failure":2
+            },
+            "getKlines":{
+                "success":4,
+                "failure":1
+            },
+            "getOpenOrders":{
+                "success":4,
+                "failure":1
+            },
+            "getOpenOrder":{
+                "success":2,
+                "failure":1
+            },
+            "testOrder":{
+                "success":14,
+                "failure":0
+            },
+            "getClosedOrders":{
+                "success":4,
+                "failure":1
+            },
+            "getClosedOrder":{
+                "success":2,
+                "failure":1
+            },
+            "getBalances":{
+                "success":1,
+                "failure":0
+            },
+            "getBalance":{
+                "success":1,
+                "failure":0
+            }
+        },
+        "poloniex":{
+            "getPairs":{
+                "success":6,
+                "failure":0
+            },
+            "getTickers":{
+                "success":2,
+                "failure":0
+            },
+            "getTicker":{
+                "success":2,
+                "failure":0
+            },
+            "getOrderBook":{
+                "success":3,
+                "failure":1
+            },
+            "getTrades":{
+                "success":7,
+                "failure":2
+            },
+            "getKlines":{
+                "success":4,
+                "failure":1
+            },
+            "getOpenOrders":{
+                "success":3,
+                "failure":0
+            },
+            "getOpenOrder":{
+                "success":1,
+                "failure":0
+            },
+            "testOrder":{
+                "success":14,
+                "failure":0
+            },
+            "getClosedOrders":{
+                "success":5,
+                "failure":0
+            },
+            "getClosedOrder":{
+                "success":2,
+                "failure":0
+            },
+            "getBalances":{
+                "success":1,
+                "failure":0
+            },
+            "getBalance":{
+                "success":1,
+                "failure":0
             }
         }
     },
     "others":{
+        "coinmarketcap":{
+            "getTickers":{
+                "success":3,
+                "failure":1
+            },
+            "getSymbols":{
+                "success":0,
+                "failure":1
+            }
+        },
+        "pushover":{
+            "notify":{
+                "success":1,
+                "failure":0
+            }
+        },
+        "tickerMonitor":{
+            "getEntries":{
+                "success":2,
+                "failure":0
+            },
+            "createEntry":{
+                "success":1,
+                "failure":7
+            },
+            "getEntry":{
+                "success":5,
+                "failure":1
+            },
+            "updateEntry":{
+                "success":1,
+                "failure":1
+            },
+            "deleteEntries":{
+                "success":1,
+                "failure":0
+            }
+        }
     }
 }
+----
+
+== List all possible REST errors
+
+*GET* _/server/errors_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|format
+|string
+|html
+|Output format
+
+|===
+
+=== Result
+
+If _format_ is _json_, result will be an array of object such as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|type
+|string
+|Error type (ex: _ExchangeError.Forbidden.InvalidAuthentication_)
+
+|httpCode
+|integer
+|Expected http code for this error
+
+|description
+|string
+|Describes in which case this error is supposed to be triggered
+
+|===
+
+.Examples
+
+Example for *GET* _/server/errors?format=json_
+
+[source,json]
+----
+[
+    {
+        "type":"ExchangeError.Forbidden.InvalidAuthentication",
+        "httpCode":403,
+        "description":"Used when auth credentials are refused by exchange"
+    },
+    {
+        "type":"ExchangeError.Forbidden.PermissionDenied",
+        "httpCode":403,
+        "description":"Used when exchange request is not allowed"
+    },
+    ...
+    {
+        "type":"ServiceError.NetworkError.UnknownError",
+        "httpCode":503,
+        "description":"Used when an unknown http error occurs when trying to contact service"
+    }
+]
 ----

@@ -8,7 +8,7 @@ Following exchanges are supported :
 
 Following services are supported :
 
-* CoinMarketCap
+* Coin Market Cap
 
 == Supported fields on exchanges
 
@@ -24,9 +24,9 @@ Following services are supported :
 
 * _price_usd_ : per-unit price in _USD_
 * _price_btc_ : per-unit price in _BTC_
-* _24h_volume_usd_ : _USD_ volume of last 24H
+* _volume_24_usd_ : _USD_ volume of last 24H
 * _total_supply_ : the total number of coins in existence
-* _available_supply_ : the number of coins in existence available to the public
+* _circulating_supply_ : the number of coins in existence available to the public
 * _market_cap_usd_ : _USD_ market cap
 * _percent_change_1h_ : % change of price in last hour (0-100)
 * _percent_change_24h_ : % change of price in last 24H (0-100)
@@ -34,14 +34,14 @@ Following services are supported :
 
 == Supported operators
 
-* _eq_ : to check if _field value == _target value_
-* _neq_ : to check if _field value != _target value_
-* _lt_ : to check if _field value < _target value_
-* _lte_ : to check if _field value <= _target value_
-* _gt_ : to check if _field value > _target value_
-* _gte_ : to check if _field value >= _target value_
-* _in_ : to check if _field value is in range [a,b]_
-* _out_ : to check if _field value is outside of range [a,b]_
+* _eq_ : to check if _field value_ == _target value_
+* _neq_ : to check if _field value_ != _target value_
+* _lt_ : to check if _field value_ &lt; _target value_
+* _lte_ : to check if _field value_ &lt;= _target value_
+* _gt_ : to check if _field value_ &gt; _target value_
+* _gte_ : to check if _field value_ &gt;= _target value_
+* _in_ : to check if _field value_ is in range _[a,b]_
+* _out_ : to check if _field value_ is outside of range _[a,b]_
 
 == Ticker Monitor entries
 

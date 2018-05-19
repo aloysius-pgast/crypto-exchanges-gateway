@@ -1,6 +1,7 @@
 "use strict";
 const _ = require('lodash');
 const serviceRegistry = require('../service-registry');
+const Errors = require('../errors');
 
 /**
  * List of possible ticker fields
@@ -15,7 +16,7 @@ const supportedServices = ['coinmarketcap'];
 /**
  * List of possible fields for coinmarketcap
  */
-const coinmarketcapTickerFields = ['price_usd', 'price_btc', '24h_volume_usd', 'total_supply', 'available_supply', 'market_cap_usd', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d'];
+const coinmarketcapTickerFields = ['price_usd', 'price_btc', 'volume_24_usd', 'volume_24_btc', 'total_supply', 'circulating_supply', 'market_cap_usd', 'market_cap_btc', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d'];
 
 /**
  * List of supported operators and whether or not they require array parameter
@@ -92,34 +93,40 @@ _checkCondition(c, index)
         let entry = {};
         if (undefined === c.condition)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition]`);
+            return reject(extErr);
         }
         entry.condition = {};
         if (undefined === c.condition.field)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition][field]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][field]`);
+            return reject(extErr);
         }
         entry.condition.field = c.condition.field;
         if (undefined === c.condition.operator)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition][operator]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][operator]`);
+            return reject(extErr);
         }
         entry.condition.operator = c.condition.operator;
         if (undefined === c.condition.value)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition][value]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][value]`);
+            return reject(extErr);
         }
         let requiresArray = supportedOperators[c.condition.operator];
         if (undefined === requiresArray)
         {
-            return reject(`Unsupported value for parameter 'conditions[${index}][condition][operator]' : value = '${c.condition.operator}'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][operator]`, c.condition.operator);
+            return reject(extErr);
         }
         if (requiresArray)
         {
             let valid = true;
             if (!Array.isArray(c.condition.value) || 2 != c.condition.value.length)
             {
-                return reject(`Parameter 'conditions[${index}][condition][value]' should be a float[2] array : value = '${c.condition.value}'`);
+                let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][value]`, c.condition.value, `Parameter 'conditions[${index}][condition][value]' should be a float[2] array`);
+                return reject(extErr);
             }
             let value;
             entry.condition.value = [];
@@ -128,7 +135,8 @@ _checkCondition(c, index)
                 value = parseFloat(c.condition.value[i]);
                 if (isNaN(value))
                 {
-                    return reject(`Parameter 'conditions[${index}][condition][value][${i}]' is not a valid float : value = '${c.condition.value[i]}'`);
+                    let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][value][${i}]`, c.condition.value[i], `Parameter 'conditions[${index}][condition][value][${i}]' is not a valid float`);
+                    return reject(extErr);
                 }
                 entry.condition.value.push(value);
             }
@@ -136,25 +144,29 @@ _checkCondition(c, index)
         else
         {
             let value = parseFloat(c.condition.value);
-            if (isNaN(value))
+            if ('number' != typeof c.condition.value || isNaN(value))
             {
-                return reject(`Parameter 'conditions[${index}][condition][value]' is not a valid float : value = '${c.condition.value}'`);
+                let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][value]`, c.condition.value, `Parameter 'conditions[${index}][condition][value]' is not a valid float`);
+                return reject(extErr);
             }
             entry.condition.value = value;
         }
         if (undefined === c.origin)
         {
-            return reject(`Missing parameter 'conditions[${index}][origin]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][origin]`);
+            return reject(extErr);
         }
         entry.origin = {};
         if (undefined === c.origin.id)
         {
-            return reject(`Missing parameter 'conditions[${index}][origin][id]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][origin][id]`);
+            return reject(extErr);
         }
         this._finalList[index] = entry;
         if (undefined === c.origin.type)
         {
-            return reject(`Missing parameter 'conditions[${index}][origin][type]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][origin][type]`);
+            return reject(extErr);
         }
         let p;
         switch (c.origin.type)
@@ -166,12 +178,13 @@ _checkCondition(c, index)
                 p = this._checkServiceCondition(c, index);
                 break;
             default:
-                return reject(`Unsupported value for parameter 'conditions[${index}][origin][type]' : value = '${c.origin.type}'`);
+                let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][origin][type]`, c.origin.type, `Unsupported value for parameter 'conditions[${index}][origin][type]'`);
+                return reject(extErr);
         }
         p.then(function(){
-            resolve(true);
+            return resolve(true);
         }).catch(function(err){
-            reject(err);
+            return reject(err);
         });
     });
 }
@@ -191,39 +204,45 @@ _checkExchangeCondition(c, index)
         // ensure pair attribute is defined
         if (undefined === c.condition.pair)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition][pair]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][pair]`);
+            return reject(extErr);
         }
         // check if field is supported
         if (-1 == exchangeTickerFields.indexOf(c.condition.field))
         {
-            return reject(`Invalid value for 'conditions[${index}][condition][field]' : value = '${c.condition.field}`);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][field]`, c.condition.field);
+            return reject(extErr);
         }
         entry.condition.field = c.condition.field;
         // check if exchange exists and wsTickers feature is enabled
         let exchange = serviceRegistry.getExchange(c.origin.id);
         if (null === exchange)
         {
-            return reject(`Invalid value for 'conditions[${index}][origin][id]' : '${c.origin.id}' exchange is not supported`);
+            let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchange(c.origin.id);
+            return reject(extErr);
         }
         let exchangeInstance = exchange.instance;
-        if (undefined === exchange.features['wsTickers'])
+        if (undefined === exchange.features['wsTickers'] || !exchange.features['wsTickers'].enabled)
         {
-            return reject(`Invalid value for 'conditions[${index}][origin][id]' : feature 'wsTickers' is not supported by '${c.origin.id}' exchange`);
+            let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchangeFeature(c.origin.id, 'wsTickers');
+            return reject(extErr);
         }
         entry.origin.id = c.origin.id;
         entry.condition.pair = c.condition.pair.trim();
         if ('' == entry.condition.pair)
         {
-            return reject(`Parameter 'conditions[${index}][condition][pair]' cannot be empty`);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][pair]`, '', undefined, true);
+            return reject(extErr);
         }
-        exchangeInstance.pairs({useCache:true}).then(function(data){
+        exchangeInstance.getPairs({useCache:true}).then(function(data){
             if (undefined === data[c.condition.pair])
             {
-                return reject(`Invalid value for 'conditions[${index}][condition][pair]' : pair '${c.condition.pair}' is not supported by '${c.origin.id}' exchange`);
+                let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchangePair(c.origin.id, c.condition.pair);
+                return reject(extErr);
             }
             resolve(true);
         }).catch (function(err){
-            reject({origin:"remote",error:err});
+            return reject(err);
         });
     });
 }
@@ -246,7 +265,8 @@ _checkServiceCondition(c, index)
                 p = this._checkCoinmarketcapCondition(c, index);
                 break;
             default:
-                return reject(`Unsupported value for parameter 'conditions[${index}][origin][id]' : '${c.origin.type}' service is not supported`);
+                let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedService(c.origin.id);
+                return reject(extErr);
         }
         p.then(function(){
             resolve(true);
@@ -270,24 +290,28 @@ _checkCoinmarketcapCondition(c, index)
         let service = serviceRegistry.getService(c.origin.id);
         if (null === service)
         {
-            return reject(`Invalid value for 'conditions[${index}][origin][id]' : '${c.origin.id}' service is not supported`);
+            let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedService(c.origin.id);
+            return reject(extErr);
         }
         let entry = this._finalList[index];
         entry.origin.id = c.origin.id;
         // ensure symbol attribute is defined
         if (undefined === c.condition.symbol)
         {
-            return reject(`Missing parameter 'conditions[${index}][condition][symbol]'`);
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][symbol]`);
+            return reject(extErr);
         }
         entry.condition.symbol = c.condition.symbol.trim();
         if ('' == entry.condition.symbol)
         {
-            return reject(`Parameter 'conditions[${index}][condition][symbol]' cannot be empty`);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][symbol]`, '', undefined, true);
+            return reject(extErr);
         }
         // check if field is supported
         if (-1 == coinmarketcapTickerFields.indexOf(c.condition.field))
         {
-            return reject(`Invalid value for 'conditions[${index}][condition][field]' : value = '${c.condition.field}`);
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][field]`, c.condition.field);
+            return reject(extErr);
         }
         entry.condition.field = c.condition.field;
         resolve(true);

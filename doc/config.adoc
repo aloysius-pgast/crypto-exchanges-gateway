@@ -26,6 +26,8 @@ Below config will only give access to public API (since no key/secret combinatio
     "logLevel":"warn",
     "coinmarketcap":{
         "enabled":true,
+        /* history is enabled by default */
+        "history":true
     },
     "pushover":{
         "enabled":false,
@@ -51,6 +53,8 @@ Below config will only give access to public API (since no key/secret combinatio
         "binance":{
             "type":"binance",
             "enabled":true,
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
             "key":"",
             "secret":""
         }
@@ -126,6 +130,8 @@ Access will be restricted using the following :
     /* CoinMarketCap configuration */
     "coinmarketcap":{
         "enabled":true,
+        /* history is enabled by default */
+        "history":true,
         /* rate limiting to comply with CoinMarketCap */
         "throttle":{
             "publicApi":{
@@ -174,8 +180,6 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"bittrex",
             "name":"bittrex",
-            /* to account for clock skew */
-            "recvWindow":5000,
             /* API key provided by Bittrex */
             "key":"ABCD",
             /* Secret provided by Bittrex */
@@ -184,17 +188,8 @@ Access will be restricted using the following :
             "feesPercent":0.25,
             /* rate limiting to comply with Bittrex */
             "throttle":{
-                "lowIntensity":{
-                    /* one request every second */
-                    "minPeriod":1
-                },
-                "mediumIntensity":{
-                    /* one request every 10 seconds */
-                    "minPeriod":10
-                },
-                "highIntensity":{
-                    /* one request every 30 seconds */
-                    "minPeriod":30
+                "global":{
+                    "maxRequestsPerSecond":1
                 }
             }
         },
@@ -203,10 +198,14 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"binance",
             "name":"Binance #1",
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
             /* API key provided by Binance */
             "key":"ABCD",
             /* Secret provided by Binance */
             "secret":"EFGH",
+            /* to account for clock skew */
+            "recvWindow":5000,
             /* % fees [0,100] */
             "feesPercent":0.10,
             /* rate limiting to comply with Binance */
@@ -220,10 +219,14 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"binance",
             "name":"Binance #2",
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
             /* API key provided by Binance */
             "key":"ABCD",
             /* Secret provided by Binance */
             "secret":"EFGH",
+            /* to account for clock skew */
+            "recvWindow":5000,
             /* % fees [0,100] */
             "feesPercent":0.10,
             /* rate limiting to comply with Binance */
@@ -260,7 +263,7 @@ Example for *GET* _/server/logLevel_
 
 === Mandatory query parameters
 
-[cols="1,1a,1a,3a", options="header"]
+[cols="1,1a,1a", options="header"]
 |===
 
 |Name
@@ -268,7 +271,7 @@ Example for *GET* _/server/logLevel_
 |Description
 
 |value
-|string
+|string (_error,warn,info,verbose,debug_)
 |New log level
 
 |===

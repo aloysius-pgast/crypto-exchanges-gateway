@@ -1,0 +1,166 @@
+= Test orders
+
+[NOTE]
+====
+Those routes require the feature _pairs_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "pairs":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Simulate a new order
+
+This routes can be used to ensure that an order will match exchange filters such as :
+
+* minimum rate & precision
+* minimum quantity & precision
+* minimum price (ie: _quantity_ * _rate_)
+
+*GET* _/exchanges/{exchangeId}/testOrder_
+
+[NOTE]
+====
+Query parameters can be sent in one of the following format :
+
+* directly in the url (as usually done in GET requests)
+* in the body (_application/x-www-form-urlencoded_)
+====
+
+=== Mandatory query parameters
+
+[cols="1,1a,1a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|pair
+|string
+|Pair (_X-Y_)
+
+|orderType
+|string (_buy_,_sell_)
+|Order type to create
+
+|targetRate
+|float
+|Expected per-unit price for the trades
+
+|===
+
+=== Optional query parameters
+
+[NOTE]
+====
+One of the following optional parameter must be defined :
+
+* quantity : quantity to buy/sell
+* targetPrice : the total amount in base currency without taking fees into account (ie: _quantity_ * _targetRate_)
+* finalPrice : the total amount in base currency after adding/substracting fees (ie: _quantity_ * _targetRate_ +- _fees_)
+====
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|quantity
+|float
+|
+|Quantity to buy/sell
+
+|targetPrice
+|float
+|
+|_quantity_ * _targetRate_ (will be ignored if _quantity_ is set)
+
+|finalPrice
+|float
+|
+|_quantity_ * _targetRate_ +- _fees_ (will be ignored if _quantity_ or _targetPrice_ is set)
+
+|feesPercent
+|float
+|_default value for the exchange_
+|% fees to use when computing final price (0-100)
+
+|===
+
+=== Result
+
+Result will be a dictionary such as below
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|orderType
+|string (_buy_,_sell_)
+|Requested order type
+
+|pair
+|string
+|Requested pair (_X-Y_)
+
+|targetRate
+|float
+|Updated target rate matching exchange filters
+
+|quantity
+|float
+|Updated quantity matching exchange filters
+
+|targetPrice
+|float
+|_quantity_ * _targetRate_
+
+|fees
+|float
+|Estimated fees in base currency
+
+|finalPrice
+|float
+|_quantity_ * _targetRate_ +- _fees_
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/binance/testOrder?orderType=sell&pair=USDT-NEO&targetRate=150.0555&finalPrice=1500_
+
+[source,json]
+----
+{
+    "orderType":"sell",
+    "pair":"USDT-NEO",
+    "targetRate":150.055,
+    "quantity":10.006,
+    "targetPrice":1501.45033,
+    "fees":1.50145033,
+    "finalPrice":1499.94887967
+}
+----
+
+[NOTE]
+====
+In above example :
+
+* _targetRate_ was updated from _150.0555_ to _150.055_ because _Binance_ only allows a 3 digits precision
+* _finalPrice_ was updated to be as near as possible to _1500_, while respecting exchange filters
+* _quantity_ was computed so that _quantity_ * _targetRate_ - _fees_ == _finalPrice_
+====

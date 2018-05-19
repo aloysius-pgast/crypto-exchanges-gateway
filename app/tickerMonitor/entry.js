@@ -133,6 +133,7 @@ store(force)
         let self = this;
         storage.storeTickerMonitorEntry(this._id, this._name, this._enabled, hash).then(function(id){
             self._id = id;
+            self._shouldStore = false;
             return resolve(id);
         }).catch(function(){
             reject(false);
@@ -195,6 +196,14 @@ setAny(flag)
  */
 setPushOver(flag, priority, minDelay)
 {
+    if (undefined === priority)
+    {
+        priority = Entry.DEFAULT_PUSH_OVER_PRIORITY;
+    }
+    if (undefined === minDelay)
+    {
+        minDelay = Entry.DEFAULT_PUSH_OVER_MIN_DELAY;
+    }
     if (flag == this._pushover.enabled)
     {
         if (flag)
@@ -576,14 +585,33 @@ _formatTime(date)
 }
 
 /**
- * Sets entry status & conditions status to 'unknown'
+ * Disable storage (ie: used only after restoring an entry)
+ */
+_disableStorage()
+{
+    this._shouldStore = false;
+}
+
+/**
+ * Sets entry status & conditions status to 'unknown' (do nothing if condition is invalid)
  */
 _resetStatus()
 {
+    // do nothing if entry is invalid
+    if (STATUS_INVALID == this._status.value)
+    {
+        return;
+    }
     let timestamp = new Date().getTime() / 1000.0;
     this._status.value = STATUS_UNKNOWN;
     this._status.timestamp = timestamp;
     _.forEach(this._conditions, (c) => {
+        // do nothing if condition is invalid
+        if (c.invalid)
+        {
+            c.status.value = STATUS_INVALID;
+            return;
+        }
         c.value = null;
         c.status.value = STATUS_UNKNOWN;
         c.status.timestamp = timestamp;
@@ -683,7 +711,7 @@ _initializeCondition(c, timestamp)
 _getExchangeChecker(c)
 {
     let exchange = serviceRegistry.getExchange(c.origin.id);
-    if (null === exchange)
+    if (null === exchange || undefined === exchange.features['wsTickers'] || !exchange.features['wsTickers'].enabled)
     {
         c.invalid = true;
         logger.warn(`TickerMonitor entry '${this._id}' has a condition for exchange '${c.origin.id}' but exchange is not supported anymore`);

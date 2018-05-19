@@ -2,29 +2,98 @@
 const util = require('util');
 const _ = require('lodash');
 const logger = require('winston');
-const requestHelper = require('../../request-helper');
+const Joi = require('../../custom-joi');
+const JoiHelper = require('../../joi-helper');
+const Errors = require('../../errors');
 const serviceRegistry = require('../../service-registry');
 const statistics = require('../../statistics');
+const pjson = require('../../../package.json');
+
+/**
+ * Sends an http error to client
+ *
+ * @param {object} res express response object
+ * @param {string|object} err error message or exception
+ */
+const sendError = (res, err) => {
+    return Errors.sendHttpError(res, err, 'server');
+}
 
 module.exports = function(app, bodyParsers, config) {
 
 const startTime = parseInt(new Date().getTime() / 1000.0);
 
-
 /**
- * Retrieve server uptime in seconds
+ * Retrieve server uptime in seconds + version number
  */
 app.get('/server/uptime', (req, res) => {
     let now = parseInt(new Date().getTime() / 1000.0);
     let uptime = now - startTime;
-    res.send({uptime:uptime});
+    return res.send({uptime:uptime,version:pjson.version});
 });
+
+/**
+ * Format error list using an ugly html output
+ */
+const formatErrorList = (list) => {
+    let content = '<div style="margin-left:10px;font-size:2.5vh;"><ul>';
+    _.forEach(list, (err) => {
+        let arr = err.type.split('.');
+        let type = arr.shift();
+        let index = 0;
+        _.forEach(arr, (e) => {
+            ++index;
+            type += '.<br/>'
+            let paddingSize = index * 4;
+            type += '&nbsp;'.repeat(paddingSize);
+            type += e;
+        });
+        content += `<br/><li><strong>${type}</strong> (<i>${err.httpCode}</i>) : ${err.description}</li>`;
+    });
+    content += '</ul></div>'
+    return content;
+}
+
+/*
+ * List possible errors
+ */
+(function(){
+    const schema = Joi.object({
+        format: Joi.string().valid(['json','html']).default('html')
+    });
+
+    /**
+     * List possible errors
+     * @param {string} format (json|html) (default = html)
+     */
+    app.get('/server/errors', (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true,body:true});
+        if (null !== params.error)
+        {
+            return sendError(res, params.error);
+        }
+        let list = Errors.list();
+        if ('json' == params.value.format)
+        {
+            return res.send(list);
+        }
+        try
+        {
+            let content = formatErrorList(list);
+            return res.send(content);
+        }
+        catch (e)
+        {
+            return sendError(res, e);
+        }
+    });
+})();
 
 /**
  * Display log level
  */
 app.get('/server/logLevel', (req, res) => {
-    res.send({value:config.logLevel});
+    return res.send({value:config.logLevel});
 });
 
 /**
@@ -51,10 +120,11 @@ app.get('/server/services', (req, res) => {
             id:entry.id,
             name:entry.name,
             features:entry.features,
-            demo:entry.demo
+            demo:entry.demo,
+            cfg:entry.cfg
         }
     });
-    res.send(data);
+    return res.send(data);
 });
 
 /**
@@ -64,36 +134,32 @@ app.get('/server/statistics', (req, res) => {
     res.send(statistics.getStatistics());
 });
 
-/**
- * Update logLevel
+/*
+ * Updates log level
  */
-app.post('/server/logLevel', bodyParsers.urlEncoded, (req, res) => {
-    let value = requestHelper.getParam(req, 'value');
-    if (undefined === value || '' == value)
-    {
-        res.status(400).send({origin:"gateway",error:"Missing query parameter 'value'"});
-        return;
-    }
-    switch (value)
-    {
-        case 'error':
-        case 'warn':
-        case 'info':
-        case 'verbose':
-        case 'debug':
-        case 'silly':
-            break;
-        default:
-            res.status(400).send({origin:"gateway",error:util.format("Invalid value for query parameter 'value' : value = '%s'", value)});
-            return;
-    }
-    // update log level
-    config.logLevel = value;
-    logger.level = value;
+(function(){
+    const schema = Joi.object({
+        value: Joi.string().required().valid(['error','warn','info','verbose','debug'])
+    });
+    /**
+     * Updates log level
+     *
+     * @param {string} value (error|warn|info|verbose|debug)
+     */
+    app.post('/server/logLevel', bodyParsers.urlEncoded, (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true,body:true});
+        if (null !== params.error)
+        {
+            return sendError(res, params.error);
+        }
+        // update log level
+        config.logLevel = params.value.value;
+        logger.level = params.value.value;
 
-    logger.info("Log level changed to '%s'", value);
+        logger.info("Log level changed to '%s'", params.value.value);
 
-    res.status(200).send({});
-});
+        res.status(200).send({});
+    });
+})();
 
-};
+}

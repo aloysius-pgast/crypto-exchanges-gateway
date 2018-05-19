@@ -19,8 +19,6 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 constructor(exchange)
 {
     super(exchange, {globalTickersSubscription:false, marketsSubscription:false});
-    // 2018-01-23 : not used anymore
-    this._tickerLoops = {}
     // Binance WS only provides access to oder books update through WS, we need to use REST API to retrieve full order book
     this._waitingForFullOrderBooks = {};
     // keep track of last emitted cseq id for order books
@@ -47,7 +45,7 @@ _waitForFullOrderBook(pair)
     let requestId = ++this._waitingForFullOrderBooks[pair].requestId;
     this._waitingForFullOrderBooks[pair].waiting = true;
     let self = this;
-    this._exchangeInstance.orderBook({pair:pair,limit:100,includeLastUpdateId:true}).then(function(data){
+    this._exchangeInstance.getOrderBook(pair, {custom:{includeLastUpdateId:true}}).then(function(data){
         // we have another pending request
         if (requestId != self._waitingForFullOrderBooks[pair].requestId)
         {
@@ -116,67 +114,6 @@ _waitingForFullOrderBook(pair, updateCseq)
     return false;
 }
 
-//-- we use a timer to retrieve tickers since we don't have all data available from WS
-// 2018-01-23 : not used anymore
-_registerTickerLoop(pair)
-{
-    // initialize loop information
-    if (undefined === this._tickerLoops[pair])
-    {
-        this._tickerLoops[pair] = {requestId:0,enabled:false};
-    }
-    // we already have a loop
-    if (this._tickerLoops[pair].enabled)
-    {
-        return;
-    }
-    let self = this;
-    let requestId = ++this._tickerLoops[pair].requestId;
-    this._tickerLoops[pair].enabled = true;
-    this._tickerLoops[pair].timestamp = (new Date().getTime()) / 1000.0;
-    this._registerConnection(`ticker-${pair}`);
-    const getTicker = function(){
-        self._exchangeInstance.tickers({pairs:[pair]}).then(function(data){
-            // loop has been disabled
-            if (!self._tickerLoops[pair].enabled)
-            {
-                return;
-            }
-            // we already have another loop with a distinct requestId
-            if (self._tickerLoops[pair].requestId > requestId)
-            {
-                return;
-            }
-            if (undefined !== data[pair])
-            {
-                let evt = {
-                    exchange:self._exchangeId,
-                    pair:pair,
-                    data:data[pair]
-                }
-                self.emit('ticker', evt);
-            }
-            setTimeout(function(){
-                getTicker();
-            }, TICKER_LOOP_PERIOD);
-        });
-    }
-    getTicker();
-}
-
-// 2018-01-23 : not used anymore
-_unregisterTickerLoop(pair)
-{
-    // loop is already disabled
-    if (undefined === this._tickerLoops[pair] || !this._tickerLoops[pair].enabled)
-    {
-        return;
-    }
-    this._unregisterConnection(`ticker-${pair}`);
-    this._tickerLoops[pair].enabled = false;
-    this._tickerLoops[pair].timestamp = (new Date().getTime()) / 1000.0;
-}
-
 /**
  * @return {boolean} true if client was already connected, false otherwise
  */
@@ -185,7 +122,7 @@ _registerOrderBookClient(pair)
     let client = this._clients.orderBooks[pair];
     if (undefined !== client)
     {
-        if (!client.isConnected())
+        if (!client.isConnected() && !client.isConnecting())
         {
             client.connect();
             return false;
@@ -251,7 +188,7 @@ _registerTickerClient(pair)
     let client = this._clients.tickers[pair];
     if (undefined !== client)
     {
-        if (!client.isConnected())
+        if (!client.isConnected() && !client.isConnecting())
         {
             client.connect();
             return false;
@@ -305,7 +242,7 @@ _registerTradesClient(pair)
     let client = this._clients.trades[pair];
     if (undefined !== client)
     {
-        if (!client.isConnected())
+        if (!client.isConnected() && !client.isConnecting())
         {
             client.connect();
         }
@@ -361,7 +298,7 @@ _registerKlinesClient(pair, interval)
     let client = this._clients.klines[pair][interval];
     if (undefined !== client)
     {
-        if (!client.isConnected())
+        if (!client.isConnected() && !client.isConnecting())
         {
             client.connect();
         }

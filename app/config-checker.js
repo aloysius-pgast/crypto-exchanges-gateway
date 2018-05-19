@@ -35,6 +35,9 @@ constructor(defaultConfig)
                 allow:[]
             }
         },
+        userAgent:{
+            value:"Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+        },
         ui:{
            enabled:false
         },
@@ -75,6 +78,10 @@ _check()
             this._err("Cannot run both http and websocket on same ip/port combination");
             valid = false;
         }
+    }
+    if (!this._checkUserAgent())
+    {
+        valid = false;
     }
     if (!this._checkLogLevel())
     {
@@ -218,7 +225,7 @@ _checkExchanges()
     {
         this._config.exchanges = this._defaultConfig.exchanges;
     }
-    // try to load all config-checker.js file in exchanges directory (except for dummy exchange which will be handled separately)
+    // try to load all config-checker.js file in exchanges directory
     let exchangesDir = path.join(__dirname, 'exchanges');
     let configCheckers = {};
     _.forEach(fs.readdirSync(exchangesDir), (exchangeId) => {
@@ -276,6 +283,25 @@ _checkExchanges()
         }
     });
     return valid;
+}
+
+_checkUserAgent()
+{
+    if (undefined === this._config.userAgent)
+    {
+        return true;
+    }
+    if (undefined === this._config.userAgent.value)
+    {
+        return true;
+    }
+    let value = this._config.userAgent.value.trim();
+    if ('' == value)
+    {
+        return true;
+    }
+    this._finalConfig.userAgent.value = value;
+    return true;
 }
 
 _checkLogLevel()

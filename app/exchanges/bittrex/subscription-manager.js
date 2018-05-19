@@ -25,7 +25,7 @@ _registerClient(connect)
 {
     if (null !== this._client)
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             return;
         }
@@ -40,6 +40,7 @@ _registerClient(connect)
     let client = new SignalRClient({
         pingTimeout:internalConfig.get('keepalive').exchanges,
         logger:logger,
+        userAgent:internalConfig.get('userAgent'),
         reconnectAfterUnsubscribingFromMarkets:{reconnect:false}
     });
     client.on('connected', function(data){
@@ -192,7 +193,7 @@ _processChanges(changes, opt)
     // do we need to disconnect client ?
     if (!this.hasSubscriptions())
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             this._unregisterConnection('default');
             this._client.disconnect();

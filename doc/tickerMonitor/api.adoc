@@ -1,5 +1,10 @@
 = Ticker Monitor API
 
+[NOTE]
+====
+Those routes will only be available if _tickerMonitor_ service is enabled
+====
+
 == Retrieve a list of entries
 
 *GET* _/tickerMonitor_
@@ -100,6 +105,18 @@ Result will be an array of objects
 |string
 |_Coinmarketcap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _coinmarketcap_
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}status
+|object
+|Entry status
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|string
+|One of (_active_,_inactive_,_unknown_,_invalid_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when status value changed for the last time
+
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
 |float
 |Last value for the field _field_ retrieved from _exchange_ or _service_
@@ -107,10 +124,6 @@ Result will be an array of objects
 |pushover
 |object
 |
-
-|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}enabled
-|boolean
-|Whether or not pushover notifications are enabled
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}enabled
 |boolean
@@ -223,8 +236,19 @@ Example for *GET* _/tickerMonitor/0_
 [source,json]
 ----
 {
-    "origin": "gateway",
-    "error": "No entry with id '0'"
+    "origin":"gateway",
+    "error":"No entry with id '0'",
+    "route":{
+        "method":"GET",
+        "path":"/tickerMonitor/0"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"No entry with id '0'",
+        "data":{
+
+        }
+    }
 }
 ----
 
@@ -379,7 +403,7 @@ Creation of a new entry with following properties :
 * enabled : _true_ (default)
 * any : _false_ (default)
 * pushover : _disabled_ (default)
-* conditions : _buy price on binance for NEO-USDT > 130.5_ AND _price for NEO on CoinMarketCap in range [120,125]_
+* conditions : _buy price on binance for NEO-USDT > 130.5_ AND _price for NEO on Coin Market Cap in range [120,125]_
 
 [source,json]
 ----
@@ -517,8 +541,19 @@ Example for *PATCH* _/tickerMonitor/0_
 [source,json]
 ----
 {
-    "origin": "gateway",
-    "error": "No entry with id '0'"
+    "origin":"gateway",
+    "error":"No entry with id '0'",
+    "route":{
+        "method":"GET",
+        "path":"/tickerMonitor/0"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"No entry with id '0'",
+        "data":{
+
+        }
+    }
 }
 ----
 
@@ -584,7 +619,7 @@ Example for *PATCH* _/tickerMonitor_
 }
 ----
 
-== Delte entries
+== Delete entries
 
 *DELETE* _/tickerMonitor_
 

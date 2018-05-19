@@ -1,5 +1,7 @@
 :toc:
 
+include::errors.adoc[leveloffset=1]
+
 include::config.adoc[leveloffset=1]
 
 include::ui/index.adoc[leveloffset=1]

@@ -225,10 +225,22 @@ componentWillUnmount()
     this._isMounted = false;
 }
 
-
-
 // nothing to do, we already know the pair
-componentWillReceiveProps(nextProps) {}
+componentWillReceiveProps(nextProps)
+{
+    this.setState(function(prevState, props){
+        return {
+            exchange:nextProps.exchange,
+            pair:nextProps.pair,
+            pairs:nextProps.pairs
+        };
+    }, function(){
+        if (null !== this.state.pair)
+        {
+            dataStore.setExchangeData(this.state.exchange, 'pair', this.state.pair);
+        }
+    });
+}
 
 render()
 {

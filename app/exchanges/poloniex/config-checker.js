@@ -23,7 +23,8 @@ constructor()
         name:"Poloniex",
         key:"",
         secret:"",
-        feesPercent:0.25,
+        // starting from 2018-05-15, takers fees will be 0.20% (see https://poloniex.com/press-releases/2018.05.01-Coming-May-15-consistent-competitive-trading-fees/)
+        feesPercent:0.20,
         throttle:{
             publicApi:{
                 maxRequestsPerSecond:ConfigChecker.PUBLIC_API_MAX_REQUESTS_PER_SECOND
