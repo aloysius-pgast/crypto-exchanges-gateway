@@ -1,7 +1,5 @@
 # Change Log
 
-*THIS IS AN EXPERIMENTAL BRANCH*
-
 ## [v1.6.0]
 ### Gateway
 * Refactoring of code related to exchanges & services

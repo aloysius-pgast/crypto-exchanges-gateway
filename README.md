@@ -67,7 +67,7 @@ A _Node.js_ client is available
 
 TODO : update CLI
 
-[here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
+[here](https://github.com/aloysius-pgast/crypto-exchanges-rest-client-nodejs)
 
 ## Available Exchanges
 
