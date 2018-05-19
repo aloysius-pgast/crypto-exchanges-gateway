@@ -50,7 +50,7 @@ Unit tests *will not create any orders* automatically
 
 Tests cover the following :
 
-* Coin Market Cap tickers
+* Coin Market Cap tickers & history
 * Sending notification using PushOver
 * TickerMonitor alerts
 
@@ -131,7 +131,7 @@ Test suites can be customized through environment variables :
 |http://127.0.0.1:8000
 |Used to define gateway http uri
 
-|GATEWAY_URI
+|GATEWAY_WS_URI
 |string
 |ws://127.0.0.1:8001
 |Used to define gateway ws uri

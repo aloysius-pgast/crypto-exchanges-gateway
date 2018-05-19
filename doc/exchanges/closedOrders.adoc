@@ -43,7 +43,6 @@ Some exchange require to retrieve _closed orders_ for each pair separately. This
 * When _completeHistory_ is _true_, it means that exchange supports retrieving complete history for a given pair
 * When _completeHistory_ is _false_, it means that exchange does not support retrieving complete history and only recent closed orders will be returned
 
-====
 
 *GET* _/exchanges/{exchangeId}/closedOrders_
 

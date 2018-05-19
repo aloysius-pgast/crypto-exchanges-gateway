@@ -54,7 +54,7 @@ They use Coin Market Cap https://coinmarketcap.com/currencies/{symbol}/historica
 
 |from
 |string (_yyyy-mm-dd_)
-|_to - 6 days_ as yyyy-mm-dd_
+|_to - 6 days as yyyy-mm-dd_
 |Date of the oldest entry (will be ignored if _completeHistory_ is _true_)
 
 |===

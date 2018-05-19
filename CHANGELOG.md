@@ -7,7 +7,7 @@
 * Refactoring of code related to exchanges & services
 * Support for retrieving history from Coin Market Cap (see [here](doc/coinmarketcap) for documentation and changes)
 * Support for multiple instances of same exchange (might not be supported for all exchanges)
-* Better error handling (see [here](docs/errors.adoc) for documentation)
+* Better error handling (see [here](doc/errors.adoc) for documentation)
 * Indicate _fees_ when listing closed orders
 * Support for klines retrieval on _Binance_, _Bittrex_ and _Poloniex_
 * New route to test order creation and ensure _quantity_, _rate_ & _price_ match exchange filters (ie: min values, precision, step...)

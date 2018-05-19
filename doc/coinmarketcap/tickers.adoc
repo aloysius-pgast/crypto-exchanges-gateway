@@ -2,7 +2,7 @@
 
 [NOTE]
 ====
-Those routes will only be available if _coinmarketcap_ service is enabled
+Those routes will only be available if _coinmarketcap_ service is enabled. Output format is not backward compatible with versions < 1.6.0
 ====
 
 == Retrieve tickers for all symbols or a list of symbols
@@ -45,6 +45,8 @@ Result will be an array of entries such as below
 [NOTE]
 ====
 If some symbols are invalid, they won't appear in array. No error will be triggered
+
+Values in _converted_ will be an approximation which will be computed using _USD_ as an intermediate currency
 ====
 
 [cols="1a,1a,3a", options="header"]
@@ -123,7 +125,7 @@ If some symbols are invalid, they won't appear in array. No error will be trigge
 
 |_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}XXX_
 |object
-|Ticker values converted to currency _XXX_
+|Ticker values converted to currency _XXX_ (approximation)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
 |float
@@ -281,6 +283,11 @@ Uses CoinMarketCap _ticker_ API
 
 Result will be a single object such as below
 
+[NOTE]
+====
+Values in _converted_ will be an approximation which will be computed using _USD_ as an intermediate currency
+====
+
 [cols="1a,1a,3a", options="header"]
 |===
 |Name
@@ -357,7 +364,7 @@ Result will be a single object such as below
 
 |_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}XXX_
 |object
-|Ticker values converted to currency _XXX_
+|Ticker values converted to currency _XXX_ (approximation)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
 |float
