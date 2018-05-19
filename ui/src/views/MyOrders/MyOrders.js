@@ -85,7 +85,6 @@ componentWillReceiveProps(nextProps)
 
 shouldComponentUpdate(nextProps, nextState)
 {
-
     if (null === this.state.pair || this.state.exchange != nextState.exchange || this.state.pair != nextState.pair || this.state.pairs.loaded != nextState.pairs.loaded)
     {
         return true;

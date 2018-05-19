@@ -168,7 +168,7 @@ render()
     }
 
     const RetrieveOnlyStarredPairs = () => {
-        if (this._withoutPair)
+        if (undefined !== this.props.pair || this._withoutPair)
         {
             return null
         }
@@ -179,7 +179,6 @@ render()
         )
     }
 
-    let self = this;
     return (
       <div className="animated fadeIn col-lg-5 p-0">
         <RetrieveOnlyStarredPairs/>

@@ -108,7 +108,7 @@ Result will be a dictionary using order number as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}fees
 |object
-|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_
+|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}amount
 |float
@@ -120,11 +120,11 @@ Result will be a dictionary using order number as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalPrice
 |float
-|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalRate
 |float
-|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |float (unix timestamp sec.msec)
@@ -243,7 +243,7 @@ Result will be a dictionary containing a single entry
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}fees
 |object
-|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_
+|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}amount
 |float
@@ -255,11 +255,11 @@ Result will be a dictionary containing a single entry
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalPrice
 |float
-|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalRate
 |float
-|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_
+|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
 |float (unix timestamp sec.msec)
