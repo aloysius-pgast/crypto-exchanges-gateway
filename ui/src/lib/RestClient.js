@@ -244,9 +244,6 @@ getClosedOrders(exchange, pairs)
         }
         params.pairs = pairs.join(',');
     }
-    // useful for poloniex, retrieve trades from last month
-    let timestamp = parseInt(new Date().getTime() / 1000) - 3600 * 30;
-    params.fromTimestamp = timestamp;
     let url = this._getExchangeUrl(exchange, path);
     let self = this;
     return this._sendRequest('get', url, params, function(data){
@@ -256,12 +253,10 @@ getClosedOrders(exchange, pairs)
 getClosedOrder(exchange, orderNumber)
 {
     let path = `/closedOrders/${orderNumber}`;
-    // useful for poloniex, retrieve trades from last month
-    let timestamp = parseInt(new Date().getTime() / 1000) - 3600 * 30;
-    let params = {fromTimestamp:timestamp};
+    let params = {};
     let url = this._getExchangeUrl(exchange, path);
     let self = this;
-    return this._sendRequest('get', url, params, function(data){
+    return this._sendRequest('get', url, {}, function(data){
     });
 }
 
@@ -323,6 +318,18 @@ createOrder(exchange, pair, orderType, quantity, rate)
     return this._sendRequest('post', url, params);
 }
 
+getAlerts(name)
+{
+    let path = 'tickerMonitor';
+    let params = {};
+    if (undefined != name)
+    {
+        params.name = name;
+    }
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url, params);
+}
+
 //-- CoinMarketCap
 coinMarketCap(limit)
 {
@@ -337,10 +344,18 @@ coinMarketCap(limit)
 }
 
 //-- Portfolio
-portfolio()
+/**
+ * Loads portfolio
+ * @param {exchangeId} exchange id, if not null, overall portfolio will be retrieved
+ */
+portfolio(exchangeId)
 {
     let path = '/portfolio';
     let params = {};
+    if (null !== exchangeId)
+    {
+        params.exchanges = exchangeId;
+    }
     let url = this._getUrl(path);
     return this._sendRequest('get', url, params);
 }

@@ -136,8 +136,9 @@ _handleSelectFilteredPair(event)
     let arr = pair.split('-');
     let market = arr[0];
     let marketPairs = this._getMarketPairs(this.state.pairs, market);
+    let starred = starredPairs.isStarred(this.props.exchange, pair);
     this.setState((prevState, props) => {
-        return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[]};
+        return {market:market,marketPairs:marketPairs,pair:pair,currencyFilter:'',filteredCurrencies:[],starred:starred};
     }, function(){
         // update datastore
         dataStore.setExchangeData(this.props.exchange, 'pair', pair);
@@ -156,8 +157,13 @@ _handleSelectPair(event)
     {
         pair = null;
     }
+    let starred = false;
+    if (null !== pair)
+    {
+        starred = starredPairs.isStarred(this.props.exchange, pair);
+    }
     this.setState((prevState, props) => {
-        return {pair:pair};
+        return {pair:pair,starred:starred};
     }, function(){
         // update datastore
         dataStore.setExchangeData(this.props.exchange, 'pair', pair);
@@ -219,10 +225,22 @@ componentWillUnmount()
     this._isMounted = false;
 }
 
-
-
 // nothing to do, we already know the pair
-componentWillReceiveProps(nextProps) {}
+componentWillReceiveProps(nextProps)
+{
+    this.setState(function(prevState, props){
+        return {
+            exchange:nextProps.exchange,
+            pair:nextProps.pair,
+            pairs:nextProps.pairs
+        };
+    }, function(){
+        if (null !== this.state.pair)
+        {
+            dataStore.setExchangeData(this.state.exchange, 'pair', this.state.pair);
+        }
+    });
+}
 
 render()
 {

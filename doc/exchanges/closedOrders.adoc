@@ -1,0 +1,311 @@
+= Closed orders
+
+[NOTE]
+====
+Those routes require the feature _closedOrders_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "closedOrders":{
+            "enabled":true
+        }
+    }
+}
+----
+====
+
+== Retrieve a list of closed orders
+
+[NOTE]
+====
+Some exchange require to retrieve _closed orders_ for each pair separately. This is indicated in feature _closedOrders_
+====
+
+[source,json]
+----
+{
+    "features":{
+        "closedOrders":{
+            "enabled":true,
+            "withoutPair":false,
+            "completeHistory":true,
+            "requirePair":false
+        }
+    }
+}
+----
+
+* When _withoutPair_ is _false_, it means exchange requires _closed orders_ to be retrieved for each pair separately
+* When _requirePair_ is _false_, it means _gateway_ will provide a fallback method to retrieve _closed orders_ for all pairs by looping over all existing pairs
+* When _requirePair_ is _true_, it means that client will not be able to retrieve _closed orders_ for all pairs at the same time
+* When _completeHistory_ is _true_, it means that exchange supports retrieving complete history for a given pair
+* When _completeHistory_ is _false_, it means that exchange does not support retrieving complete history and only recent closed orders will be returned
+
+
+*GET* _/exchanges/{exchangeId}/closedOrders_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pairs
+|string (comma-separated)
+|
+|Comma-separated list of pairs to retrieve closed orders for (will be needed if _requirePair_ is _true_)
+
+|completeHistory
+|boolean
+|false
+|If _true_ complete history will be retrieved (might not be supported by all exchanges)
+
+|===
+
+=== Result
+
+Result will be a dictionary using order number as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_orderNumber_
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair (_X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderNumber
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderType
+|string (_buy_,_sell_)
+|Order type
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity bought/sold
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}actualRate
+|float
+|Actual per-unit price used in the trades
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}actualPrice
+|float
+|Total price (_quantity_ * _actualPrice_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}fees
+|object
+|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}amount
+|float
+|Fees amount
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency used to pay fees
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalPrice
+|float
+|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalRate
+|float
+|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was created (might not be supported by all exchanges, will be _null_ if not supported)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was closed (ie: last trade performed) (might not be supported by all exchanges, will be _null_ if not supported)
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/closedOrders_
+
+[source,json]
+----
+{
+    "fe86e255-f440-4f17-ba05-8c708bcd08a3":{
+        "pair":"BTC-PTC",
+        "orderNumber":"fe86e255-f440-4f17-ba05-8c708bcd08a3",
+        "orderType":"sell",
+        "quantity":120,
+        "actualRate":0.00000439,
+        "openTimestamp":1526382451,
+        "closedTimestamp":1526382451,
+        "fees":{
+            "amount":0.00000131,
+            "currency":"BTC"
+        },
+        "actualPrice":0.0005268,
+        "finalPrice":0.00052549,
+        "finalRate":0.00000438
+    },...
+}
+----
+
+== Retrieve a single closed order
+
+*GET* _/exchanges/{exchangeId}/closedOrders/{orderNumber}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{orderNumber}
+|string
+|Number of the order to retrieve
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string (X-Y)
+|
+|Used to optimize request by indicating the pair used for this order (will be needed if _requirePair_ is _true_)
+
+|===
+
+[NOTE]
+====
+Some exchanges require to retrieve closed orders _per pair_. Passing the _pair_ parameter will make request execute faster (will be needed if _requirePair_ is _true_).
+====
+
+=== Result
+
+Result will be a dictionary containing a single entry
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_orderNumber_
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair (_X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderNumber
+|string
+|Unique identifier of the order
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}orderType
+|string (_buy_,_sell_)
+|Order type
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|float
+|Quantity bought/sold
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}actualRate
+|float
+|Actual per-unit price used in the trades
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}actualPrice
+|float
+|Total price (_quantity_ * _actualPrice_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}fees
+|object
+|Fees for this order. Will be _null_ if not supported or if _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}amount
+|float
+|Fees amount
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency used to pay fees
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalPrice
+|float
+|_actualPrice_ +- _fees.amount_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}finalRate
+|float
+|_finalPrice_ / _quantity_. Will be _null_ if _fees_ is _null_ or _quantity_ is _0_ (ie: cancelled order)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}openTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was created (might not be supported by all exchanges, will be _null_ if not supported)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closedTimestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when order was closed (ie: last trade performed) (might not be supported by all exchanges, will be _null_ if not supported)
+
+|===
+
+[NOTE]
+====
+In case order does not exists, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/closedOrders/fe86e255-f440-4f17-ba05-8c708bcd08a3_
+
+[source,json]
+----
+{
+    "fe86e255-f440-4f17-ba05-8c708bcd08a3":{
+        "pair":"BTC-PTC",
+        "orderNumber":"fe86e255-f440-4f17-ba05-8c708bcd08a3",
+        "orderType":"sell",
+        "quantity":120,
+        "actualRate":0.00000439,
+        "openTimestamp":1526382451,
+        "closedTimestamp":1526382451,
+        "fees":{
+            "amount":0.00000131,
+            "currency":"BTC"
+        },
+        "actualPrice":0.0005268,
+        "finalPrice":0.00052549,
+        "finalRate":0.00000438
+    }
+}
+----
+
+Example for *GET* _/exchanges/bittrex/closedOrders/INVALID_
+
+[source,json]
+----
+{
+}
+----

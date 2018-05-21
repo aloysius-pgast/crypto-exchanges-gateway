@@ -49,9 +49,9 @@
     "wolfy87-eventemitter": "^5.2.4"
   },
   "scripts": {
-    "dev": "webpack -d --progress --watch",
-    "start": "webpack-dev-server --env.dev --open --hot --progress --colors --inline",
-    "build": "webpack --progress",
+    "dev": "./node_modules/webpack/bin/webpack.js -d --progress --watch",
+    "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --env.dev --open --hot --progress --colors --inline",
+    "build": "./node_modules/webpack/bin/webpack.js --progress",
     "clean": "rimraf ./dist"
   },
   "engines": {

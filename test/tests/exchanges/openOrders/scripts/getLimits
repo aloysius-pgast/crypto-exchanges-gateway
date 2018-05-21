@@ -1,0 +1,351 @@
+#!/usr/bin/env node
+"use strict";
+const yargs = require('yargs')
+const _ = require('lodash');
+const Big = require('big.js');
+const RestClient = require('../../../../lib/rest-client');
+
+// define command arguments
+const argv = yargs
+    .locale('en')
+    .options({
+        'exchange':{
+            alias:'e',
+            describe:'exchange identifier',
+            requiresArg:true,
+            demandOption:true
+        },
+        'pair':{
+            alias:'p',
+            describe:'pair (X-Y)',
+            coerce:function(val){
+                let valid = true;
+                if (!(/^[A-Z0-9]+-[A-Z0-9]+$/.test(val)))
+                {
+                    throw new Error("argument '--pair, -p' should be a pair (X-Y)");
+                }
+                return val;
+            },
+            requiresArg:true,
+            demandOption:true
+        },
+        'uri':{
+            alias:'u',
+            describe:'base gateway uri (http://{host}:{port})',
+            default:'http://127.0.0.1:8000',
+            coerce:function(val){
+                let valid = true;
+                if (!val.startsWith('http://') && !val.startsWith('https://'))
+                {
+                    throw new Error("argument '--uri, -u' should start with 'http://' or 'https://'");
+                }
+                return val;
+            },
+            requiresArg:true,
+            demandOption:false
+        },
+        'apiKey':{
+            alias:'k',
+            describe:'API key declared on gateway',
+            requiresArg:true,
+            demandOption:false
+        },
+        'help':{
+            alias:'h',
+            describe:'display help',
+            requiresArg:false,
+            demandOption:false
+        }
+    })
+    .version(false)
+    .argv
+
+if (argv['help'])
+{
+    yargs.showHelp();
+    process.exit(1);
+}
+
+// create rest client instance
+let opt = {};
+if (undefined !== argv['u'])
+{
+    opt.baseUri = argv['u'];
+}
+if (undefined !== argv['k'])
+{
+    opt.apiKey = argv['k'];
+}
+const client = new RestClient(opt);
+
+/**
+ * Retrieves the list of services
+ *
+ * @return {object} list of services on success, exit on error
+ */
+const getServices = async () => {
+    let path = `/server/services`;
+    let result = await client.makeRequest('GET', path);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.error(`Could not retrieve services (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.error(`Could not retrieve services`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Retrieves the list of pairs for a given exchange
+ *
+ * @param {string} exchangeId exchange identifier
+ * @return {object} list of pairs on success, exit on error
+ */
+const getPairs = async (exchangeId) => {
+    let path = `/exchanges/${exchangeId}/pairs`;
+    let params = {useCache:true};
+    let result = await client.makeRequest('GET', path, params);
+    // an error occured
+    if (undefined !== result.error)
+    {
+        console.error(`Gateway does not seem to be reachable on '${client.getBaseUri()}' : ${result.error.message}`);
+        process.exit(1);
+    }
+    if (undefined === result.body)
+    {
+        console.error(`Could not retrieve pairs on '${exchangeId}' exchange (no body received in response)`);
+        process.exit(1);
+    }
+    if (undefined !== result.body.extError)
+    {
+        console.error(`Could not retrieve pairs on '${exchangeId} exchange`);
+        console.error(JSON.stringify(result.body.extError, null, 4));
+        process.exit(1);
+    }
+    return result.body;
+}
+
+/**
+ * Checks if an exchange exists in the list of services
+ *
+ * @param {object} services list of services
+ * @param {string} exchangeId exchange identifier
+ * @return {boolean} true if exchange exist, false otherwise
+ */
+const checkExchange = (services, exchangeId) => {
+    if (undefined === services.exchanges[exchangeId])
+    {
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Justifies a string with spaces
+ *
+ * @param {string} value string to pad
+ * @param {integer} len expected string length
+ */
+const justifyStr = (value, len) => {
+    let extra = (len - value.length);
+    if (0 == extra)
+    {
+        return value;
+    }
+    let leftPadding = parseInt(extra / 2);
+    let rightPadding = extra - leftPadding;
+    let str = value;
+    for (let i = 0; i < leftPadding; ++i)
+    {
+        str = ' ' + str;
+    }
+    for (let i = 0; i < rightPadding; ++i)
+    {
+        str = str + ' ';
+    }
+    return str;
+}
+
+/**
+ * Left-pads a float number with spaces
+ *
+ * @param {string} s string to pad
+ * @param {integer} len expected string length
+ */
+const padFloat = (value, len) => {
+    if ('' == value)
+    {
+        return value.padStart(len, ' ');
+    }
+    return new Big(value).toFixed().padStart(len, ' ');
+}
+
+/**
+ * Returns the length of the larger string
+ */
+const getMaxLength = (arr) => {
+    let max = 0;
+    _.forEach(arr, (e) => {
+        let s = e;
+        if ('number' == typeof s)
+        {
+            s = new Big(s).toFixed();
+        }
+        if (s.length > max)
+        {
+            max = s.length;
+        }
+    });
+    return max + 3;
+}
+
+/**
+ * Returns optimal columns size for each fields
+ *
+ * @param {object} limits limits for the requested pair
+ * @return {object} {list:[{title:string,size:integer},...],dict:{"title1":integer,...}}
+ */
+const getHeaders = (limits) => {
+    let result =  {list:[], dict:{}};
+    let entry;
+    let arr;
+
+    // FIELD
+    arr = ['FIELD','targetRate','quantity','targetPrice'];
+    entry = {title:arr[0], size:getMaxLength(arr)};
+    result.list.push(entry);
+    result.dict[entry.title] = entry.size;
+
+    // MIN
+    arr = ['MIN'];
+    _.forEach(['rate', 'quantity', 'price'], (e) => {
+        if (undefined !== limits[e].min && null !== limits[e].min)
+        {
+            arr.push(limits[e].min);
+        }
+    });
+    entry = {title:arr[0], size:getMaxLength(arr)};
+    result.list.push(entry);
+    result.dict[entry.title] = entry.size;
+
+    // MAX
+    arr = ['MAX'];
+    _.forEach(['rate', 'quantity', 'price'], (e) => {
+        if (undefined !== limits[e].max && null !== limits[e].max)
+        {
+            arr.push(limits[e].max);
+        }
+    });
+    entry = {title:arr[0], size:getMaxLength(arr)};
+    result.list.push(entry);
+    result.dict[entry.title] = entry.size;
+
+    // STEP
+    arr = ['STEP'];
+    _.forEach(['rate', 'quantity', 'price'], (e) => {
+        if (undefined !== limits[e].step && null !== limits[e].step)
+        {
+            arr.push(limits[e].step);
+        }
+    });
+    entry = {title:arr[0], size:getMaxLength(arr)};
+    result.list.push(entry);
+    result.dict[entry.title] = entry.size;
+
+    // PRECISION
+    arr = ['PRECISION'];
+    _.forEach(['rate', 'quantity', 'price'], (e) => {
+        if (undefined !== limits[e].precision && null !== limits[e].precision)
+        {
+            arr.push(limits[e].precision);
+        }
+    });
+    entry = {title:arr[0], size:getMaxLength(arr)};
+    result.list.push(entry);
+    result.dict[entry.title] = entry.size;
+
+    return result;
+}
+
+/**
+ * @param {string} field name in FIELD column
+ * @param {object} headers
+ * @param {object} limits limits for current pair
+ * @param {string} limitField field in limits
+ */
+const getRow = (field, headers, limits, limitField) => {
+    let arr = [justifyStr(field, headers.dict['FIELD'])];
+    // MIN
+    if (undefined !== limits[limitField].min && null !== limits[limitField].min)
+    {
+        arr.push(padFloat(limits[limitField].min, headers.dict['MIN']));
+    }
+    else
+    {
+        arr.push(padFloat('', headers.dict['MIN']));
+    }
+    // MAX
+    if (undefined !== limits[limitField].max && null !== limits[limitField].max)
+    {
+        arr.push(padFloat(limits[limitField].max, headers.dict['MAX']));
+    }
+    else
+    {
+        arr.push(padFloat('', headers.dict['MAX']));
+    }
+    // STEP
+    if (undefined !== limits[limitField].step && null !== limits[limitField].step)
+    {
+        arr.push(padFloat(limits[limitField].step, headers.dict['STEP']));
+    }
+    else
+    {
+        arr.push(padFloat('', headers.dict['STEP']));
+    }
+    // PRECISION
+    if (undefined !== limits[limitField].precision && null !== limits[limitField].precision)
+    {
+        arr.push(padFloat(limits[limitField].precision, headers.dict['PRECISION']));
+    }
+    else
+    {
+        arr.push(padFloat('', headers.dict['PRECISION']));
+    }
+    return arr.join('|') + '|';
+}
+
+const main = async () => {
+    const services = await getServices();
+    if (!checkExchange(services, argv['e']))
+    {
+        console.error(`'${argv['e']}' exchange is not supported`);
+        process.exit(1);
+    }
+    const pairs = await getPairs(argv['e']);
+    if (undefined === pairs[argv['p']])
+    {
+        console.error(`'${argv['p']}' pair is not supported on '${argv['e']}' exchange`);
+        process.exit(1);
+    }
+    // display headers
+    const headers = getHeaders(pairs[argv['p']].limits);
+    console.log(_.map(headers.list, (e) => { return justifyStr(e.title, e.size) }).join('|') + '|');
+
+    // display limits
+    console.log(getRow('targetRate', headers, pairs[argv['p']].limits, 'rate'));
+    console.log(getRow('quantity', headers, pairs[argv['p']].limits, 'quantity'));
+    console.log(getRow('targetPrice', headers, pairs[argv['p']].limits, 'price'));
+}
+
+main();

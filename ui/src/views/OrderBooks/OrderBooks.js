@@ -8,6 +8,7 @@ import PairChooser from '../../components/PairChooser';
 import OrderBook from '../../components/OrderBook';
 import LastTrades from '../../components/LastTrades';
 import dateTimeHelper from '../../lib/DateTimeHelper';
+import dataStore from '../../lib/DataStore';
 
 class OrderBooks extends Component
 {
@@ -20,7 +21,12 @@ constructor(props) {
        orderBook:false,
        trades:false
    }
-   this.state = this._initializeState(this.props.data.exchange, this.props.match.params.pair);
+   let pair = undefined === this.props.match.params.pair ? null : this.props.match.params.pair;
+   if (null === pair)
+   {
+       pair = dataStore.getExchangeData(this.props.data.exchange, 'pair');
+   }
+   this.state = this._initializeState(this.props.data.exchange, pair);
    this._initializeData();
 
    this._handleSelectPair = this._handleSelectPair.bind(this);
@@ -55,7 +61,7 @@ _initializeState(exchange, pair, pairs)
             err:null,
             data:null
         },
-        pair:undefined === pair ? null : pair
+        pair:pair
     };
     if (undefined === state.pairs)
     {
@@ -119,10 +125,11 @@ _handleSelectPair(pair)
     {
         wsClient.unsubscribe();
     }
+    let previousPair = this.state.pair;
     this.setState((prevState, props) => {
       return this._initializeState(prevState.exchange, pair, prevState.pairs);
     }, function(){
-        if (null !== pair)
+        if (null !== pair && pair != previousPair)
         {
             this._setupWsListeners(this.state.exchange, pair);
             this._loadOrderBook();
@@ -417,7 +424,7 @@ _updateState()
     this.setState(newState);
 }
 
-_loadPairs()
+_loadPairs(cb)
 {
     let self = this;
     restClient.getPairs(this.state.exchange).then(function(data){
@@ -426,8 +433,15 @@ _loadPairs()
             return;
         }
         self.setState((prevState, props) => {
-          return {pairs:{loaded:true, err:null, data: data}};
-        });
+          let pair = self.state.pair;
+          if (undefined === data[pair])
+          {
+            pair = null;
+          }
+          return {pairs:{loaded:true, err:null, data: data},pair:pair};
+      }, function(){
+          cb.call(self);
+      });
     }).catch (function(err){
         if (!self._isMounted)
         {
@@ -442,19 +456,21 @@ _loadPairs()
 
 componentWillReceiveProps(nextProps)
 {
-    let newState = this._initializeState(nextProps.data.exchange, nextProps.match.params.pair);
+    let pair = undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair;
+    let newState = this._initializeState(nextProps.data.exchange, pair);
     this._initializeData();
     this.setState(function(prevState, props){
         return newState;
     }, function(){
-        this._loadPairs();
-        // we already have a pair => load data
-        if (null !== this.state.pair)
-        {
-            this._setupWsListeners(this.state.exchange, this.state.pair);
-            this._loadOrderBook();
-            this._loadTrades();
-        }
+        this._loadPairs(function(){
+            // we already have a pair => load data
+            if (null !== this.state.pair)
+            {
+                this._setupWsListeners(this.state.exchange, this.state.pair);
+                this._loadOrderBook();
+                this._loadTrades();
+            }
+        });
     });
 }
 
@@ -618,14 +634,15 @@ componentWillUnmount()
 componentDidMount()
 {
     this._isMounted = true;
-    this._loadPairs();
-    // we already have a pair => load data
-    if (null !== this.state.pair)
-    {
-        this._setupWsListeners(this.state.exchange, this.state.pair);
-        this._loadOrderBook();
-        this._loadTrades();
-    }
+    this._loadPairs(function(){
+        // we already have a pair => load data
+        if (null !== this.state.pair)
+        {
+            this._setupWsListeners(this.state.exchange, this.state.pair);
+            this._loadOrderBook();
+            this._loadTrades();
+        }
+    });
 }
 
 render()

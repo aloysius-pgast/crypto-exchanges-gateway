@@ -1,0 +1,14 @@
+{
+    "binance":{
+        "openOrders":["USDT-NEO"],
+        "closedOrders":["USDT-NEO"]
+    },
+    "poloniex":{
+        "openOrders":["BTC-GAS"],
+        "closedOrders":["BTC-GAS"]
+    },
+    "bittrex":{
+        "openOrders":["USDT-NEO"],
+        "closedOrders":["USDT-NEO"]
+    }
+}

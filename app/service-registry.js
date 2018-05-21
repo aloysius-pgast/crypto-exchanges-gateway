@@ -16,12 +16,13 @@ constructor()
  * Registers an exchange and indicate supported features
  *
  * @param {string} id exchange id
+ * @param {string} type exchange type (ex: binance)
  * @param {string} name exchange name
  * @param {object} instance Exchange object
  * @param {object} features dictionary of features {string:{enabled:boolean}} (optional)
  * @param {boolean} demoMode indicates whether or not demo mode is enabled for this exchange
  */
-registerExchange(id, name, instance, features, demoMode, obj)
+registerExchange(id, type, name, instance, features, demoMode, obj)
 {
     let featureList = {};
     let demo = false;
@@ -38,10 +39,10 @@ registerExchange(id, name, instance, features, demoMode, obj)
             demo = true;
         }
     }
-    this._services.exchanges[id] = {id:id,instance:instance,name:name,features:featureList,demo:demo,dummy:instance.isDummy()}
+    this._services.exchanges[id] = {id:id,type:type,instance:instance,name:name,features:featureList,demo:demo}
 }
 
-getExchanges(id)
+getExchanges()
 {
     return this._services.exchanges;
 }
@@ -55,6 +56,28 @@ getExchange(id)
     return this._services.exchanges[id];
 }
 
+getExchangeFeatures(id)
+{
+    if (undefined === this._services.exchanges[id])
+    {
+        return null;
+    }
+    return this._services.exchanges[i].features;
+}
+
+getExchangeFeature(id, feature)
+{
+    if (undefined === this._services.exchanges[id])
+    {
+        return null;
+    }
+    if (undefined === this._services.exchanges[id].features[feature])
+    {
+        return null;
+    }
+    return this._services.exchanges[id].features[feature];
+}
+
 /**
  * Registers a service and indicate supported features
  *
@@ -63,8 +86,9 @@ getExchange(id)
  * @param {object} instance service object
  * @param {object} features dictionary of features {string:{enabled:boolean}} (optional)
  * @param {boolean} demoMode indicates whether or not demo mode is enabled for this service
+ * @param {object} cfg service configuration (optional)
  */
-registerService(id, name, instance, features, demoMode)
+registerService(id, name, instance, features, demoMode, cfg)
 {
     let featureList = {};
     let demo = false;
@@ -81,7 +105,12 @@ registerService(id, name, instance, features, demoMode)
             demo = true;
         }
     }
-    this._services.others[id] = {id:id,name:name,instance:instance,features:featureList,demo:demo}
+    let serviceCfg = {};
+    if (undefined !== cfg)
+    {
+        serviceCfg = cfg;
+    }
+    this._services.others[id] = {id:id,name:name,instance:instance,features:featureList,demo:demo,cfg:serviceCfg}
 }
 
 getServices()

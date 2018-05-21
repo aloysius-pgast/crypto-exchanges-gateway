@@ -10,10 +10,15 @@ const AbstractConfigCheckerClass = require('../../abstract-config-checker');
 class ConfigChecker extends AbstractConfigCheckerClass
 {
 
+// whether or not multiple instances can be supported for this exchange
+static get MULTIPLE_INSTANCES() { return  true };
+
 constructor(id)
 {
     // default config
     let cfg = {
+        type:"dummy",
+        name:"Paper Exchange",
         feesPercent:0
     }
     super(cfg, `exchanges[${id}]`);
@@ -22,11 +27,7 @@ constructor(id)
 _check()
 {
     let valid = true;
-    if (undefined === this._config.name)
-    {
-        this._missing('name');
-        return false;
-    }
+    //-- check name
     if (undefined === this._config.baseHttpUri)
     {
         this._missing('baseHttpUri');

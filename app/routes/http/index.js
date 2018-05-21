@@ -8,18 +8,22 @@ const pushover = require('../../pushover/routes');
 const exchanges = require('./exchanges');
 const sessions = require('./sessions');
 const portfolio = require('./portfolio');
+const tickerMonitor = require('../../tickerMonitor/routes');
 const ui = require('./ui');
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
     auth(app, config);
-    debug(app, bodyParser, config);
-    coinmarketcap(app, bodyParser, config);
-    pushover(app, bodyParser, config);
-    exchanges(app, bodyParser, config);
-    sessions(app, bodyParser, config);
-    ui(app, bodyParser, config);
-    server(app, bodyParser, config);
-    portfolio(app, bodyParser, config);
+    debug(app, bodyParsers, config);
+    coinmarketcap(app, bodyParsers, config);
+    pushover(app, bodyParsers, config);
+    exchanges(app, bodyParsers, config);
+    sessions(app, bodyParsers, config);
+    ui(app, bodyParsers, config);
+    server(app, bodyParsers, config);
+    // must be loaded after coinmarketcap
+    portfolio(app, bodyParsers, config);
+    // must be loaded after pushover
+    tickerMonitor(app, bodyParsers, config);
     _default(app, config);
     errors(app, config);
 };

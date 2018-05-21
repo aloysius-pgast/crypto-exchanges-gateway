@@ -99,9 +99,20 @@ constructor(uri, options)
     this._ignoreCloseEvent = true;
 }
 
+/**
+ * Indicates whether or not we're ready to process messages from server
+ */
 isConnected()
 {
     return STATE_CONNECTED == this._connectionState;
+}
+
+/**
+ * Indicates whether or not we're waiting for connection to be established
+ */
+isConnecting()
+{
+    return STATE_CONNECTING == this._connectionState;
 }
 
 send(data)

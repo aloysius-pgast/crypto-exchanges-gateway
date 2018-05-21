@@ -8,7 +8,7 @@ const _ = require('lodash');
  * Used to log requests
  */
 
-module.exports = function(app, bodyParser, config) {
+module.exports = function(app, bodyParsers, config) {
 
 app.get('*', (req, res, next) => {
     if ('debug' != logger.level)
@@ -58,7 +58,7 @@ app.delete('*', (req, res, next) => {
     next();
 });
 
-app.post('*', bodyParser, (req, res, next) => {
+app.post('*', bodyParsers.urlEncoded, (req, res, next) => {
     if ('debug' != logger.level)
     {
         next();
@@ -90,7 +90,7 @@ app.post('*', bodyParser, (req, res, next) => {
     next();
 });
 
-app.patch('*', bodyParser, (req, res, next) => {
+app.patch('*', bodyParsers.urlEncoded, (req, res, next) => {
     if ('debug' != logger.level)
     {
         next();

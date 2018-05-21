@@ -2,6 +2,7 @@
 const util = require('util');
 const _ = require('lodash');
 const url = require('url');
+const Errors = require('../../errors');
 const logger = require('winston');
 
 /**
@@ -22,8 +23,9 @@ app.use(function (req, res) {
         res.status(404).end();
         return;
     }
-    logger.warn("Unknown route %s %s", req.method, u.pathname)
-    res.status(404).send({origin:"gateway",error:'Unknown route'});
+    logger.warn("Unknown route %s %s", req.method, u.pathname);
+    let extError = new Errors.GatewayError.UnknownRoute();
+    return Errors.sendHttpError(res, extError);
 });
 
 };

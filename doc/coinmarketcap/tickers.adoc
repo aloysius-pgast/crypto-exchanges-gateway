@@ -1,6 +1,11 @@
 = Tickers
 
-== Retrieve tickers for all currencies or a list of symbols
+[NOTE]
+====
+Those routes will only be available if _coinmarketcap_ service is enabled. Output format is not backward compatible with versions < 1.6.0
+====
+
+== Retrieve tickers for all symbols or a list of symbols
 
 *GET* _/coinmarketcap/tickers_
 
@@ -16,46 +21,39 @@ Uses CoinMarketCap _ticker_ API
 |Default
 |Description
 
-|outputFormat
-|string (_custom_,_coinmarketcap_)
-|custom
-|If value is _coinmarketcap_ result returned by CoinMarketCap will be returned untouched
-
-|limit
-|integer
-|100
-|Only returns the top _limit_ results
-
 |symbols
 |string (comma-separated)
 |
 |Comma-separated list of symbols to retrieve tickers for
 
-|convert
-|string
+|limit
+|integer
+|100
+|Only returns the top _limit_ results (will be ignored if _symbols_ is set)
+
+|convertTo
+|string (comma-separated)
 |
-|Return _price_, _24h volume_, and _market cap_ in terms of another currency (ex: _EUR_)
+|Convert _price_, _24h volume_, and _market cap_ to fiat currencies (ex: _GBP_ or _EUR_) or any other symbol (ex: _ETH_ or _NEO_)
 
 |===
 
 === Result
 
+Result will be an array of entries such as below
+
 [NOTE]
 ====
-This only applies when _outputFormat_ is set to _custom_
-====
+If some symbols are invalid, they won't appear in array. No error will be triggered
 
-Result will be an array of entries such as below
+Values in _converted_ will be an approximation which will be computed using _USD_ as an intermediate currency
+====
 
 [cols="1a,1a,3a", options="header"]
 |===
 |Name
 |Type
 |Description
-
-|id
-|string
-|Currency identifier (ex: _bitcoin_)
 
 |name
 |string
@@ -73,11 +71,7 @@ Result will be an array of entries such as below
 |float
 |Per-unit price in _USD_
 
-|price_btc
-|float
-|Per-unit price in _BTC_
-
-|24h_volume_usd
+|volume_24h_usd
 |float
 |_USD_ volume of last 24H
 
@@ -85,9 +79,29 @@ Result will be an array of entries such as below
 |float
 |_USD_ market cap
 
-|available_supply
+|price_btc
 |float
-|Available supply
+|Per-unit price in _BTC_
+
+|volume_24h_btc
+|float
+|_BTC_ volume of last 24H
+
+|market_cap_btc
+|float
+|_BTC_ market cap
+
+|total_supply
+|float
+|The total number of coins in existence
+
+|circulating_supply
+|float
+|The number of coins in existence available to the public
+
+|max_supply
+|float
+|The maximum number of coins
 
 |percent_change_1h
 |float
@@ -101,35 +115,35 @@ Result will be an array of entries such as below
 |float
 |Price change during last 7 days (in %)
 
-|percent_change_7d
-|float
-|Price change during last 7 days (in %)
-
 |last_updated
 |integer
 |Unix timestamp of last update
 
-|convert_currency
-|string
-|_XXX_ currency used for conversion (will be _null_ if parameter _convert_ was not set)
+|converted
+|object
+|One entry per currency used for conversion
 
-|price_converted
-|float
-|Per-unit price in converted currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}XXX_
+|object
+|Ticker values converted to currency _XXX_ (approximation)
 
-|24h_volume_converted
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
 |float
-|Volume of last 24H in converted currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+|Price in currency _XXX_
 
-|market_cap_converted
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume_24h
 |float
-|Market cap in currency _XXX_ (will be _null_ if parameter _convert_ was not set or conversion could not be done)
+|Volume of last 24H for in currency _XXX_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}market_cap
+|float
+|Market cap in currency _XXX_
 
 |===
 
 .Examples
 
-Example for *GET* _/coinmarketcap/tickers?limit=3&convert=EUR_
+Example for *GET* _/coinmarketcap/tickers?limit=3&convertTo=ETH,GPB_
 
 [source,json]
 ----
@@ -138,58 +152,284 @@ Example for *GET* _/coinmarketcap/tickers?limit=3&convert=EUR_
         "name":"Bitcoin",
         "symbol":"BTC",
         "rank":1,
-        "last_updated":1502955265,
-        "convert_currency":"EUR",
-        "price_converted":3670.0231928,
-        "24h_volume_converted":1759217786.8,
-        "market_cap_converted":60596530981,
-        "price_usd":4323.04,
+        "circulating_supply":17040550,
+        "total_supply":17040550,
+        "max_supply":21000000,
+        "last_updated":1526652872,
+        "converted":{
+            "ETH":{
+                "price":11.9348613092,
+                "volume_24h":9006040.225806225,
+                "market_cap":203376600.88240668
+            },
+            "GBP":{
+                "price":6016.0749577153,
+                "volume_24h":4539727079.115838,
+                "market_cap":102517226121.06627
+            }
+        },
+        "price_usd":8111.23,
+        "market_cap_usd":138219820377,
+        "volume_24h_usd":6120730000,
+        "percent_change_1h":-0.3,
+        "percent_change_24h":-2.6,
+        "percent_change_7d":-6.34,
         "price_btc":1,
-        "24h_volume_usd":2072240000,
-        "market_cap_usd":71378629924,
-        "available_supply":16511212,
-        "total_supply":16511212,
-        "percent_change_1h":-0.23,
-        "percent_change_24h":5.59,
-        "percent_change_7d":28.33
+        "market_cap_btc":17040550,
+        "volume_24h_btc":754599.4873773769
     },
     {
         "name":"Ethereum",
         "symbol":"ETH",
         "rank":2,
-        "last_updated":1502955258,
-        "convert_currency":"EUR",
-        "price_converted":261.447044815,
-        "24h_volume_converted":804241254.19,
-        "market_cap_converted":24589748150,
-        "price_usd":307.967,
-        "price_btc":0.0715967,
-        "24h_volume_usd":947342000,
-        "market_cap_usd":28965066229,
-        "available_supply":94052500,
-        "total_supply":94052500,
-        "percent_change_1h":1.15,
-        "percent_change_24h":6.8,
-        "percent_change_7d":3.52
+        "circulating_supply":99512624,
+        "total_supply":99512624,
+        "max_supply":null,
+        "last_updated":1526652856,
+        "converted":{
+            "ETH":{
+                "price":1,
+                "volume_24h":3625396.410684055,
+                "market_cap":99512624
+            },
+            "GBP":{
+                "price":504.075823659,
+                "volume_24h":1827474655.3931155,
+                "market_cap":50161907906.52261
+            }
+        },
+        "price_usd":679.625,
+        "market_cap_usd":67631267085,
+        "volume_24h_usd":2463910000,
+        "percent_change_1h":-0.55,
+        "percent_change_24h":-3.48,
+        "percent_change_7d":-1.25,
+        "price_btc":0.0837881554,
+        "market_cap_btc":8337979,
+        "volume_24h_btc":303765.2735774969
     },
     {
         "name":"Ripple",
         "symbol":"XRP",
         "rank":3,
-        "last_updated":1502955242,
-        "convert_currency":"EUR",
-        "price_converted":0.1351248778,
-        "24h_volume_converted":72383088.168,
-        "market_cap_converted":5181206947,
-        "price_usd":0.159168,
-        "price_btc":0.000037,
-        "24h_volume_usd":85262400,
-        "market_cap_usd":6103112625,
-        "available_supply":38343841883,
-        "total_supply":99994523265,
-        "percent_change_1h":-0.18,
-        "percent_change_24h":2.84,
-        "percent_change_7d":-12.45
+        "circulating_supply":39189968239,
+        "total_supply":99992233977,
+        "max_supply":100000000000,
+        "last_updated":1526652841,
+        "converted":{
+            "ETH":{
+                "price":0.0009758926,
+                "volume_24h":529818.657648329,
+                "market_cap":38245200.07455701
+            },
+            "GBP":{
+                "price":0.49192386,
+                "volume_24h":267068772.3839922,
+                "market_cap":19278480449.9501
+            }
+        },
+        "price_usd":0.663241,
+        "market_cap_usd":25992393725,
+        "volume_24h_usd":360078000,
+        "percent_change_1h":-1.3,
+        "percent_change_24h":-4.86,
+        "percent_change_7d":-4.03,
+        "price_btc":0.0000817682,
+        "market_cap_btc":3204495,
+        "volume_24h_btc":44392.5273972012
     }
 ]
+----
+
+== Retrieve ticker for a single symbol
+
+*GET* _/coinmarketcap/tickers/{symbol}_
+
+Uses CoinMarketCap _ticker_ API
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{symbol}
+|string
+|Symbol to retrieve ticker for
+
+|===
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|convertTo
+|string (comma-separated)
+|
+|Convert _price_, _24h volume_, and _market cap_ to fiat currencies (ex: _GBP_ or _EUR_) or any other symbol (ex: _ETH_ or _NEO_)
+
+|===
+
+=== Result in case data exist
+
+Result will be a single object such as below
+
+[NOTE]
+====
+Values in _converted_ will be an approximation which will be computed using _USD_ as an intermediate currency
+====
+
+[cols="1a,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|name
+|string
+|Currency name (ex: _Bitcoin_)
+
+|symbol
+|string
+|Currency symbol (ex: _BTC_)
+
+|rank
+|integer
+|Currency rank
+
+|price_usd
+|float
+|Per-unit price in _USD_
+
+|volume_24h_usd
+|float
+|_USD_ volume of last 24H
+
+|market_cap_usd
+|float
+|_USD_ market cap
+
+|price_btc
+|float
+|Per-unit price in _BTC_
+
+|volume_24h_btc
+|float
+|_BTC_ volume of last 24H
+
+|market_cap_btc
+|float
+|_BTC_ market cap
+
+|total_supply
+|float
+|The total number of coins in existence
+
+|circulating_supply
+|float
+|The number of coins in existence available to the public
+
+|max_supply
+|float
+|The maximum number of coins
+
+|percent_change_1h
+|float
+|Price change during last hour (in %)
+
+|percent_change_24h
+|float
+|Price change during last 24 hours (in %)
+
+|percent_change_7d
+|float
+|Price change during last 7 days (in %)
+
+|last_updated
+|integer
+|Unix timestamp of last update
+
+|converted
+|object
+|One entry per currency used for conversion
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}XXX_
+|object
+|Ticker values converted to currency _XXX_ (approximation)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
+|float
+|Price in currency _XXX_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume_24h
+|float
+|Volume of last 24H for in currency _XXX_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}market_cap
+|float
+|Market cap in currency _XXX_
+
+|===
+
+.Examples
+
+Example for *GET* _/coinmarketcap/tickers/BTC_
+
+[source,json]
+----
+{
+    "name":"Bitcoin",
+    "symbol":"BTC",
+    "rank":1,
+    "circulating_supply":17040550,
+    "total_supply":17040550,
+    "max_supply":21000000,
+    "last_updated":1526652872,
+    "converted":{},
+    "price_usd":8111.23,
+    "market_cap_usd":138219820377,
+    "volume_24h_usd":6120730000,
+    "percent_change_1h":-0.3,
+    "percent_change_24h":-2.6,
+    "percent_change_7d":-6.34,
+    "price_btc":1,
+    "market_cap_btc":17040550,
+    "volume_24h_btc":754599.4873773769
+}
+----
+
+=== Result in case data does not exist
+
+A _GatewayError.InvalidRequest.ObjectNotFound_ error will be returned
+
+.Examples
+
+Example for *GET* _/coinmarketcap/tickers/INVALID_
+
+[source,json]
+----
+{
+    "origin":"gateway",
+    "error":"Symbol 'INVALID' does not exist",
+    "route":{
+        "method":"GET",
+        "path":"/coinmarketcap/tickers/INVALID"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"Symbol 'INVALID' does not exist",
+        "data":{
+            "symbol":"INVALID"
+        }
+    }
+}
 ----

@@ -5,6 +5,8 @@ import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import PairChooser from '../../components/PairChooser';
 import Ticker from '../../components/Ticker';
 import CandleSticks from '../../components/CandleSticks';
+import serviceRegistry from '../../lib/ServiceRegistry';
+import dataStore from '../../lib/DataStore';
 
 class Prices extends Component
 {
@@ -12,12 +14,19 @@ class Prices extends Component
 constructor(props) {
    super(props);
    this._isMounted = false;
+   let exchangeInstance = serviceRegistry.getExchange(this.props.data.exchange);
+   let pair = undefined === this.props.match.params.pair ? null : this.props.match.params.pair;
+   if (null === pair)
+   {
+       pair = dataStore.getExchangeData(this.props.data.exchange, 'pair');
+   }
    this.state = {
        exchange:this.props.data.exchange,
+       exchangeType:exchangeInstance.type,
        loaded:false,
        err: null,
        data:null,
-       pair:undefined === this.props.match.params.pair ? null : this.props.match.params.pair
+       pair:pair
    };
    this._handleSelectPair = this._handleSelectPair.bind(this);
 }
@@ -38,7 +47,12 @@ _loadData()
             return;
         }
         self.setState((prevState, props) => {
-          return {err:null, loaded:true, data: data};
+          let pair = self.state.pair;
+          if (undefined === data[pair])
+          {
+            pair = null;
+          }
+          return {err:null, loaded:true, data: data, pair:pair};
         });
     }).catch (function(err){
         if (!self._isMounted)
@@ -54,11 +68,13 @@ _loadData()
 
 componentWillReceiveProps(nextProps)
 {
-    let exchange = nextProps.data.exchange;
+    let exchangeId = nextProps.data.exchange;
+    let exchangeInstance = serviceRegistry.getExchange(exchangeId);
     this.setState(function(prevState, props){
         return {
             loaded:false,
             exchange:exchange,
+            exchangeType:exchangeInstance.type,
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair
         };
     }, function(){
@@ -108,7 +124,7 @@ render() {
             return null;
         }
         // no chart support ?
-        if (!tradingViewHelper.hasChartSupport(this.state.exchange))
+        if (!tradingViewHelper.hasChartSupport(this.state.exchangeType))
         {
             return null;
         }
@@ -116,7 +132,7 @@ render() {
             <div className="animated fadeIn">
               <br/>
                 <h6>CHART</h6>
-                <CandleSticks exchange={this.state.exchange} pair={this.state.pair}/>
+                <CandleSticks exchange={this.state.exchangeType} pair={this.state.pair}/>
             </div>
         )
     }

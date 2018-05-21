@@ -1,9 +1,40 @@
 "use strict";
-const Bottleneck = require('bottleneck');
+const createApiInstance = require('node-bittrex-api').createInstance;
+const logger = require('winston');
 const _ = require('lodash');
 const Big = require('big.js');
+const Errors = require('../../errors');
+const DateTimeHelper = require('../../datetime-helper');
 const AbstractExchangeClass = require('../../abstract-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
+
+const exchangeType = 'bittrex';
+
+// list of possible interval for klines
+const supportedKlinesIntervals = [
+  '1m', '5m', '30m',
+  '1h',
+  '1d'
+]
+const klinesIntervalsMapping = {
+    '1m':'oneMin', '5m':'fiveMin', '30m':'thirtyMin',
+    '1h':'hour',
+    '1d':'day'
+}
+const defaultKlinesInterval = '5m';
+
+// list of all possible features (should be enabled by default if supported by class)
+const supportedFeatures = {
+    'pairs':{enabled:true},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true},
+    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:false},
+    'orders':{enabled:true, withoutPair:true},
+    'openOrders':{enabled:true, withoutPair:true},
+    'closedOrders':{enabled:true, withoutPair:true, completeHistory:false},
+    'balances':{enabled:true, withoutCurrency:true}
+};
 
 class Exchange extends AbstractExchangeClass
 {
@@ -17,217 +48,136 @@ class Exchange extends AbstractExchangeClass
  */
  constructor(exchangeId, exchangeName, config)
  {
-    super(exchangeId, exchangeName);
-    this._client = require('node-bittrex-api');
+    super(exchangeId, exchangeType, exchangeName, supportedFeatures, config);
     let opt = {
-        apikey:config.exchanges.bittrex.key,
-        apisecret:config.exchanges.bittrex.secret,
+        apikey:config.exchanges[exchangeId].key,
+        apisecret:config.exchanges[exchangeId].secret,
         verbose:false,
         stream:false,
         cleartext:false
     };
-    this._client.options(opt);
-    this._limiterLowIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.lowIntensity.minPeriod * 1000);
-    this._limiterMediumIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.mediumIntensity.minPeriod * 1000);
-    this._limiterHighIntensity = new Bottleneck(1, config.exchanges.bittrex.throttle.highIntensity.minPeriod * 1000);
+    this._client = createApiInstance(opt);
+    this._limiterGlobal = this._getRateLimiter(config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
-    this._timeOffset = new Date().getTimezoneOffset() * -60;
 }
 
 /**
-* Returns ticker for all currencies
-*
-* Format of result depends on opt.outputFormat parameter
-*
-* If opt.outputFormat is 'exchange', the result returned by exchange will be returned unchanged
-*
-* {
-*     "success":true,
-*     "message":"",
-*     "result":[
-*         {
-*             "MarketName":"BITCNY-BTC",
-*             "High":23400.00099998,
-*             "Low":21000.03,
-*             "Volume":2.13098225,
-*             "Last":22499.99999078,
-*             "BaseVolume":47823.64813412,
-*             "TimeStamp":"2017-08-07T15:47:03.217",
-*             "Bid":21802.22000043,
-*             "Ask":22499.99999078,
-*             "OpenBuyOrders":460,
-*             "OpenSellOrders":49,
-*             "PrevDay":22900,
-*             "Created":"2015-12-11T06:31:40.653"
-*         },...
-*     ]
-* }
-*
-* If opt.outputFormat is 'custom', the result will be as below
-*
-* {
-*     "BITCNY-BTC":{
-*         "pair":"BITCNY-BTC",
-*         "last":21802.21999999,
-*         "priceChangePercent":2.5,
-*         "sell":21802.21999999,
-*         "buy":21802.20000021,
-*         "high":23400.00099998,
-*         "low":21000.03,
-*         "volume":2.12833311,
-*         "timestamp":1502120848.53
-*      },...
-* }
-*
-* @param {string} opt.outputFormat if value is 'exchange', response returned will be returned untouched
-* @param {string} opt.pairs used to retrieve ticker for only a list of pairs (optional) (will be ignored if opt.outputFormat is exchange)
-* @return {Promise} format depends on parameter opt.outputFormat
-*/
-tickers(opt)
+ * Extract error from the error returned by API
+ *
+ * @param {object} error error returned by API
+ * @return {string|object}
+ */
+_parseError(error)
 {
-    let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
-        return new Promise((resolve, reject) => {
-            self._client.getmarketsummaries((response, error) => {
-                if (null !== error)
-                {
-                    reject(error.message);
-                    return;
-                }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
-                    return;
-                }
-                let list = {};
-                let filteredList = {};
-                if (undefined !== opt.pairs && 0 !== opt.pairs.length)
-                {
-                    _.forEach(opt.pairs, function(entry){
-                        filteredList[entry] = 1;
-                    });
-                }
-                _.forEach(response.result, function (entry) {
-                    // only keep the pairs we're interested in
-                    if (undefined !== opt.pairs && undefined === filteredList[entry.MarketName])
-                    {
-                        return;
-                    }
-                    let last = parseFloat(entry.Last);
-                    let previousDay = parseFloat(entry.PrevDay);
-                    let percentChange = 0;
-                    if (previousDay > 0)
-                    {
-                        percentChange = ((last/previousDay) - 1) * 100;
-                    }
-                    list[entry.MarketName] = {
-                        pair:entry.MarketName,
-                        last: last,
-                        priceChangePercent:percentChange,
-                        sell: parseFloat(entry.Ask),
-                        buy: parseFloat(entry.Bid),
-                        high: parseFloat(entry.High),
-                        low: parseFloat(entry.Low),
-                        volume: parseFloat(entry.Volume),
-                        timestamp: parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
-                    }
-                });
-                resolve(list);
-            });
-        });
-    });
+    // not an error generated by node-bittrex-api
+    if (undefined === error.success && error instanceof Error)
+    {
+        return error;
+    }
+    // network error (ex: DNS pb)
+    if (null !== error.error && error.error instanceof Error)
+    {
+        return error.error;
+    }
+    // http error returned by Bittrex (ex: wrong url)
+    if (null !== error.result)
+    {
+        return error.result;
+    }
+    // Bittrex API error
+    return error.message;
 }
 
 /**
- * Returns existing pairs
+ * Indicates whether or not error is an authentication error
  *
- * Result will be as below
+ * @param {string} message error message
+ * @return {boolean}
+ */
+_isInvalidAuthError(message)
+{
+    switch (message)
+    {
+        case 'APIKEY_INVALID':
+        case 'INVALID_SIGNATURE':
+            return true;
+    }
+    return false;
+}
+
+/**
+ * Returns all active pairs
  *
- * {
- *     "X-Y":{
- *         "pair":"X-Y",
- *         "baseCurrency":"X",
- *         "currency":"Y"
- *     },...
- * }
- *
- * @param {boolean} opt.useCache : if true cached version will be used (optional, default = false)
- * @param {string} opt.pair : retrieve a single pair (ex: BTC-ETH pair) (optional)
- * @param {string} opt.currency : retrieve only pairs having a given currency (ex: ETH in BTC-ETH pair) (optional, will be ignored if pair is set)
- * @param {string} opt.baseCurrency : retrieve only pairs having a given base currency (ex: BTC in BTC-ETH pair) (optional, will be ignored if currency or pair are set)
  * @return {Promise}
  */
-pairs(opt)
+/*
+Raw output example for GET https://bittrex.com/api/v1.1/public/getmarkets
+
 {
-    let timestamp = parseInt(new Date().getTime() / 1000.0);
-    let updateCache = true;
-    let useCache = false;
-    if (undefined !== opt)
-    {
-        if (undefined !== opt.useCache && opt.useCache && timestamp < this._cachedPairs.nextTimestamp)
+    "success":true,
+    "message":"",
+    "result":[
         {
-            useCache = true;
-        }
-        // don't use cache if user asked for a list currencies / base currencies
-        if (undefined !== opt.pair || undefined !== opt.currency || undefined !== opt.baseCurrency)
+            "MarketCurrency":"LTC",
+            "BaseCurrency":"BTC",
+            "MarketCurrencyLong":"Litecoin",
+            "BaseCurrencyLong":"Bitcoin",
+            "MinTradeSize":0.01385042,
+            "MarketName":"BTC-LTC",
+            "IsActive":true,
+            "Created":"2014-02-13T00:00:00",
+            "Notice":null,
+            "IsSponsored":null,
+            "LogoUrl":"https://bittrexblobstorage.blob.core.windows.net/public/6defbc41-582d-47a6-bb2e-d0fa88663524.png"
+        },
         {
-            updateCache = false;
-            useCache = false;
+            "MarketCurrency":"DOGE",
+            "BaseCurrency":"BTC",
+            "MarketCurrencyLong":"Dogecoin",
+            "BaseCurrencyLong":"Bitcoin",
+            "MinTradeSize":625.00000000,
+            "MarketName":"BTC-DOGE",
+            "IsActive":true,
+            "Created":"2014-02-13T00:00:00",
+            "Notice":null,
+            "IsSponsored":null,
+            "LogoUrl":"https://bittrexblobstorage.blob.core.windows.net/public/a2b8eaee-2905-4478-a7a0-246f212c64c6.png"
         }
-    }
-    if (useCache)
-    {
-        return new Promise((resolve, reject) => {
-            resolve(this._cachedPairs.cache);
-        });
-    }
+    ]
+}
+
+*/
+_getPairs()
+{
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
             self._client.getmarkets((response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
                 let list = {};
                 // count active pairs
                 let activePairs = 0;
-                _.forEach(response.result, function (entry) {
+                _.forEach(response.result, (entry) => {
                     // ignore if inactive
                     if (!entry.IsActive)
                     {
                         return;
                     }
                     ++activePairs;
-                    if (undefined !== opt.pair)
-                    {
-                        // ignore this pair
-                        if (opt.pair != entry.MarketName)
-                        {
-                            return;
-                        }
-                    }
-                    else if (undefined !== opt.currency)
-                    {
-                        // ignore this pair
-                        if (opt.currency != entry.MarketCurrency)
-                        {
-                            return;
-                        }
-                    }
-                    else if (undefined !== opt.baseCurrency)
-                    {
-                        // ignore this pair
-                        if (opt.baseCurrency != entry.BaseCurrency)
-                        {
-                            return;
-                        }
-                    }
                     list[entry.MarketName] = {
                         pair:entry.MarketName,
                         baseCurrency: entry.BaseCurrency,
@@ -245,8 +195,14 @@ pairs(opt)
                                 step:0.00000001,
                                 precision:8
                             },
+                            /*
+                            The minimum trade value for orders is supposed to be 100,000 Satoshis (.00100000), see https://support.bittrex.com/hc/en-us/articles/115003004171-What-are-my-trade-limits-
+                            But the API is still returning DUST_TRADE_DISALLOWED_MIN_VALUE_50K_SAT error when total amount is < 0.0005 (with an error margin)
+                            - 0.00049914 can be fine
+                            - 0.00049855 can trigger the error
+                            */
                             price:{
-                                min:0.00000001,
+                                min:0.0005,
                                 max:null
                             }
                         }
@@ -255,24 +211,14 @@ pairs(opt)
                 // something must be wrong on exchange
                 if (0 == response.result)
                 {
-                    logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self._id);
+                    logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
                 }
                 else
                 {
                     // no active pair
                     if (0 == activePairs)
                     {
-                        logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", response.result.length, self._id);
-                    }
-                    else
-                    {
-                        // only update cache if we have trading pairs
-                        if (updateCache)
-                        {
-                            self._cachedPairs.cache = list;
-                            self._cachedPairs.lastTimestamp = timestamp;
-                            self._cachedPairs.nextTimestamp = timestamp + self._cachedPairs.cachePeriod;
-                        }
+                        logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", response.result.length, self.getId());
                     }
                 }
                 resolve(list);
@@ -282,91 +228,164 @@ pairs(opt)
 }
 
 /**
- * Returns order book
+ * Retrieve tickers for all pairs
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":{
- *         "buy":[
- *             {
- *                 "Quantity":0.006,
- *                 "Rate":271.66292
- *             },
- *             {
- *                 "Quantity":96.61178755,
- *                 "Rate":269.65000001
- *             },...
- *         ],
- *         "sell":[
- *             {
- *                 "Quantity":0.01537121,
- *                 "Rate":271.663
- *             },
- *             {
- *                 "Quantity":15.52871902,
- *                 "Rate":271.999
- *             },...
- *         ]
- *     }
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * {
- *     "buy":[
- *         {
- *             "quantity":0.006,
- *             "rate":271.66292
- *         },
- *         {
- *             "quantity":96.61178755,
- *             "rate":269.65000001
- *         },...
- *     ],
- *     "sell":[
- *         {
- *             "quantity":0.01537121,
- *             "rate":271.663
- *         },
- *         {
- *             "quantity":15.52871902,
- *             "rate":271.999
- *         },...
- *     ]
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.pair pair to retrieve order book for (X-Y)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @return {Promise}
  */
- orderBook(opt) {
+/*
+Raw output example for GET https://bittrex.com/api/v1.1/public/getmarketsummaries
+
+{
+    "success":true,
+    "message":"",
+    "result":[
+        {
+            "MarketName":"BTC-2GIVE",
+            "High":0.00000074,
+            "Low":0.00000071,
+            "Volume":1748300.03203106,
+            "Last":0.00000072,
+            "BaseVolume":1.26515507,
+            "TimeStamp":"2018-04-09T11:56:01.533",
+            "Bid":0.00000071,
+            "Ask":0.00000072,
+            "OpenBuyOrders":119,
+            "OpenSellOrders":914,
+            "PrevDay":0.00000072,
+            "Created":"2016-05-16T06:44:15.287"
+        },
+        {
+            "MarketName":"BTC-ABY",
+            "High":0.00000086,
+            "Low":0.00000081,
+            "Volume":4301219.03432162,
+            "Last":0.00000082,
+            "BaseVolume":3.57801245,
+            "TimeStamp":"2018-04-09T11:59:33.9",
+            "Bid":0.00000082,
+            "Ask":0.00000084,
+            "OpenBuyOrders":233,
+            "OpenSellOrders":1680,
+            "PrevDay":0.00000083,
+            "Created":"2014-10-31T01:43:25.743"
+        }
+    ]
+}
+
+*/
+_getTickers()
+{
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
-            self._client.getorderbook({market:opt.pair, type:'both'}, (response, error) => {
+            self._client.getmarketsummaries((response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
+                let list = {};
+                _.forEach(response.result, (entry) => {
+                    let last = parseFloat(entry.Last);
+                    let previousDay = parseFloat(entry.PrevDay);
+                    let percentChange = 0;
+                    if (previousDay > 0)
+                    {
+                        percentChange = ((last/previousDay) - 1) * 100;
+                    }
+                    list[entry.MarketName] = {
+                        pair:entry.MarketName,
+                        last: last,
+                        priceChangePercent:percentChange,
+                        sell: parseFloat(entry.Ask),
+                        buy: parseFloat(entry.Bid),
+                        high: parseFloat(entry.High),
+                        low: parseFloat(entry.Low),
+                        volume: parseFloat(entry.Volume),
+                        timestamp: DateTimeHelper.parseUtcDateTime(entry.TimeStamp)
+                    }
+                });
+                resolve(list);
+            });
+        });
+    });
+}
+
+/**
+ * Retrieve order book for a single pair
+
+ * @param {string} pair pair to retrieve order book for
+ * @param {integer} opt.limit maximum number of entries (for both ask & bids) (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
+ * @return {Promise}
+ */
+ /*
+ Raw output example for GET https://bittrex.com/api/v1.1/public/getorderbook?market=USDT-NEO&type=both
+
+ {
+     "success":true,
+     "message":"",
+     "result":{
+         "buy":[
+             {
+                 "Quantity":0.51658382,
+                 "Rate":50.20000000
+             },
+             {
+                 "Quantity":299.56301220,
+                 "Rate":50.13469042
+             }
+         ],
+         "sell":[
+             {
+                 "Quantity":168.10400000,
+                 "Rate":50.49355634
+             },
+             {
+                 "Quantity":2.63506940,
+                 "Rate":50.49355642
+             }
+         ]
+     }
+ }
+ */
+_getOrderBook(pair, opt)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        return new Promise((resolve, reject) => {
+            self._client.getorderbook({market:pair, type:'both'}, (response, error) => {
+                if (null !== error)
                 {
-                    resolve(response);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
                 let result = {
-                    buy:_.map(response.result.buy, entry => {
+                    buy:_.map(response.result.buy, (entry) => {
                         return {
                             rate:parseFloat(entry.Rate),
                             quantity:parseFloat(entry.Quantity)
                         }
                     }),
-                    sell:_.map(response.result.sell, entry => {
+                    sell:_.map(response.result.sell, (entry) => {
                         return {
                             rate:parseFloat(entry.Rate),
                             quantity:parseFloat(entry.Quantity)
@@ -382,86 +401,61 @@ pairs(opt)
 /**
  * Returns last trades
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":[
- *         {
- *             "Id":113534543,
- *             "TimeStamp":"2017-09-18T09:24:55.777",
- *             "Quantity":0.01735772,
- *             "Price":0.0732,
- *             "Total":0.00127058,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *          },
- *          {
- *             "Id":113534540,
- *             "TimeStamp":"2017-09-18T09:24:55.37",
- *             "Quantity":0.01003977,
- *             "Price":0.0732,
- *             "Total":0.00073491,
- *             "FillType":"PARTIAL_FILL",
- *             "OrderType":"SELL"
- *         },...
- *     ]
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * [
- *     {
- *         "id":113534972,
- *         "quantity":0.19996545,
- *         "rate":0.07320996,
- *         "price":0.01463946,
- *         "orderType":"sell",
- *         "timestamp":1505726820.53
- *     },
- *     {
- *         "id":113534957,
- *         "quantity":0.14025718,
- *         "rate":0.07320997,
- *         "price":0.01026822,
- *         "orderType":"buy",
- *         "timestamp":1505726816.57
- *     }
- * ]
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional, will be ignored if opt.outputFormat is set to 'exchange')
- * @param {string} opt.pair pair to retrieve trades for (X-Y)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @param {string} pair pair to retrieve trades for
+ * @param {integer} opt.limit maximum number of entries (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
+ * @return {Promise}
  */
- trades(opt) {
+ /*
+ Raw output example for GET https://bittrex.com/api/v1.1/public/getmarkethistory?market=USDT-NEO
+
+ {
+     "success":true,
+     "message":"",
+     "result":[
+         {
+             "Id":24673441,
+             "TimeStamp":"2018-04-09T14:09:34.393",
+             "Quantity":0.25015311,
+             "Price":49.16800000,
+             "Total":12.29952811,
+             "FillType":"FILL",
+             "OrderType":"BUY"
+         },
+         {
+             "Id":24673433,
+             "TimeStamp":"2018-04-09T14:09:27.86",
+             "Quantity":22.48100000,
+             "Price":49.16800000,
+             "Total":1105.34580800,
+             "FillType":"FILL",
+             "OrderType":"BUY"
+         }
+     ]
+ }
+*/
+_getTrades(pair, opt)
+{
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
-            self._client.getmarkethistory({market:opt.pair}, (response, error) => {
+            self._client.getmarkethistory({market:pair}, (response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
-                    return;
-                }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
                 let list = [];
-                _.forEach(response.result, function(entry){
-                    // only keep trades with an ID > afterTradeId
-                    if (undefined !== opt.afterTradeId)
-                    {
-                        if (entry.Id <= opt.afterTradeId)
-                        {
-                            return;
-                        }
-                    }
+                _.forEach(response.result, (entry) =>{
                     let orderType = 'sell';
                     if ('BUY' == entry.OrderType)
                     {
@@ -473,7 +467,7 @@ pairs(opt)
                         rate:entry.Price,
                         price:entry.Total,
                         orderType:orderType,
-                        timestamp:parseFloat(new Date(entry.TimeStamp).getTime() / 1000.0) + self._timeOffset
+                        timestamp:DateTimeHelper.parseUtcDateTime(entry.TimeStamp)
                     })
                 });
                 resolve(list);
@@ -483,262 +477,179 @@ pairs(opt)
 }
 
 /**
- * Returns open orders
+ * Returns charts data
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":[
- *         {
- *             "Uuid":null,
- *              "OrderUuid":"14250e18-ac45-4742-9647-5ee3d5acc6b1",
- *              "Exchange":"BTC-WAVES",
- *              "OrderType":"LIMIT_SELL",
- *              "Quantity":110.80552162,
- *              "QuantityRemaining":110.80552162,
- *              "Limit":0.00248,
- *              "CommissionPaid":0,
- *              "Price":0,
- *              "PricePerUnit":null,
- *              "Opened":"2017-07-01T21:46:18.653",
- *              "Closed":null,
- *              "CancelInitiated":false,
- *              "ImmediateOrCancel":false,
- *              "IsConditional":false,
- *              "Condition":"NONE",
- *              "ConditionTarget":null
- *       },
- *       {
- *              "Uuid":null,
- *              "OrderUuid":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
- *              "Exchange":"USDT-NEO",
- *              "OrderType":"LIMIT_BUY",
- *              "Quantity":2.33488048,
- *              "QuantityRemaining":2.33488048,
- *              "Limit":12,
- *              "CommissionPaid":0,
- *              "Price":0,
- *              "PricePerUnit":null,
- *              "Opened":"2017-08-07T08:43:58.45",
- *              "Closed":null,
- *              "CancelInitiated":false,
- *              "ImmediateOrCancel":false,
- *              "IsConditional":false,
- *              "Condition":"NONE",
- *              "ConditionTarget":null
- *          },...
- *     ]
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * {
- *     "14250e18-ac45-4742-9647-5ee3d5acc6b1":{
- *         "pair":"BTC-WAVES",
- *         "orderType":"sell",
- *         "orderNumber":"14250e18-ac45-4742-9647-5ee3d5acc6b1",
- *         "targetRate":0.00248,
- *         "quantity":110.80552162,
- *         "remainingQuantity":110.80552162,
- *         "openTimestamp":1498945578.53,
- *         "targetPrice":0.2747976936176
- *     },
- *     "d3af561a-c3ac-4452-bf0e-a32854b558e5":{
- *         "pair":"USDT-NEO",
- *         "orderType":"buy",
- *         "orderNumber":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
- *         "targetRate":12,
- *         "quantity":2.33488048,
- *         "remainingQuantity":2.33488048,
- *         "openTimestamp":1502095438.57,
- *         "targetPrice":28.01856576
- *     },...
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.orderNumber used to query a single order (optional, if not set all orders will be returned) (will be ignored if opt.outputFormat is exchange)
- * @param {string} opt.pairs used to restrict results to only a list of pairs (will be ignored if opt.outputFormat is exchange)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @param {string} pair pair to retrieve chart data for
+ * @param {string} interval charts interval
+ * @param {integer} fromTimestamp unix timestamp in seconds (not supported by Bittrex)
+ * @param {integer} toTimestamp unix timestamp in seconds (not supported by Bittrex)
+ * @return {Promise}
  */
- openOrders(opt) {
-     let self = this;
-     // we're using low intensity limiter but there is no official answer on this
-     return this._limiterLowIntensity.schedule(function(){
-         return new Promise((resolve, reject) => {
-             self._client.getopenorders({}, (response, error) => {
-                 if (null !== error)
-                 {
-                     reject(error.message);
-                     return;
-                 }
-                 // return raw results
-                 if ('exchange' == opt.outputFormat)
-                 {
-                     resolve(response);
-                     return;
-                 }
-                 let list = {};
-                 let filteredList = {};
-                 if (undefined !== opt.pairs && 0 !== opt.pairs.length)
-                 {
-                     _.forEach(opt.pairs, function(entry){
-                         filteredList[entry] = 1;
-                     });
-                 }
-                 _.forEach(response.result, function(entry) {
-                     // only keep the order we're interested in
-                     if (undefined !== opt.orderNumber && opt.orderNumber != entry.OrderUuid)
-                     {
-                         return;
-                     }
-                     if (undefined !== opt.pairs && undefined === filteredList[entry.Exchange])
-                     {
-                         return;
-                     }
-                     let orderType;
-                     // we only support buy or sell orders
-                     switch (entry.OrderType)
-                     {
-                         case 'LIMIT_BUY':
-                             orderType = 'buy';
-                             break;
-                         case 'LIMIT_SELL':
-                             orderType = 'sell';
-                             break;
-                         default:
-                             return;
-                     }
-                     let o = {
-                         pair:entry.Exchange,
-                         orderType:orderType,
-                         orderNumber:entry.OrderUuid,
-                         targetRate:parseFloat(entry.Limit),
-                         quantity:parseFloat(entry.Quantity),
-                         remainingQuantity:parseFloat(entry.QuantityRemaining),
-                         openTimestamp:parseFloat(new Date(entry.Opened).getTime() / 1000.0) + self._timeOffset
-                     }
-                     // define targetPrice based on quantity & targetRate
-                     o.targetPrice = parseFloat(new Big(o.quantity).times(o.targetRate));
-                     list[o.orderNumber] = o;
-                 });
-                 resolve(list);
-             });
-         });
-     });
+ /*
+ Raw output example for GET https://bittrex.com/Api/v2.0/pub/market/GetTicks?marketName=BTC-PTC&tickInterval=fiveMin
+
+ {
+    "success":true,
+    "message":"",
+    "result":[
+        {
+            "O":0.00000421,
+            "H":0.00000421,
+            "L":0.00000421,
+            "C":0.00000421,
+            "V":1250.00000000,
+            "T":"2018-03-27T13:50:00",
+            "BV":0.00526250
+        },
+        {
+            "O":0.00000428,
+            "H":0.00000428,
+            "L":0.00000428,
+            "C":0.00000428,
+            "V":116.53270444,
+            "T":"2018-03-27T14:10:00",
+            "BV":0.00049875
+        },
+        {
+            "O":0.00000420,
+            "H":0.00000420,
+            "L":0.00000420,
+            "C":0.00000420,
+            "V":1672.50001236,
+            "T":"2018-03-27T14:45:00",
+            "BV":0.00702449
+        },
+        {
+            "O":0.00000415,
+            "H":0.00000415,
+            "L":0.00000407,
+            "C":0.00000407,
+            "V":43363.75417264,
+            "T":"2018-03-27T14:50:00",
+            "BV":0.17710378
+        }
+    ]
+}
+ */
+async _getKlines(pair, interval, fromTimestamp, toTimestamp)
+{
+    let _interval = klinesIntervalsMapping[interval];
+    let self = this;
+    return new Promise((resolve, reject) => {
+        self._client.getcandles({marketName:pair,tickInterval:_interval}, (response, error) => {
+            if (null !== error)
+            {
+                let e = self._parseError(error);
+                // must be a Bittrex error
+                if ('string' == typeof (e))
+                {
+                    reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                }
+                else
+                {
+                    reject(e);
+                }
+                return;
+            }
+            let list = [];
+            _.forEach(response.result, (entry) =>{
+                list.push({
+                    timestamp:DateTimeHelper.parseUtcDateTime(entry.T),
+                    open:parseFloat(entry.O),
+                    high:parseFloat(entry.H),
+                    low:parseFloat(entry.L),
+                    close:parseFloat(entry.C),
+                    volume:parseFloat(entry.V)
+                })
+            });
+            resolve(list);
+        });
+    });
 }
 
 /**
- * Returns closed orders
+ * Retrieve open orders for all pairs
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":[
- *         {
- *             "OrderUuid":"dee7c058-3f48-4e6c-bb69-e54d7faf9f98",
- *             "Exchange":"USDT-NEO",
- *             "TimeStamp":"2017-08-07T08:38:37.353",
- *             "OrderType":"LIMIT_SELL",
- *             "Limit":20,
- *             "Quantity":5.00033725,
- *             "QuantityRemaining":0,
- *             "Commission":0.250004801,
- *             "Price":100.19204559,
- *             "PricePerUnit":20.0003706,
- *             "IsConditional":false,
- *             "Condition":"NONE",
- *             "ConditionTarget":null,
- *             "ImmediateOrCancel":false,
- *             "Closed":"2017-08-07T08:38:37.947"
- *         },
- *         {
- *             "OrderUuid":"62d4368c-4363-4c9e-b992-9852189141eb",
- *             "Exchange":"USDT-ANS",
- *             "TimeStamp":"2017-08-06T22:31:05.44",
- *             "OrderType":"LIMIT_SELL",
- *             "Limit":16.11,
- *             "Quantity":2.4927,
- *             "QuantityRemaining":0,
- *             "Commission":0.1005181274,
- *             "Price":40.72509999,
- *             "PricePerUnit":16.12999999,
- *             "IsConditional":false,
- *             "Condition":"NONE",
- *             "ConditionTarget":null,
- *             "ImmediateOrCancel":false,
- *             "Closed":"2017-08-06T22:31:05.61"
- *         }
- *     ]
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * {
- *     "dee7c058-3f48-4e6c-bb69-e54d7faf9f98":{
- *         "pair":"USDT-NEO",
- *         "orderNumber":"dee7c058-3f48-4e6c-bb69-e54d7faf9f98",
- *         "orderType":"sell",
- *         "quantity":5.00033725,
- *         "actualPrice":100.19204559,
- *         "actualRate":20.0003706,
- *         "closedTimestamp":1500488953,
- *     },
- *     "62d4368c-4363-4c9e-b992-9852189141eb":{
- *         "pair":"USDT-ANS",
- *         "orderNumber":"62d4368c-4363-4c9e-b992-9852189141eb",
- *         "orderType":"buy",
- *         "quantity":2.4927,
- *         "actualPrice":40.72509999,
- *         "actualRate":16.12999999
- *         "closedTimestamp":1498939537
- *     },...
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.orderNumber used to query a single order (optional, if not set all orders will be returned) (will be ignored if opt.outputFormat is exchange)
- * @param {string} opt.pairs used to restrict results to only a list of pairs (will be ignored if opt.outputFormat is exchange)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @return {Promise}
  */
-closedOrders(opt)
+/*
+Raw output example for GET https://bittrex.com/api/v1.1/market/getopenorders?apikey=API_KEY
+
+{
+    "success":true,
+    "message":"",
+    "result":[
+        {
+            "Uuid":null,
+            "OrderUuid":"14250e18-ac45-4742-9647-5ee3d5acc6b1",
+            "Exchange":"BTC-WAVES",
+            "OrderType":"LIMIT_SELL",
+            "Quantity":110.80552162,
+            "QuantityRemaining":110.80552162,
+            "Limit":0.00248,
+            "CommissionPaid":0,
+            "Price":0,
+            "PricePerUnit":null,
+            "Opened":"2017-07-01T21:46:18.653",
+            "Closed":null,
+            "CancelInitiated":false,
+            "ImmediateOrCancel":false,
+            "IsConditional":false,
+            "Condition":"NONE",
+            "ConditionTarget":null
+        },
+        {
+            "Uuid":null,
+            "OrderUuid":"d3af561a-c3ac-4452-bf0e-a32854b558e5",
+            "Exchange":"USDT-NEO",
+            "OrderType":"LIMIT_BUY",
+            "Quantity":2.33488048,
+            "QuantityRemaining":2.33488048,
+            "Limit":12,
+            "CommissionPaid":0,
+            "Price":0,
+            "PricePerUnit":null,
+            "Opened":"2017-08-07T08:43:58.45",
+            "Closed":null,
+            "CancelInitiated":false,
+            "ImmediateOrCancel":false,
+            "IsConditional":false,
+            "Condition":"NONE",
+            "ConditionTarget":null
+        }
+    ]
+}
+
+*/
+_getOpenOrders()
 {
     let self = this;
-    // all account/* methods are supposed to be throttled to 1 request / 10s
-    return this._limiterMediumIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
-            self._client.getorderhistory({}, (response, error) => {
+            self._client.getopenorders({}, (response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
-                    return;
-                }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        if (self._isInvalidAuthError(e))
+                        {
+                            reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                        }
+                        else
+                        {
+                            reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                        }
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
                 let list = {};
-                let filteredList = {};
-                if (undefined !== opt.pairs && 0 !== opt.pairs.length)
-                {
-                    _.forEach(opt.pairs, function(entry){
-                        filteredList[entry] = 1;
-                    });
-                }
-                _.forEach(response.result, function(entry) {
-                    // only keep the order we're interested in
-                    if (undefined !== opt.orderNumber && opt.orderNumber != entry.OrderUuid)
-                    {
-                        return;
-                    }
-                    if (undefined !== opt.pairs && undefined === filteredList[entry.Exchange])
-                    {
-                        return;
-                    }
+                _.forEach(response.result, (entry) => {
                     let orderType;
                     // we only support buy or sell orders
                     switch (entry.OrderType)
@@ -752,17 +663,18 @@ closedOrders(opt)
                         default:
                             return;
                     }
-                    let quantity = parseFloat(entry.Quantity) - parseFloat(entry.QuantityRemaining);
-                    let o = {
+                    let order = {
                         pair:entry.Exchange,
-                        orderNumber:entry.OrderUuid,
                         orderType:orderType,
-                        quantity:quantity,
-                        actualRate:parseFloat(entry.PricePerUnit),
-                        actualPrice:parseFloat(entry.Price),
-                        closedTimestamp:parseFloat(new Date(entry.Closed).getTime() / 1000.0) + self._timeOffset
+                        orderNumber:entry.OrderUuid,
+                        targetRate:parseFloat(entry.Limit),
+                        quantity:parseFloat(entry.Quantity),
+                        remainingQuantity:parseFloat(entry.QuantityRemaining),
+                        openTimestamp:DateTimeHelper.parseUtcDateTime(entry.Opened)
                     }
-                    list[o.orderNumber] = o;
+                    // define targetPrice based on quantity & targetRate
+                    order.targetPrice = parseFloat(new Big(order.quantity).times(order.targetRate).toFixed(8));
+                    list[order.orderNumber] = order;
                 });
                 resolve(list);
             });
@@ -771,61 +683,353 @@ closedOrders(opt)
 }
 
 /**
+ * Update a closed order
+ * - recompute actualPrice from quantity & actualRate
+ * - compute finalPrice from actualPrice & fees
+ * - compute finalRate from finalPrice & quantity
+ *
+ * @param {object} order object
+ */
+_updateClosedOrder(order)
+{
+    // entry.Price returned by Bittrex is not computed correctly, so we recompute it
+    let actualPrice = new Big(order.quantity).times(order.actualRate);
+    let finalPrice;
+    if ('buy' == order.orderType)
+    {
+        finalPrice = actualPrice.plus(order.fees.amount);
+    }
+    else
+    {
+        finalPrice = actualPrice.minus(order.fees.amount);
+    }
+    order.actualPrice = parseFloat(actualPrice.toFixed(8));
+    order.finalPrice = parseFloat(finalPrice.toFixed(8));
+    order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
+}
+
+/**
+ * Retrieve closed orders for all pairs
+ *
+ * @param {boolean} opt.completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
+ * @return {Promise}
+ */
+/*
+Raw output example GET https://bittrex.com/api/v1.1/market/getorderhistory?apikey=API_KEY
+
+{
+    "success":true,
+    "message":"",
+    "result":[
+        {
+            "OrderUuid":"dee7c058-3f48-4e6c-bb69-e54d7faf9f98",
+            "Exchange":"USDT-NEO",
+            "TimeStamp":"2017-08-07T08:38:37.353",
+            "OrderType":"LIMIT_SELL",
+            "Limit":20,
+            "Quantity":5.00033725,
+            "QuantityRemaining":0,
+            "Commission":0.250004801,
+            "Price":100.19204559,
+            "PricePerUnit":20.0003706,
+            "IsConditional":false,
+            "Condition":"NONE",
+            "ConditionTarget":null,
+            "ImmediateOrCancel":false,
+            "Closed":"2017-08-07T08:38:37.947"
+        },
+        {
+            "OrderUuid":"62d4368c-4363-4c9e-b992-9852189141eb",
+            "Exchange":"USDT-ANS",
+            "TimeStamp":"2017-08-06T22:31:05.44",
+            "OrderType":"LIMIT_SELL",
+            "Limit":16.11,
+            "Quantity":2.4927,
+            "QuantityRemaining":0,
+            "Commission":0.1005181274,
+            "Price":40.72509999,
+            "PricePerUnit":16.12999999,
+            "IsConditional":false,
+            "Condition":"NONE",
+            "ConditionTarget":null,
+            "ImmediateOrCancel":false,
+            "Closed":"2017-08-06T22:31:05.61"
+        }
+    ]
+}
+
+*/
+_getClosedOrders(opt)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        return new Promise((resolve, reject) => {
+            self._client.getorderhistory({}, (response, error) => {
+                if (null !== error)
+                {
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        if (self._isInvalidAuthError(e))
+                        {
+                            reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                        }
+                        else
+                        {
+                            reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                        }
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
+                    return;
+                }
+                let list = {};
+                _.forEach(response.result, (entry) => {
+                    let orderType;
+                    let splittedPair = entry.Exchange.split('-');
+                    let feesCurrency = splittedPair[0];
+                    // we only support buy or sell orders
+                    switch (entry.OrderType)
+                    {
+                        case 'LIMIT_BUY':
+                            orderType = 'buy';
+                            break;
+                        case 'LIMIT_SELL':
+                            orderType = 'sell';
+                            break;
+                        default:
+                            return;
+                    }
+                    let quantity = parseFloat(entry.Quantity) - parseFloat(entry.QuantityRemaining);
+                    let order = {
+                        pair:entry.Exchange,
+                        orderNumber:entry.OrderUuid,
+                        orderType:orderType,
+                        quantity:quantity,
+                        actualRate:parseFloat(entry.Limit),
+                        openTimestamp:DateTimeHelper.parseUtcDateTime(entry.TimeStamp),
+                        closedTimestamp:DateTimeHelper.parseUtcDateTime(entry.Closed),
+                        fees:{
+                            amount:parseFloat(entry.Commission),
+                            currency:feesCurrency
+                        }
+                    }
+                    self._updateClosedOrder(order);
+                    list[order.orderNumber] = order;
+                });
+                resolve(list);
+            });
+        });
+    });
+}
+
+/**
+ * Retrieves a single order (open or closed)
+ *
+ * @param {string} orderNumber
+ * @param {string} pair pair (ex: USDT-NEO) (if exchange supports retrieving an order without the pair, value will be undefined)
+ * @return {Promise}
+ */
+/*
+
+Raw output example for GET https://bittrex.com/api/v1.1/account/getorder&uuid=0cb4c4e4-bdc7-4e13-8c13-430e587d2cc1
+
+{
+    "AccountId":null,
+    "OrderUuid":"0cb4c4e4-bdc7-4e13-8c13-430e587d2cc1",
+    "Exchange":"BTC-PTC",
+    "Type":"LIMIT_SELL",
+    "Quantity":1000,
+    "QuantityRemaining":1000,
+    "Limit":0.000009,
+    "Reserved":1000,
+    "ReserveRemaining":1000,
+    "CommissionReserved":0,
+    "CommissionReserveRemaining":0,
+    "CommissionPaid":0,
+    "Price":0,
+    "PricePerUnit":null,
+    "Opened":"2018-04-09T14:43:52.1",
+    "Closed":null,
+    "IsOpen":true,
+    "Sentinel":"0cb4c4e4-bdc7-4e13-8c13-430e587d2cc1",
+    "CancelInitiated":false,
+    "ImmediateOrCancel":false,
+    "IsConditional":false,
+    "Condition":"NONE",
+    "ConditionTarget":null
+}
+*/
+_getOrder(orderNumber, pair)
+{
+    let self = this;
+    return this._limiterGlobal.schedule(function(){
+        return new Promise((resolve, reject) => {
+            self._client.getorder({uuid:orderNumber}, (response, error) => {
+                if (null !== error)
+                {
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        if (self._isInvalidAuthError(e))
+                        {
+                            reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                        }
+                        else
+                        {
+                            switch (e)
+                            {
+                                case 'INVALID_ORDER':
+                                    reject(new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(self.getId(), orderNumber, e));
+                                    break;
+                                default:
+                                    reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
+                    return;
+                }
+                // probably an invalid order number
+                if (null === response.result)
+                {
+                    reject(new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(self.getId(), orderNumber, response.message));
+                    return;
+                }
+                let orderType;
+                let orderState = 'open';
+                let splittedPair = response.result.Exchange.split('-');
+                let feesCurrency = splittedPair[0];
+                if (null !== response.result.Closed)
+                {
+                    orderState = 'closed';
+                }
+                // we only support buy or sell orders
+                switch (response.result.Type)
+                {
+                    case 'LIMIT_BUY':
+                        orderType = 'buy';
+                        break;
+                    case 'LIMIT_SELL':
+                        orderType = 'sell';
+                        break;
+                    default:
+                        logger.warn(`Unknown order type '${response.result.Type}' for '${self.getId()}' order '${orderNumber}'`);
+                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(self.getId(), orderNumber, e));
+                        return;
+                }
+                let order = {
+                    pair:response.result.Exchange,
+                    orderType:orderType,
+                    orderNumber:orderNumber,
+                    openTimestamp:DateTimeHelper.parseUtcDateTime(response.result.Opened)
+                }
+                if ('open' == orderState)
+                {
+                    order.quantity = parseFloat(response.result.Quantity);
+                    order.targetRate = parseFloat(response.result.Limit);
+                    order.remainingQuantity = parseFloat(response.result.QuantityRemaining);
+                    order.targetPrice = parseFloat(new Big(order.targetRate).times(order.quantity).toFixed(8));
+                }
+                else
+                {
+                    order.quantity = parseFloat(response.result.Quantity) - parseFloat(response.result.QuantityRemaining);
+                    order.actualRate = parseFloat(response.result.Limit);
+                    order.closedTimestamp = DateTimeHelper.parseUtcDateTime(response.result.Closed);
+                    order.fees = {
+                        amount:parseFloat(response.result.CommissionPaid),
+                        currency:feesCurrency
+                    }
+                    self._updateClosedOrder(order);
+                }
+                resolve(order);
+            });
+        });
+    });
+}
+
+/**
  * Creates a new order
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":{
- *         "uuid":"3ec3d53f-70d6-4ee8-b92c-224d62dcf95d"
- *     }
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below
- *
- * {
- *     "orderNumber": "103b190f-0ff8-4418-9377-7b8bcbcdf1ec"
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.pair pair to create order for
- * @param {string} opt.orderType (buy|sell) order type
- * @param {float} opt.quantity quantity to buy/sell
- * @param {float} opt.targetRate price per unit
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @param {string} orderType (buy|sell)
+ * @param {string} pair pair to buy/sell
+ * @param {float} targetRate expected buy/sell price
+ * @param {float} quantity quantity to buy/sell
+ * @return {Promise} Promise which will resolve to the number of the new order
  */
-addOrder(opt) {
+ /*
+ Raw output example for GET https://bittrex.com/api/v1.1/market/buylimit?apikey=API_KEY&market=BTC-LTC&quantity=1.2&rate=1.3
+
+{
+    "success":true,
+    "message":"",
+    "result":{
+        "uuid":"e606d53c-8d70-11e3-94b5-425861b86ab6"
+    }
+}
+ */
+_createOrder(orderType, pair, targetRate, quantity)
+{
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
             let params = {
-                market:opt.pair,
-                quantity:opt.quantity,
-                rate:opt.targetRate
+                market:pair,
+                quantity:quantity,
+                rate:targetRate
             }
             // buy order
-            if ('buy' == opt.orderType)
+            if ('buy' == orderType)
             {
                 self._client.buylimit(params, (response, error) => {
                     if (null !== error)
                     {
-                        reject(error.message);
-                        return;
-                    }
-                    // return raw results
-                    if ('exchange' == opt.outputFormat)
-                    {
-                        resolve(response);
+                        let e = self._parseError(error);
+                        // must be a Bittrex error
+                        if ('string' == typeof (e))
+                        {
+                            if (self._isInvalidAuthError(e))
+                            {
+                                reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                            }
+                            else
+                            {
+                                switch (e)
+                                {
+                                    // invalid quantity
+                                    case 'MIN_TRADE_REQUIREMENT_NOT_MET':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidQuantity(self.getId(), pair, quantity, e));
+                                        break;
+                                    // invalid price
+                                    case 'DUST_TRADE_DISALLOWED_MIN_VALUE_50K_SAT':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidPrice(self.getId(), pair, targetRate, quantity, e));
+                                        break;
+                                    // not enough funds
+                                    case 'INSUFFICIENT_FUNDS':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InsufficientFunds(self.getId(), pair, targetRate, quantity, e));
+                                        break;
+                                    default:
+                                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                                        break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            reject(e);
+                        }
                         return;
                     }
                     // only return order number
-                    let result = {
-                        orderNumber:response.result.uuid
-                    }
-                    resolve(result);
+                    return resolve(response.result.uuid);
                 });
             }
             // sell order
@@ -834,20 +1038,41 @@ addOrder(opt) {
                 self._client.selllimit(params, (response, error) => {
                     if (null !== error)
                     {
-                        reject(error.message);
-                        return;
-                    }
-                    // return raw results
-                    if ('exchange' == opt.outputFormat)
-                    {
-                        resolve(response);
+                        let e = self._parseError(error);
+                        // must be a Bittrex error
+                        if ('string' == typeof (e))
+                        {
+                            if (self._isInvalidAuthError(e))
+                            {
+                                reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                            }
+                            else
+                            {
+                                switch (e)
+                                {
+                                    case 'MIN_TRADE_REQUIREMENT_NOT_MET':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidQuantity(self.getId(), pair, quantity, e));
+                                        break;
+                                    case 'DUST_TRADE_DISALLOWED_MIN_VALUE_50K_SAT':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidPrice(self.getId(), pair, targetRate, quantity, e));
+                                        break;
+                                    case 'INSUFFICIENT_FUNDS':
+                                        reject(new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InsufficientFunds(self.getId(), pair, targetRate, quantity, e));
+                                        break;
+                                    default:
+                                        reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                                        break;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            reject(e);
+                        }
                         return;
                     }
                     // only return order number
-                    let result = {
-                        orderNumber:response.result.uuid
-                    }
-                    resolve(result);
+                    return resolve(response.result.uuid);
                 });
             }
         });
@@ -855,129 +1080,104 @@ addOrder(opt) {
 }
 
 /**
- * Cancels an order
+ * Cancels an existing order
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":null
- * }
- *
- * If opt.outputFormat is 'custom', result will be an empty object
- *
- * {
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.orderNumber unique identifier of the order to cancel
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @param {string} orderNumber number of the order to cancel
+ * @param {string} pair pair (ex: USDT-NEO) (if exchange supports retrieving an order without the pair, value will be undefined)
+ * @return {Promise} Promise which will resolve to true in case of success
  */
-cancelOrder(opt) {
+/*
+ Raw output example for GET https://bittrex.com/api/v1.1/market/cancel?apikey=API_KEY&uuid=ORDER_UUID
+
+{
+    "success" : true,
+    "message" : "",
+    "result" : null
+}
+
+*/
+_cancelOrder(orderNumber, pair)
+{
     let self = this;
-    // we're using low intensity limiter but there is no official answer on this
-    return this._limiterLowIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
-            self._client.cancel({uuid:opt.orderNumber}, (response, error) => {
+            self._client.cancel({uuid:orderNumber}, (response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        if (self._isInvalidAuthError(e))
+                        {
+                            reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                        }
+                        else
+                        {
+                            switch (e)
+                            {
+                                case 'INVALID_ORDER':
+                                    reject(new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(self.getId(), orderNumber, e));
+                                    break;
+                                case 'ORDER_NOT_OPEN':
+                                    reject(new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotOpen(self.getId(), orderNumber, e));
+                                    break;
+                                default:
+                                    reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
-                    return;
-                }
-                // return empty body
-                let result = {}
-                resolve(result);
+                resolve(true);
             });
         });
     });
 }
 
 /**
- * Return balances
+ * Return balances for all currencies (currencies with balance = 0 should be filtered out)
  *
- * If opt.outputFormat is 'exchange', the result returned by remote exchange will be returned untouched
- *
- * {
- *     "success":true,
- *     "message":"",
- *     "result":[
- *         {
- *             "Currency":"BCC",
- *             "Balance":0,
- *             "Available":0,
- *             "Pending":0,
- *             "CryptoAddress":null
- *         },
- *         {
- *             "Currency":"BTC",
- *             "Balance":0.73943812,
- *             "Available":0.73943812,
- *             "Pending":0,
- *             "CryptoAddress":"1AMM8oDfXxfGjLYH8pYRjZhBXRXE98WNt9r"
- *         },...
- *     ]
- * }
- *
- * If opt.outputFormat is 'custom', the result will be as below (currencies with a 0 balance will be filtered out)
- *
- * {
- *     "BTC":{
- *         "currency":"BTC",
- *         "total":0.73943812,
- *         "available":0.73943812,
- *         "onOrders":0
- *     },
- *     "NEO":{
- *         "currency":"NEO",
- *         "total":5.70415443,
- *         "available":5.70415443,
- *         "onOrders":0
- *     },...
- * }
- *
- * @param {string} opt.outputFormat (custom|exchange) if value is 'exchange' result returned by remote exchange will be returned untouched
- * @param {string} opt.currencies used to retrieve balances for a list of currencies (optional)
- * @return {Promise} format depends on parameter opt.outputFormat
+ * @return {Promise}
  */
-balances(opt)
+/*
+Raw output example for GET https://bittrex.com/api/v1.1/account/getbalances?apikey=API_KEY
+
+*/
+_getBalances()
 {
     let self = this;
-    // all account/* methods are supposed to be throttled to 1 request / 10s
-    return this._limiterMediumIntensity.schedule(function(){
+    return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
             self._client.getbalances((response, error) => {
                 if (null !== error)
                 {
-                    reject(error.message);
-                    return;
-                }
-                // return raw results
-                if ('exchange' == opt.outputFormat)
-                {
-                    resolve(response);
+                    let e = self._parseError(error);
+                    // must be a Bittrex error
+                    if ('string' == typeof (e))
+                    {
+                        if (self._isInvalidAuthError(e))
+                        {
+                            reject(new Errors.ExchangeError.Forbidden.InvalidAuthentication(self.getId(), e));
+                        }
+                        else
+                        {
+                            reject(new Errors.ExchangeError.InvalidRequest.UnknownError(self.getId(), e));
+                        }
+                    }
+                    else
+                    {
+                        reject(e);
+                    }
                     return;
                 }
                 let list = {};
-                let filteredList = {};
-                if (undefined !== opt.currencies && 0 !== opt.currencies.length)
-                {
-                    _.forEach(opt.currencies, function(entry){
-                        filteredList[entry] = 1;
-                    });
-                }
-                _.forEach(response.result, function(entry) {
-                    // only keep the currencies we're interested in
-                    if (undefined !== opt.currencies && undefined === filteredList[entry.Currency])
-                    {
-                        return;
-                    }
+                _.forEach(response.result, (entry) => {
                     // ignore currency with 0 balance
                     let total = parseFloat(entry.Balance);
                     if (0 == total)

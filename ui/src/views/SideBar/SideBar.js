@@ -30,10 +30,11 @@ _defineExchangeEntry(obj, id)
         'prices':'Prices',
         'orderBooks':'Order Books',
         'myOrders':'My Orders',
+        'allMyOrders':'All My Orders',
         'newOrder':'New Orders',
         'myBalances':'My Balances'
     }
-    let routeNames = ['prices','orderBooks','myOrders','newOrder','myBalances'];
+    let routeNames = ['prices','orderBooks','myOrders','allMyOrders','newOrder','myBalances'];
     _.forEach(routeNames, function(n){
         // route does not exist
         if (undefined === obj[n])
@@ -81,13 +82,21 @@ _definePortfolioEntry(obj)
     );
 }
 
+_defineAlertsEntry(obj)
+{
+    this._menu.push(
+        {
+            name: 'Alerts',
+            url: obj.path,
+            icon: 'fa fa-bell'
+        }
+    );
+}
+
 _defineServiceEntry(obj, id)
 {
     switch (id)
     {
-        case 'coinmarketcap':
-            this._defineCoinMarketCapEntry(obj);
-            break;
         case 'coinmarketcap':
             this._defineCoinMarketCapEntry(obj);
             break;
@@ -119,8 +128,9 @@ _defineMenuEntries()
     let servicesRoutes = routeRegistry.getServicesRoutes();
     let marketOverviewRoute = routeRegistry.getRoute('/services/marketOverview');
     let portfolioRoute = routeRegistry.getRoute('/services/portfolio');
+    let alertsRoute = routeRegistry.getRoute('/services/alerts');
     // do we have services ?
-    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || 0 != Object.keys(servicesRoutes))
+    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== alertsRoute || 0 != Object.keys(servicesRoutes))
     {
         this._menu.push(
             {
@@ -140,6 +150,10 @@ _defineMenuEntries()
         if (undefined !== portfolioRoute)
         {
             self._definePortfolioEntry(portfolioRoute);
+        }
+        if (undefined !== alertsRoute)
+        {
+            self._defineAlertsEntry(alertsRoute);
         }
         _.forEach(servicesRoutes, function(obj, id){
             self._defineServiceEntry(obj, id);

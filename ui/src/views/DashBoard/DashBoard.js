@@ -123,7 +123,7 @@ render()
         let startTimestamp = new Date().getTime() - this.state.data.uptime * 1000;
         return (
           <div className="text-success">
-            Gateway is running since {dateTimeHelper.formatDateTime(startTimestamp)}
+            Gateway is running since {dateTimeHelper.formatDateTime(startTimestamp)} (version {this.state.data.version})
           </div>
         )
     }

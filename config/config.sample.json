@@ -7,31 +7,45 @@
         "ipaddr":"127.0.0.1",
         "port":8001
     },
+    "userAgent":{
+        "value":"Mozilla/6.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/604.1.38 (KHTML, like Gecko) Version/11.0 Mobile/15A372 Safari/604.1"
+    },
     "ui":{
         "enabled":true
     },
     "logLevel":"warn",
     "coinmarketcap":{
-        "enabled":true
+        "enabled":true,
+        "history":true
     },
     "pushover":{
         "enabled":false,
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
+            "name":"Poloniex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "bittrex":{
+            "type":"bittrex",
+            "name":"Bittrex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "binance":{
+            "type":"binance",
+            "name":"Binance",
             "enabled":true,
+            "requirePair":false,
             "key":"",
             "secret":""
         }

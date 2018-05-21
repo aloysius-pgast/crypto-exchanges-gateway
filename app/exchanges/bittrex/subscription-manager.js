@@ -25,7 +25,7 @@ _registerClient(connect)
 {
     if (null !== this._client)
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             return;
         }
@@ -38,9 +38,9 @@ _registerClient(connect)
     }
     let self = this;
     let client = new SignalRClient({
-        userAgent:internalConfig.get('userAgent'),
         pingTimeout:internalConfig.get('keepalive').exchanges,
         logger:logger,
+        userAgent:internalConfig.get('userAgent'),
         reconnectAfterUnsubscribingFromMarkets:{reconnect:false}
     });
     client.on('connected', function(data){
@@ -61,6 +61,8 @@ _registerClient(connect)
         {
             return;
         }
+        // used to round value
+        evt.data.priceChangePercent = parseFloat(evt.data.priceChangePercent.toFixed(3));
         evt.exchange = self._exchangeId;
         self.emit('ticker', evt);
     });
@@ -191,7 +193,7 @@ _processChanges(changes, opt)
     // do we need to disconnect client ?
     if (!this.hasSubscriptions())
     {
-        if (this._client.isConnected())
+        if (this._client.isConnected() || this._client.isConnecting())
         {
             this._unregisterConnection('default');
             this._client.disconnect();

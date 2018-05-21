@@ -1,0 +1,194 @@
+= Pairs
+
+[NOTE]
+====
+Those routes require the feature _pairs_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "pairs":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Retrieve all pairs
+
+*GET* _/exchanges/{exchangeId}/pairs_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pair
+|string
+|
+|Used to retrieve a single pair (ex: _BTC-ETH_)
+
+|useCache
+|boolean
+|false
+|Whether or not result should used the list of cached pairs (reply will be faster if _true_, pairs are cached by gateway for _1H_)
+
+|currency
+|string
+|
+|Used to only retrieve pairs having a given _currency_ (ex: _ETH_ in _BTC-ETH_ pair) (will be ignored if _pair_ is set)
+
+|baseCurrency
+|string
+|
+|Used to only retrieve pairs having a given _base currency_ (ex: _BTC_ in _BTC-ETH_ pair) (will be ignored if _pair_ or _currency_ are set)
+
+|===
+
+=== Result
+
+Result will be a dictionary using pairs as keys (even if only one pair was requested)
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_pair_
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_ (same as _pair_ key)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|string
+|Base currency (part _X_ in pair _X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency (part _Y_ in pair _X-Y_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}limits
+|object
+|Limits for _rate_, _quantity_ & _price_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|object
+|Limits for _rate_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}min
+|float
+|Minimum _rate_ value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}max
+|float
+|Maximum _rate_ value. Will be _null_ if no maximum exists
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}precision
+|integer
+|Number of significant digits for decimal value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}step
+|float
+|_rate_ value should be a multiple of _step_ value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
+|object
+|Limits for _quantity_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}min
+|float
+|Minimum _quantity_ value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}max
+|float
+|Maximum _quantity_ value. Will be _null_ if no maximum exists
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}precision
+|integer
+|Number of significant digits for decimal value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}step
+|float
+|_quantity_ value should be a multiple of _step_ value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
+|object
+|Limits for _price_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}min
+|float
+|Minimum _price_ value (_quantity_ * _rate_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}max
+|float
+|Maximum _price_ value (_quantity_ * _rate_). Will be _null_ if no maximum exists
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/pairs_
+
+[source,json]
+----
+{
+    "BTC-LTC":{
+        "pair":"BTC-LTC",
+        "baseCurrency":"BTC",
+        "currency":"LTC",
+        "limits":{
+            "rate":{
+                "min":1e-8,
+                "max":null,
+                "step":1e-8,
+                "precision":8
+            },
+            "quantity":{
+                "min":0.01469482,
+                "max":null,
+                "step":1e-8,
+                "precision":8
+            },
+            "price":{
+                "min":0,
+                "max":null
+            }
+        }
+    },
+    "BTC-DOGE":{
+        "pair":"BTC-DOGE",
+        "baseCurrency":"BTC",
+        "currency":"DOGE",
+        "limits":{
+            "rate":{
+                "min":1e-8,
+                "max":null,
+                "step":1e-8,
+                "precision":8
+            },
+            "quantity":{
+                "min":274.72527473,
+                "max":null,
+                "step":1e-8,
+                "precision":8
+            },
+            "price":{
+                "min":0,
+                "max":null
+            }
+        }
+    }
+}
+----

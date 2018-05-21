@@ -3,6 +3,7 @@ const util = require('util');
 const _ = require('lodash');
 const logger = require('winston');
 const ipfilter = require('express-ipfilter').IpFilter;
+const Errors = require('../errors');
 
 module.exports = function(app, config, isWs) {
 
@@ -45,7 +46,12 @@ app.use(function (req, res, next) {
             if (config.auth.apiKey.key != key)
             {
                 logger.warn("Unauthorized WS access from %s", req.ip)
-                res.status(401).end();
+                if (undefined !== req.ws)
+                {
+                    req.ws.close(4401, 'UNAUTHORIZED_ACCESS');
+                    return;
+                }
+                res.status(403).end();
                 return;
             }
             next();
@@ -70,8 +76,8 @@ app.use(function (req, res, next) {
                 return;
             }
             logger.warn("Unauthorized HTTP access from %s", req.ip)
-            res.status(401).send({origin:"gateway",error:'Unauthorized access'});
-            return;
+            let extError = new Errors.GatewayError.Forbidden('Unauthorized access');
+            return Errors.sendHttpError(res, extError);
         }
     }
     next();

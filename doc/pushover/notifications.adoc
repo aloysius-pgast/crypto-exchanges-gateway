@@ -1,5 +1,10 @@
 = Notifications
 
+[NOTE]
+====
+Those routes will only be available if _pushover_ service is enabled
+====
+
 == Send a notification
 
 *POST* _/pushover/notify_

@@ -7,14 +7,20 @@ class ConfigChecker extends AbstractConfigCheckerClass
 {
 
 // maximum number of requests per seconds for api
-static get GLOBAL_API_MAX_REQUESTS_PER_SECOND() { return  20 };
+static get GLOBAL_API_MAX_REQUESTS_PER_SECOND() { return 20 };
+
+// whether or not multiple instances can be supported for this exchange
+static get MULTIPLE_INSTANCES() { return true };
 
 constructor()
 {
     // default config
     let cfg = {
         enabled:true,
+        type:"binance",
+        name:"Binance",
         recvWindow:5000,
+        requirePair:false,
         key:"",
         secret:"",
         feesPercent:0.1,
@@ -60,6 +66,11 @@ _check()
             this._finalConfig.recvWindow = value;
         }
     }
+    //-- check name
+    if (undefined !== this._config.name && '' != this._config.name)
+    {
+        this._finalConfig.name = this._config.name;
+    }
     //-- check key & secret
     let valid = true;
     if (undefined !== this._config.key)
@@ -69,6 +80,15 @@ _check()
     if (undefined !== this._config.secret)
     {
         this._finalConfig.secret = this._config.secret;
+    }
+
+    //-- check wether or not pair should be required
+    if (undefined !== this._config.requirePair)
+    {
+        if (true === this._config.requirePair)
+        {
+            this._finalConfig.requirePair = true;
+        }
     }
 
     //-- check feesPercent
@@ -85,7 +105,7 @@ _check()
             this._finalConfig.feesPercent = value;
         }
     }
-    
+
     //-- update throttle config
     if (undefined !== this._config.throttle)
     {

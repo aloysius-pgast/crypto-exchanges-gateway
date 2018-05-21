@@ -1,0 +1,174 @@
+= Balances
+
+[NOTE]
+====
+Those routes require the feature _balances_ to be enabled for the requested exchange
+
+[source,json]
+----
+{
+    "features":{
+        "balances":{
+            "enabled":true
+        }
+    }
+}
+----
+
+====
+
+== Retrieve balances for all currencies
+
+*GET* _/exchanges/{exchangeId}/balances_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|currencies
+|string (comma-separated)
+|
+|Comma-separated list of currencies to retrieve balances for
+
+|===
+
+=== Result
+
+Result will be a dictionary using currencies as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_currency_
+|string
+|Currency (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency same as _currency_ key (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}total
+|float
+|Total quantity of current currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}available
+|float
+|Quantity of currency available for trading
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}onOrders
+|float
+|Quantity of currency currently reserved in open orders
+
+|===
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/balances_
+
+[source,json]
+----
+{
+    "BTC":{
+        "currency":"BTC",
+        "total":0.73943812,
+        "available":0.73943812,
+        "onOrders":0
+    },
+    "NEO":{
+        "currency":"NEO",
+        "total":5.70415443,
+        "available":5.70415443,
+        "onOrders":0
+    },
+    ...
+}
+----
+
+== Retrieve balance for a single currency
+
+*GET* _/exchanges/{exchangeId}/balances/{currency}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{currency}
+|string
+|Currency to retrieve balance for (ex: _BTC_)
+
+|===
+
+=== Result
+
+Result will be a dictionary containing a single entry
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_currency_
+|string
+|Currency as requested in {currency} (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|string
+|Currency same as _currency_ key (ex: _BTC_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}total
+|float
+|Total quantity of current currency
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}available
+|float
+|Quantity of currency available for trading
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}onOrders
+|float
+|Quantity of currency currently reserved in open orders
+
+|===
+
+[NOTE]
+====
+In case currency does not exists, an empty dictionary will be returned
+====
+
+.Examples
+
+Example for *GET* _/exchanges/bittrex/balances/NEO_
+
+[source,json]
+----
+{
+    "NEO":{
+        "currency":"NEO",
+        "total":5.70415443,
+        "available":5.70415443,
+        "onOrders":0
+    }
+}
+----
+
+Example for *GET* _/exchanges/bittrex/balances/INVALID_
+
+[source,json]
+----
+{
+}
+----

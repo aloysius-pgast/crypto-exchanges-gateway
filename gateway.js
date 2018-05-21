@@ -8,6 +8,7 @@ const https = require('https');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
 const storage = require('./app/storage');
+const internalConfig = require('./app/internal-config');
 const _ = require('lodash');
 const logger = require('winston');
 
@@ -92,13 +93,53 @@ if (fs.existsSync(configFile))
     config = checker.getCfg();
 }
 
+
+//-- update config based on environment (used when using docker container)
+
+//-- check CoinMarketCap
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    let enableCoinMarketCap = process.env['cfg.coinmarketcap.enabled'];
+    if (undefined !== enableCoinMarketCap && '' !== enableCoinMarketCap)
+    {
+        if (true === enableCoinMarketCap || '1' == enableCoinMarketCap)
+        {
+            config.coinmarketcap.enabled = true;
+        }
+        else if (false === enableCoinMarketCap || '0' == enableCoinMarketCap)
+        {
+            config.coinmarketcap.enabled = false;
+        }
+    }
+    // check history feature
+    if (config.coinmarketcap.enabled)
+    {
+        let enableHistory = process.env['cfg.coinmarketcap.history'];
+        if (true === enableHistory || '1' == enableHistory)
+        {
+            config.coinmarketcap.history = true;
+        }
+        else if (false === enableHistory || '0' == enableHistory)
+        {
+            config.coinmarketcap.history = false;
+        }
+    }
+}
+
 // add log if CoinMarketCap is enabled
 if (config.coinmarketcap.enabled)
 {
-    logger.warn("CoinMarketCap API is enabled");
+    if (config.coinmarketcap.history)
+    {
+        logger.warn("CoinMarketCap API is enabled (with history)");
+    }
+    else
+    {
+        logger.warn("CoinMarketCap API is enabled (without history)");
+    }
 }
 
-//-- update config based on environment (used when using docker container)
 // check env (only if custom config does not exist)
 if (!hasCustomConfig)
 {
@@ -120,16 +161,16 @@ _.forEach(config.exchanges, function(obj, exchange) {
         {
             if ('demo' == config.exchanges[exchange]['key'] && 'demo' == config.exchanges[exchange]['secret'])
             {
-                logger.warn("%s exchange is enabled (public API & trading API)(DEMO)", exchange);
+                logger.warn("%s exchange (%s) is enabled (public API & trading API)(DEMO)", exchange, obj.type);
             }
             else
             {
-                logger.warn("%s exchange is enabled (public API & trading API)", exchange);
+                logger.warn("%s exchange (%s) is enabled (public API & trading API)", exchange, obj.type);
             }
         }
         else
         {
-            logger.warn("%s exchange is enabled (public API)", exchange);
+            logger.warn("%s exchange (%s) is enabled (public API)", exchange, obj.type);
         }
     }
 });
@@ -163,6 +204,11 @@ if (config.ui.enabled)
 }
 if (config.ui.enabled)
 {
+    // save UI endpoint in internalConfig (this requires config.listen.externalEndpoint to be defined)
+    if (undefined !== config.listen.externalEndpoint && '' != config.listen.externalEndpoint)
+    {
+        internalConfig.set('uiEndpoint', `${config.listen.externalEndpoint}/ui`);
+    }
     logger.warn("UI is enabled");
 }
 
@@ -183,6 +229,29 @@ if (!hasCustomConfig)
 if (config.pushover.enabled && '' != config.pushover.user && '' != config.pushover.token)
 {
     logger.warn("PushOver API is enabled");
+}
+
+//-- check tickerMonitor config
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    let enableTickerMonitor = process.env['cfg.tickerMonitor.enabled'];
+    if (undefined !== enableTickerMonitor && '' !== enableTickerMonitor)
+    {
+        if (true === enableTickerMonitor || '1' == enableTickerMonitor)
+        {
+            config.tickerMonitor.enabled = true;
+        }
+        else if (false === enableTickerMonitor || '0' == enableTickerMonitor)
+        {
+            config.tickerMonitor.enabled = false;
+        }
+    }
+}
+// add log if TickerMonitor is enabled
+if (config.tickerMonitor.enabled)
+{
+    logger.warn("TickerMonitor is enabled");
 }
 
 //-- check api key
@@ -277,9 +346,15 @@ if (config.listen.ssl || config.listenWs.ssl)
     });
 }
 
+// update default user-agent
+internalConfig.set('userAgent', config.userAgent.value);
+
 //-- HTTP server
 let startHttp = function(){
-    const bParser = bodyParser.urlencoded({ extended: false })
+    const bodyParsers = {
+        urlEncoded:bodyParser.urlencoded({ extended: false }),
+        json:bodyParser.json()
+    };
     const app = express();
     let server;
     if (config.listen.ssl)
@@ -313,7 +388,7 @@ let startHttp = function(){
     }
 
     // load routes
-    require('./app/routes/http')(app, bParser, config);
+    require('./app/routes/http')(app, bodyParsers, config);
 
     // start server
     let ipaddr = '0.0.0.0';
@@ -394,7 +469,7 @@ process.on('SIGINT', function() {
 //-- check storage
 storage.checkDatabase().then(() => {
     // load data from storage
-    storage.loadData().then(() => {
+    storage.loadData(config).then(() => {
         logger.info("Data loaded successfully");
         //-- start both servers
         startHttp();

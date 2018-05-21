@@ -25,6 +25,13 @@ then
     echo "No openssl binary found !"
     exit 1
 fi
+OPENSSL_CONFIG=/etc/ssl/openssl.cnf
+if ! [ -f $OPENSSL_CONFIG ]
+then
+    echo "Missing openssl config '$OPENSSL_CONFIG' !"
+    exit 1
+fi
+
 # common name
 COMMON_NAME=$1
 
@@ -56,8 +63,20 @@ else
     echo "OK"
 fi
 
+# generate temporary openssl config
+OPENSSL_TMP_CONFIG=$SSL_DIR/openssl.cnf
+cat $OPENSSL_CONFIG > $OPENSSL_TMP_CONFIG
+SAN_TYPE=DNS
+# in case an ip address was provided instead of a DNS
+if [[ $1 =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]
+then
+    SAN_TYPE=IP
+fi
+printf "[SELF_SIGNED]\nsubjectAltName=$SAN_TYPE:$COMMON_NAME\nbasicConstraints=CA:TRUE\n" >> $OPENSSL_TMP_CONFIG
+
+# generate certificate
 echo -n "Generating certificate.crt..."
-OUTPUT=`openssl req -new -x509 -key $KEY_FILE -out $CRT_FILE -days 3650 -subj /CN=$COMMON_NAME`
+OUTPUT=`openssl req -new -nodes -x509 -key $KEY_FILE -out $CRT_FILE -days 3650 -subj /CN=$COMMON_NAME -reqexts SELF_SIGNED -extensions SELF_SIGNED -config $OPENSSL_TMP_CONFIG`
 if [ $? -ne 0 ]
 then
     echo "ERR"
@@ -65,4 +84,5 @@ then
     exit 1
 else
     echo "OK"
+    rm $OPENSSL_TMP_CONFIG
 fi

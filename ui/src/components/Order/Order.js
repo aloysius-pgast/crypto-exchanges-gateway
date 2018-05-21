@@ -4,17 +4,13 @@ import Big from 'big.js';
 import {
   Row,
   Col,
-  Card,
-  CardHeader,
-  CardBlock,
+  Card, CardHeader, CardBlock,
   FormGroup,
   Label,
   Input,
   InputGroup,
-  DropdownMenu,
-  DropdownItem,
-  DropdownToggle,
-  ButtonDropdown
+  DropdownMenu, DropdownItem, DropdownToggle, ButtonDropdown,
+  Modal, ModalHeader, ModalBody, ModalFooter
 } from "reactstrap";
 
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
@@ -49,6 +45,9 @@ constructor(props)
         value:'',
         valid:true,
         err:null
+    }
+    let finalTotal = {
+        value:''
     }
     let fees = {
         floatValue:0.0,
@@ -153,6 +152,7 @@ constructor(props)
                 }
                 rawTotal.value = this._formatFloat(rawTotal.floatValue);
                 total.value = this._formatFloat(total.floatValue);
+                finalTotal.value = total.value;
                 fees.floatValue = total.floatValue.minus(rawTotal.floatValue);
                 fees.value = this._formatFloat(fees.floatValue);
             }
@@ -187,6 +187,7 @@ constructor(props)
                 rawTotal.value = this._formatFloat(rawTotal.floatValue);
                 fees.value = this._formatFloat(fees.floatValue);
                 total.value = this._formatFloat(total.floatValue);
+                finalTotal.value = total.value;
             }
         }
     }
@@ -199,6 +200,7 @@ constructor(props)
         total:{value:total.value,floatValue:total.floatValue,valid:total.valid,err:total.err,timestamp:null},
         fees:{value:fees.value,floatValue:fees.floatValue},
         rawTotal:{value:rawTotal.value,floatValue:rawTotal.floatValue,valid:rawTotal.valid,err:rawTotal.err},
+        finalTotal:{value:finalTotal.value},
         order:{
             confirm:false,
             sending:false,
@@ -375,6 +377,7 @@ _setValue(id, value)
         rate:this.state.rate,
         total:this.state.total,
         rawTotal:this.state.rawTotal,
+        finalTotal:this.state.finalTotal,
         fees:this.state.fees
     }
     newState[id].value = value;
@@ -441,6 +444,183 @@ _setValue(id, value)
     this._updateState(newState, id);
 }
 
+/*
+  finalTotal is :
+
+  * rawTotal + fees for BUY orders
+  * rawTotal - fees for SELL orders
+ */
+_computeFeesAndFinalTotalFromRawTotal(newState)
+{
+    // compute fees
+    newState.fees.floatValue = newState.rawTotal.floatValue.times(this._feesPercent);
+
+    // compute final total
+    if ('buy' == this.props.orderType)
+    {
+        newState.finalTotal.value = this._formatFloat(newState.rawTotal.floatValue.plus(newState.fees.floatValue));
+    }
+    else
+    {
+        newState.finalTotal.value = this._formatFloat(newState.rawTotal.floatValue.minus(newState.fees.floatValue));
+    }
+    newState.fees.value = this._formatFloat(newState.fees.floatValue);
+}
+
+/*
+ * rawTotal is quantity x rate
+ */
+_computeRawTotalFromQuantityAndRate(newState)
+{
+    newState.rawTotal.floatValue = newState.quantity.floatValue.times(newState.rate.floatValue);
+    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+}
+
+/*
+   rawTotal is :
+   * total / buyFeesFactor for BUY orders
+   * total / sellFeesFactor for SELL orders
+ */
+_computeRawTotalFromTotal(newState)
+{
+    // compute rawTotal from total
+    if ('buy' == this.props.orderType)
+    {
+        newState.rawTotal.floatValue = newState.total.floatValue.div(this._buyFeesFactor);
+    }
+    else
+    {
+        newState.rawTotal.floatValue = newState.total.floatValue.div(this._sellFeesFactor);
+    }
+    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+}
+
+/*
+ * After computing quantity, we need to recompute rawTotal because of rounding
+ * @param {boolean} opt.min if true quantity will be computed so that rawTotal >= min
+ * @param {boolean} opt.max if true quantity will be computed so that rawTotal <= max (will be ignored if min is set)
+ */
+_computeQuantityAndRawTotalFromRawTotalAndRate(newState, opt)
+{
+    // compute quantity from rawTotal & rate
+    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
+
+    // ensure we have a multiple of step
+    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
+
+    // recompute rawTotal from qty & rate
+    this._computeRawTotalFromQuantityAndRate(newState);
+
+    if (undefined !== opt)
+    {
+        // ensure rawTotal is >= min
+        if (undefined !== opt.min)
+        {
+            if (newState.rawTotal.floatValue.lt(opt.min))
+            {
+                newState.quantity.floatValue = newState.quantity.floatValue.plus(this._limits.quantity.step);
+            }
+        }
+        // ensure rawTotal <= max
+        else if (undefined !== opt.max)
+        {
+            if (newState.rawTotal.floatValue.gt(opt.max))
+            {
+                newState.quantity.floatValue = newState.quantity.floatValue.minus(this._limits.quantity.step);
+            }
+        }
+        this._computeRawTotalFromQuantityAndRate(newState);
+    }
+
+    newState.quantity.value = this._formatFloat(newState.quantity.floatValue, this._limits.quantity.precision);
+    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
+}
+
+/*
+  total is :
+
+  * rawTotal + fees for BUY orders
+  * rawTotal - fees for SELL orders
+
+ */
+_computeTotalFromRawTotalAndFees(newState)
+{
+    // recompute total from rawTotal
+    if ('buy' == this.props.orderType)
+    {
+        newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
+    }
+    else
+    {
+        newState.total.floatValue = newState.rawTotal.floatValue.minus(newState.fees.floatValue);
+    }
+    newState.total.value = this._formatFloat(newState.total.floatValue);
+}
+
+_checkQuantity(newState)
+{
+    if (!newState.quantity.valid)
+    {
+        return;
+    }
+    // check if quantity > min
+    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
+    {
+        newState.quantity.valid = false;
+        newState.quantity.err = 'MIN';
+        return;
+    }
+    // for sell orders, quantity must be <= balance
+    if ('sell' == this.props.orderType)
+    {
+        if (newState.quantity.floatValue.gt(this._balance.floatValue))
+        {
+            newState.quantity.valid = false;
+            newState.quantity.err = 'BALANCE';
+            return;
+        }
+    }
+}
+
+_checkRawTotal(newState)
+{
+    if (!newState.quantity.valid)
+    {
+        return;
+    }
+    // ensure rawTotal is above min price
+    if (newState.rawTotal.floatValue.lt(this._limits.price.min))
+    {
+        newState.rawTotal.valid = false;
+        newState.rawTotal.err = 'MIN';
+        return;
+    }
+}
+
+_checkTotal(newState)
+{
+    if (!newState.quantity.valid)
+    {
+        return;
+    }
+    if (newState.total.floatValue.lte(0.00000001))
+    {
+        newState.total.valid = false;
+        newState.total.err = null;
+        return;
+    }
+    if ('buy' == this.props.orderType)
+    {
+        // check if total > balance
+        if (newState.total.floatValue.gt(this._balance.floatValue))
+        {
+            newState.total.valid = false;
+            newState.total.err = 'BALANCE';
+            return;
+        }
+    }
+}
+
 _updateState(newState, field)
 {
     // quantity was updated => recompute total
@@ -450,38 +630,14 @@ _updateState(newState, field)
         {
             if ('' != newState.rate.value && newState.rate.valid)
             {
-                newState.rawTotal.floatValue = newState.quantity.floatValue.times(newState.rate.floatValue);
                 newState.rawTotal.valid = true;
-                // ensure rawTotal is above min price
-                if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                {
-                    newState.rawTotal.valid = false;
-                    newState.rawTotal.err = 'MIN';
-                }
                 newState.total.valid = true;
-                newState.fees.floatValue = newState.rawTotal.floatValue.times(this._feesPercent);
-                if ('buy' == this.props.orderType)
-                {
-                    newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
-                    // check if total is 0 or > balance
-                    if (newState.total.floatValue.lte(0.00000001))
-                    {
-                        newState.total.valid = false;
-                        newState.total.err = null;
-                    }
-                    else if (newState.total.floatValue.gt(this._balance.floatValue))
-                    {
-                        newState.total.valid = false;
-                        newState.total.err = 'BALANCE';
-                    }
-                }
-                else
-                {
-                    newState.total.floatValue = newState.rawTotal.floatValue.minus(newState.fees.floatValue);
-                }
-                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
-                newState.total.value = this._formatFloat(newState.total.floatValue);
-                newState.fees.value = this._formatFloat(newState.fees.floatValue);
+                this._computeRawTotalFromQuantityAndRate(newState);
+                this._computeFeesAndFinalTotalFromRawTotal(newState);
+                this._computeTotalFromRawTotalAndFees(newState);
+                this._checkQuantity(newState);
+                this._checkRawTotal(newState);
+                this._checkTotal(newState);
             }
         }
     }
@@ -490,62 +646,14 @@ _updateState(newState, field)
     {
         if (newState.total.valid)
         {
-            if ('' != newState.rate.value && newState.rate.valid)
-            {
-                if ('buy' == this.props.orderType)
-                {
-                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._buyFeesFactor);
-                    newState.rawTotal.valid = true;
-                    // ensure rawTotal is above min price
-                    if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                    {
-                        newState.rawTotal.valid = false;
-                        newState.rawTotal.err = 'MIN';
-                    }
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                }
-                else
-                {
-                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._sellFeesFactor);
-                    newState.rawTotal.valid = true;
-                    // ensure rawTotal is above min price
-                    if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                    {
-                        newState.rawTotal.valid = false;
-                        newState.rawTotal.err = 'MIN';
-                    }
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                    // check if quantity > balance
-                    else if (newState.quantity.floatValue.gt(this._balance.floatValue))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'BALANCE';
-                    }
-                }
-                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
-                newState.quantity.value = this._formatFloat(newState.quantity.floatValue, this._limits.quantity.precision);
-                newState.fees.value = this._formatFloat(newState.fees.floatValue);
-            }
+            newState.rawTotal.valid = true;
+            newState.quantity.valid = true;
+            this._computeRawTotalFromTotal(newState);
+            this._computeQuantityAndRawTotalFromRawTotalAndRate(newState, {max:newState.rawTotal.floatValue});
+            this._computeFeesAndFinalTotalFromRawTotal(newState);
+            this._checkQuantity(newState);
+            this._checkRawTotal(newState);
+            this._checkTotal(newState);
         }
     }
     // raw total was updated => recompute quantity
@@ -553,57 +661,14 @@ _updateState(newState, field)
     {
         if (newState.rawTotal.valid)
         {
-            // recompute total
-            if ('buy' == this.props.orderType)
-            {
-                newState.total.floatValue = newState.rawTotal.floatValue.times(this._buyFeesFactor);
-                newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
-            }
-            else
-            {
-                newState.total.floatValue = newState.rawTotal.floatValue.times(this._sellFeesFactor);
-                newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
-            }
             newState.total.valid = true;
-            newState.total.value = this._formatFloat(newState.total.floatValue);
-            newState.fees.value = this._formatFloat(newState.fees.floatValue);
-
-            if ('' != newState.rate.value && newState.rate.valid)
-            {
-                if ('buy' == this.props.orderType)
-                {
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                }
-                else
-                {
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                    // check if quantity > balance
-                    else if (newState.quantity.floatValue.gt(this._balance.floatValue))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'BALANCE';
-                    }
-                }
-                newState.quantity.value = this._formatFloat(newState.quantity.floatValue, this._limits.quantity.precision);
-            }
+            newState.quantity.valid = true;
+            this._computeQuantityAndRawTotalFromRawTotalAndRate(newState, {min:this._limits.price.min});
+            this._computeFeesAndFinalTotalFromRawTotal(newState);
+            this._computeTotalFromRawTotalAndFees(newState);
+            this._checkQuantity(newState);
+            this._checkRawTotal(newState);
+            this._checkTotal(newState);
         }
     }
     // rate was updated => recompute total or quantity
@@ -620,133 +685,38 @@ _updateState(newState, field)
                 )
                 {
                     newState.rawTotal.valid = true;
-                    if ('buy' == this.props.orderType)
-                    {
-                        newState.rawTotal.floatValue = newState.total.floatValue.div(this._buyFeesFactor);
-                        newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                        // ensure we have a multiple of step
-                        newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                        newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
-                        newState.quantity.valid = true;
-                        // check if quantity > min
-                        if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                        {
-                            newState.quantity.valid = false;
-                            newState.quantity.err = 'MIN';
-                        }
-                    }
-                    else
-                    {
-                        newState.rawTotal.floatValue = newState.total.floatValue.div(this._sellFeesFactor);
-                        newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                        // ensure we have a multiple of step
-                        newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                        newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
-                        newState.quantity.valid = true;
-                        // check if quantity > min
-                        if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                        {
-                            newState.quantity.valid = false;
-                            newState.quantity.err = 'MIN';
-                        }
-                        // check if quantity > balance
-                        else if (newState.quantity.floatValue.gt(this._balance.floatValue))
-                        {
-                            newState.quantity.valid = false;
-                            newState.quantity.err = 'BALANCE';
-                        }
-                    }
-                    // ensure rawTotal is > min
-                    if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                    {
-                        newState.rawTotal.valid = false;
-                        newState.rawTotal.err = 'MIN';
-                    }
-                    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
-                    newState.quantity.value = this._formatFloat(newState.quantity.floatValue, this._limits.quantity.precision);
-                    newState.fees.value = this._formatFloat(newState.fees.floatValue);
+                    newState.quantity.valid = true;
+                    this._computeRawTotalFromTotal(newState);
+                    this._computeQuantityAndRawTotalFromRawTotalAndRate(newState,{max:newState.rawTotal.floatValue});
+                    this._computeFeesAndFinalTotalFromRawTotal(newState);
+                    this._checkQuantity(newState);
+                    this._checkRawTotal(newState);
+                    this._checkTotal(newState);
                 }
                 // recompute total
                 else
                 {
-                    newState.rawTotal.floatValue = newState.quantity.floatValue.times(newState.rate.floatValue);
-                    newState.total.valid = true;
                     newState.rawTotal.valid = true;
-                    newState.fees.floatValue = newState.rawTotal.floatValue.times(this._feesPercent);
-                    if ('buy' == this.props.orderType)
-                    {
-                        newState.total.floatValue = newState.rawTotal.floatValue.plus(newState.fees.floatValue);
-                        // check if total > balance
-                        if (newState.total.floatValue.gt(this._balance.floatValue))
-                        {
-                            newState.total.valid = false;
-                            newState.total.err = 'BALANCE';
-                        }
-                    }
-                    else
-                    {
-                        newState.total.floatValue = newState.rawTotal.floatValue.minus(newState.fees.floatValue);
-                    }
-                    // ensure rawTotal > min
-                    if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                    {
-                        newState.rawTotal.valid = false;
-                        newState.rawTotal.err = 'MIN';
-                    }
-                    newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
-                    newState.total.value = this._formatFloat(newState.total.floatValue);
-                    newState.fees.value = this._formatFloat(newState.fees.floatValue);
+                    newState.total.valid = true;
+                    this._computeRawTotalFromQuantityAndRate(newState);
+                    this._computeFeesAndFinalTotalFromRawTotal(newState);
+                    this._computeTotalFromRawTotalAndFees(newState);
+                    this._checkQuantity(newState);
+                    this._checkRawTotal(newState);
+                    this._checkTotal(newState);
                 }
             }
             // recompute quantity
             else if ('' != newState.total.value && newState.total.valid)
             {
                 newState.rawTotal.valid = true;
-                if ('buy' == this.props.orderType)
-                {
-                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._buyFeesFactor);
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.fees.floatValue = newState.total.floatValue.minus(newState.rawTotal.floatValue);
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                }
-                else
-                {
-                    newState.rawTotal.floatValue = newState.total.floatValue.div(this._sellFeesFactor);
-                    newState.quantity.floatValue = newState.rawTotal.floatValue.div(newState.rate.floatValue);
-                    // ensure we have a multiple of step
-                    newState.quantity.floatValue = new Big(this._getRoundedFloat(newState.quantity.floatValue, this._limits.quantity.precision, this._limits.quantity.step));
-                    newState.fees.floatValue = newState.rawTotal.floatValue.minus(newState.total.floatValue);
-                    newState.quantity.valid = true;
-                    // check if quantity > min
-                    if (newState.quantity.floatValue.lt(this._limits.quantity.min))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'MIN';
-                    }
-                    // check if quantity > balance
-                    else if (newState.quantity.floatValue.gt(this._balance.floatValue))
-                    {
-                        newState.quantity.valid = false;
-                        newState.quantity.err = 'BALANCE';
-                    }
-                }
-                // ensure rawTotal is > min
-                if (newState.rawTotal.floatValue.lt(this._limits.price.min))
-                {
-                    newState.rawTotal.valid = false;
-                    newState.rawTotal.err = 'MIN';
-                }
-                newState.rawTotal.value = this._formatFloat(newState.rawTotal.floatValue);
-                newState.quantity.value = this._formatFloat(newState.quantity.floatValue, this._limits.quantity.precision);
-                newState.fees.value = this._formatFloat(newState.fees.floatValue);
+                newState.quantity.valid = true;
+                this._computeRawTotalFromTotal(newState);
+                this._computeQuantityAndRawTotalFromRawTotalAndRate(newState,{max:newState.rawTotal.floatValue});
+                this._computeFeesAndFinalTotalFromRawTotal(newState);
+                this._checkQuantity(newState);
+                this._checkRawTotal(newState);
+                this._checkTotal(newState);
             }
         }
     }
@@ -801,7 +771,7 @@ _handleConfirmOrder(e)
     this.setState({order:{confirm:false,sending:true,sent:false,orderNumber:null,err:null}}, function(){
         let quantity = parseFloat(this.state.quantity.value);
         let rate = parseFloat(this.state.rate.value);
-        restClient.createOrder(this.props.exchange, this.props.pair, this.props.orderType, quantity, rate).then(function(data){
+        restClient.createOrder(self.props.exchange, self.props.pair, self.props.orderType, quantity, rate).then(function(data){
             self.setState({order:{confirm:false,sending:false,sent:true,orderNumber:data.orderNumber,err:null}});
         }).catch(function(err){
             let error = 'Unknown error';
@@ -848,12 +818,12 @@ render()
 {
     let orderType = 'BUY';
     let bidAskType = 'BID';
-    let buySellAction = 'buy';
+    let buySellAction = 'BUY';
     if ('sell' == this.props.orderType)
     {
         orderType = 'SELL';
         bidAskType = 'ASK';
-        buySellAction = 'sell';
+        buySellAction = 'SELL';
     }
 
     const MinQuantityButton = () => {
@@ -873,116 +843,103 @@ render()
         return null
     }
 
-    const SuccessfulOrderBody = () => {
-        return (
-          <Row>
-            <Col>
-              <div className="text-success" style={{marginBottom:'10px'}}>Order successfully created. New order is {this.state.order.orderNumber}</div>
-            </Col>
-          </Row>
-        )
-    }
-
-    const FailedOrderBody = () => {
-        return (
-          <Row>
-            <Col>
-              <div className="text-danger" style={{marginBottom:'10px'}}>Order failed : {this.state.order.err}</div>
-            </Col>
-          </Row>
-        )
-    }
-
-    const OrderResultBody = () => {
-        // an error occurred when sending the order
-        if (null !== this.state.order.err)
+    const ConfirmationForm = () => {
+        if (!this.state.order.confirm && !this.state.order.sending && !this.state.order.sent)
         {
+            return null
+        }
+
+        const Confirm = () => {
+            if (!this.state.order.confirm)
+            {
+                return null
+            }
+            let className = 'text-success';
+            let gainCost = 'cost';
+            if ('sell' == this.props.orderType)
+            {
+                className = 'text-danger';
+                gainCost = 'gain';
+            }
+            let rate = this._formatFloat(this.state.rate.floatValue, this._limits.rate.precision);
             return (
-                <FailedOrderBody/>
+                <div>
+                  <ModalBody>
+                    <div style={{marginBottom:'10px'}}>
+                      Do you want to <strong><span className={className}>{buySellAction}</span></strong> :<br/><br/>
+                      <li><strong>{this.state.quantity.value} {this.props.currency}</strong></li>
+                      <li>@ <strong>{rate} {this.props.baseCurrency}</strong> per unit</li><br/>
+                      For an overall {gainCost} of <strong>{this.state.finalTotal.value} {this.props.baseCurrency}</strong> ?</div>
+                  </ModalBody>
+                  <ModalFooter>
+                    <button type="button" className="btn btn-secondary" style={{marginRight:'5px'}} onClick={this._handleConfirmOrder}>Y<small>ES</small></button>
+                    <button type="button" className="btn btn-secondary" onClick={this._handleCancelOrder}>N<small>O</small></button>
+                  </ModalFooter>
+                </div>
             )
         }
-        // successful order
-        return <SuccessfulOrderBody/>
-    }
 
-    const OrderResult = () => {
-        return (
-          <form noValidate>
-            <Row>
-              <Col>
-                <Card>
-                  <CardHeader>
-                    <strong>{orderType}</strong>
-                    <small> {this.props.currency}</small>
-                  </CardHeader>
-                  <CardBlock className="card-body">
-                    <OrderResultBody/>
-                    <Row>
-                      <Col>
-                        <div className="float-right">
-                          <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>LOSE</small></button>
-                        </div>
-                      </Col>
-                    </Row>
-                  </CardBlock>
-                </Card>
-              </Col>
-            </Row>
-          </form>
-       )
-    }
+        const Sending = () => {
+            if (!this.state.order.sending)
+            {
+                return null
+            }
+            return (
+                <div>
+                  <ModalBody>
+                    <center><i className="ml-auto mr-auto fa fa-spinner fa-spin" style={{fontSize:'2.0rem'}}/></center>
+                  </ModalBody>
+                  <ModalFooter/>
+                </div>
+            )
+        }
 
-    const ConfirmationForm = () => {
+        const OrderResult = () => {
+            // an error occurred when sending the order
+            if (null !== this.state.order.err)
+            {
+                return (
+                    <div className="text-danger" style={{marginBottom:'10px'}}>Order failed : {this.state.order.err}</div>
+                )
+            }
+            // successful order
+            return (
+                <div className="text-success" style={{marginBottom:'10px'}}>Order successfully created. New order is {this.state.order.orderNumber}</div>
+            )
+        }
+
+        const Sent = () => {
+            if (!this.state.order.sent)
+            {
+                return null
+            }
+            return (
+                <div>
+                  <ModalBody>
+                    <OrderResult/>
+                  </ModalBody>
+                  <ModalFooter>
+                    <button type="button" className="btn btn-secondary" onClick={this._handleCloseOrder}>C<small>LOSE</small></button>
+                  </ModalFooter>
+                </div>
+            )
+        }
+
         return (
             <form noValidate>
-                <Row>
-                  <Col>
-                    <Card>
-                      <CardHeader>
-                        <strong>{orderType}</strong>
-                        <small> {this.props.currency}</small>
-                        <div className="float-right"><small>{this._balance.value} {this.props.balanceCurrency} AVAIL</small></div>
-                      </CardHeader>
-                      <CardBlock className="card-body">
-                        <Row>
-                          <Col>
-                              <div style={{marginBottom:'10px'}}>Do you want to {buySellAction} <strong>{this.state.quantity.value} {this.props.currency}</strong> at <strong>{this.state.rate.value} {this.props.baseCurrency}</strong> per unit, for a total of <strong>{this.state.total.value} {this.props.baseCurrency}</strong> ?</div>
-                          </Col>
-                        </Row>
-                        <Row>
-                          <Col>
-                            <div className="float-right">
-                              <button type="button" className="btn btn-secondary" style={{marginRight:'5px'}} onClick={this._handleConfirmOrder}>Y<small>ES</small></button>
-                              <button type="button" className="btn btn-secondary" onClick={this._handleCancelOrder}>N<small>O</small></button>
-                            </div>
-                          </Col>
-                        </Row>
-                      </CardBlock>
-                    </Card>
-                  </Col>
-                </Row>
+              <Modal isOpen={true} fade={this.state.order.confirm}>
+                <CardHeader>
+                  <strong>{orderType}</strong>
+                  <small> {this.props.currency}</small>
+                </CardHeader>
+                <Confirm/>
+                <Sending/>
+                <Sent/>
+              </Modal>
             </form>
         )
     }
 
-    if (this.state.order.confirm)
-    {
-        return (
-            <ConfirmationForm/>
-        )
-    }
-    if (this.state.order.sending)
-    {
-        return (
-            <ComponentLoadingSpinner/>
-        )
-    }
-    if (this.state.order.sent)
-    {
-        return (
-            <OrderResult/>
-        )
-    }
     let balanceClassnames = "float-right";
     if (this._balance.floatValue.eq(0))
     {
@@ -1011,7 +968,7 @@ render()
         <Row>
           <Col>
             <FormGroup>
-              <Label htmlFor="rawTotal">T<small>OTAL</small><br/>
+              <Label htmlFor="rawTotal">R<small>AW</small> T<small>OTAL (QUANTITY x RATE)</small><br/>
               <small>MIN: {this._limits.price.minStr}</small>
               </Label>
               <InputGroup>
@@ -1022,6 +979,31 @@ render()
               <div className="invalid-feedback" style={{display:!this.state.rawTotal.valid ? 'inline' : 'none'}}>
               {invalidValue(this.state.rawTotal, 'price')}
               </div>
+            </FormGroup>
+          </Col>
+        </Row>
+      )
+    }
+
+    const FinalTotal = () => {
+      let info = 'INCLUDING FEES';
+      let placeHolder = 'Total price you will really spend';
+      if ('sell' == this.props.orderType)
+      {
+          info = 'AFTER SUBSTRACTING FEES';
+          placeHolder = 'Total price you will really gain';
+      }
+
+      return (
+        <Row>
+          <Col>
+            <FormGroup>
+              <Label htmlFor="finalTotal">T<small>OTAL ({info})</small><br/>
+              </Label>
+              <InputGroup>
+                <Input disabled={true} type="text" id="finalTotal" placeholder={placeHolder} value={this.state.finalTotal.value}/>
+                <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
+              </InputGroup>
             </FormGroup>
           </Col>
         </Row>
@@ -1084,11 +1066,14 @@ render()
     }
 
     let totalInfo = 'INCLUDING FEES';
+    let totalPlaceHolder = 'Total price you are willing to spend';
     if ('sell' == this.props.orderType)
     {
         totalInfo = 'AFTER SUBSTRACTING FEES';
+        totalPlaceHolder = 'Total price you are willing to gain';
     }
     return (
+        <div>
         <form noValidate>
         <Row>
           <Col>
@@ -1160,7 +1145,7 @@ render()
                 <Row>
                   <Col>
                     <FormGroup>
-                      <Label htmlFor="total">T<small>OTAL ({totalInfo})</small></Label>
+                      <Label htmlFor="total">T<small>ARGET</small> T<small>OTAL ({totalInfo})</small></Label>
                       <InputGroup>
                         <ButtonDropdown style={{display:'buy' == this.props.orderType ? 'inline' : 'none'}} isOpen={this.state.showTotalDropdown} toggle={() => { this.setState({ showTotalDropdown: !this.state.showTotalDropdown }); }}>
                           <DropdownToggle caret color="secondary">
@@ -1173,7 +1158,7 @@ render()
                             <DropdownItem id="75%" onClick={this._handleSetTotal}>75%</DropdownItem>
                           </DropdownMenu>
                         </ButtonDropdown>
-                        <Input className={!this.state.total.valid ? 'is-invalid' : ''} type="text" id="total" value={this.state.total.value} onChange={this._handleSetValue}/>
+                        <Input className={!this.state.total.valid ? 'is-invalid' : ''} type="text" id="total" placeholder={totalPlaceHolder} value={this.state.total.value} onChange={this._handleSetValue}/>
                         <span className="input-group-addon"><small>{this.props.baseCurrency}</small></span>
                       </InputGroup>
                       <div className="invalid-feedback" style={{display:!this.state.total.valid ? 'inline' : 'none'}}>
@@ -1182,6 +1167,7 @@ render()
                     </FormGroup>
                   </Col>
                 </Row>
+                <FinalTotal/>
                 <Row>
                   <Col>
                     <button type="button" className="btn btn-secondary float-right" onClick={this._handleCheckOrder}>{orderType.substr(0,1)}<small>{orderType.substr(1)}</small></button>
@@ -1192,6 +1178,8 @@ render()
           </Col>
         </Row>
         </form>
+        <ConfirmationForm/>
+        </div>
     )
 }
 

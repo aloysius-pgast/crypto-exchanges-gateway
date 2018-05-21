@@ -26,25 +26,35 @@ Below config will only give access to public API (since no key/secret combinatio
     "logLevel":"warn",
     "coinmarketcap":{
         "enabled":true,
+        /* history is enabled by default */
+        "history":true
     },
     "pushover":{
         "enabled":false,
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "bittrex":{
+            "type":"bittrex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "binance":{
+            "type":"binance",
             "enabled":true,
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
             "key":"",
             "secret":""
         }
@@ -120,11 +130,13 @@ Access will be restricted using the following :
     /* CoinMarketCap configuration */
     "coinmarketcap":{
         "enabled":true,
+        /* history is enabled by default */
+        "history":true,
         /* rate limiting to comply with CoinMarketCap */
         "throttle":{
             "publicApi":{
-                /* one request every 6 seconds */
-                "minPeriod":6
+                /* one request every 2 seconds */
+                "minPeriod":2
             }
         }
     },
@@ -136,9 +148,17 @@ Access will be restricted using the following :
         /* Token provided by PushOver (required if 'enabled' is 'true')
         "token":"azfdkcafb8ynexae7wwdmb4erc71as"
     },
+    /* Ticker Monitor configuration */
+    "tickerMonitor":{
+        "enabled":true
+        /* How often (in seconds) gateway should check if conditions are met (default = 30)*/
+        "delay":30
+    },
     /* exchanges configuration */
     "exchanges":{
         "poloniex":{
+            "type":"poloniex",
+            "name":"Poloniex",
             "enabled":true,
             /* API key provided by Poloniex */
             "key":"ABCD",
@@ -158,8 +178,8 @@ Access will be restricted using the following :
         },
         "bittrex":{
             "enabled":true,
-            /* to account for clock skew */
-            "recvWindow":5000,
+            "type":"bittrex",
+            "name":"bittrex",
             /* API key provided by Bittrex */
             "key":"ABCD",
             /* Secret provided by Bittrex */
@@ -168,26 +188,45 @@ Access will be restricted using the following :
             "feesPercent":0.25,
             /* rate limiting to comply with Bittrex */
             "throttle":{
-                "lowIntensity":{
-                    /* one request every second */
-                    "minPeriod":1
-                },
-                "mediumIntensity":{
-                    /* one request every 10 seconds */
-                    "minPeriod":10
-                },
-                "highIntensity":{
-                    /* one request every 30 seconds */
-                    "minPeriod":30
+                "global":{
+                    "maxRequestsPerSecond":1
                 }
             }
         },
+        /* it is possible to define multiple instances of same exchange */
         "binance":{
             "enabled":true,
+            "type":"binance",
+            "name":"Binance #1",
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
             /* API key provided by Binance */
             "key":"ABCD",
             /* Secret provided by Binance */
             "secret":"EFGH",
+            /* to account for clock skew */
+            "recvWindow":5000,
+            /* % fees [0,100] */
+            "feesPercent":0.10,
+            /* rate limiting to comply with Binance */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":20
+                }
+            }
+        },
+        "binance2":{
+            "enabled":true,
+            "type":"binance",
+            "name":"Binance #2",
+            /* if true client will need to provide the pair when retrieving tickers or dealing with orders */
+            "requirePair":false,
+            /* API key provided by Binance */
+            "key":"ABCD",
+            /* Secret provided by Binance */
+            "secret":"EFGH",
+            /* to account for clock skew */
+            "recvWindow":5000,
             /* % fees [0,100] */
             "feesPercent":0.10,
             /* rate limiting to comply with Binance */
@@ -224,7 +263,7 @@ Example for *GET* _/server/logLevel_
 
 === Mandatory query parameters
 
-[cols="1,1a,1a,3a", options="header"]
+[cols="1,1a,1a", options="header"]
 |===
 
 |Name
@@ -232,7 +271,7 @@ Example for *GET* _/server/logLevel_
 |Description
 
 |value
-|string
+|string (_error,warn,info,verbose,debug_)
 |New log level
 
 |===

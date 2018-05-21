@@ -1,10 +1,23 @@
 "use strict";
 const _ = require('lodash');
+const Joi = require('../../custom-joi');
+const JoiHelper = require('../../joi-helper');
+const Errors = require('../../errors');
 const RequestHelper = require('../../request-helper');
 const serviceRegistry = require('../../service-registry');
 const sessionRegistry = require('../../session-registry');
 
-module.exports = function(app, bodyParser, config) {
+/**
+ * Sends an http error to client
+ *
+ * @param {object} res express response object
+ * @param {string|object} err error message or exception
+ */
+const sendError = (res, err) => {
+    return Errors.sendHttpError(res, err, 'sessions');
+}
+
+module.exports = function(app, bodyParsers, config) {
 
 /**
  * Ensures exchange and requested pair exist
@@ -21,8 +34,8 @@ const checkExchange = (req, res, features) => {
     // exchange does not exist
     if (null === exchange)
     {
-        res.status(400).send({origin:"gateway",error:`'${req.params.exchange}' exchange is not supported`});
-        return null;
+        let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchange(req.params.exchange);
+        return sendError(res, err);
     }
     let exchangeInstance = exchange.instance;
     if (undefined !== features)
@@ -30,9 +43,8 @@ const checkExchange = (req, res, features) => {
         _.forEach(features, (f) => {
             if (undefined === exchange.features[f] || !exchange.features[f].enabled)
             {
-                exchangeInstance = null;
-                res.status(400).send({origin:"gateway",error:`Feature '${f}' is not supported by '${req.params.exchange}' exchange`});
-                return false;
+                let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchangeFeature(req.params.exchange, f);
+                return sendError(res, err);
             }
         });
     }
@@ -51,17 +63,17 @@ const checkExchange = (req, res, features) => {
  */
 const checkPair = (exchange, req, res) => {
     return new Promise((resolve, reject) => {
-        exchange.pairs({useCache:true}).then(function(data){
-            if (undefined === data[req.params.pair])
+        exchange.getPairsSymbols(true).then(function(data){
+            if (-1 == data.indexOf(req.params.pair))
             {
-                res.status(400).send({origin:"gateway",error:`Pair '${req.params.pair}' is not supported by '${req.params.exchange}' exchange`});
+                let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchangePair(req.params.exchange, req.params.pair);
                 resolve(false);
-                return;
+                return sendError(res, err);
             }
             resolve(true);
         }).catch (function(err){
-            res.status(503).send({origin:"remote",error:err});
             resolve(false);
+            return sendError(res, err);
         });
     });
 }
@@ -78,38 +90,45 @@ const checkPair = (exchange, req, res) => {
  */
 const checkExchangeAndPair = (req, res, features) => {
     let exchange = checkExchange(req, res, features);
-    if (null === exchange)
+    if (false === exchange)
     {
         return Promise.resolve(false);
     }
     return checkPair(exchange, req, res);
 }
 
-/**
+/*
  * List existing sessions
- *
- * @param {boolean} rpc if true, only RPC sessions will be retrieved. If false only non-rpc sessions will be retrieved. If not set, all sessions will be retrieved
  */
-app.get('/sessions', (req, res) => {
-    let opt = {};
-    if (undefined !== req.query.rpc && '' != req.query.rpc)
-    {
-        if ('true' === req.query.rpc || '1' === req.query.rpc)
-        {
-            opt.rpc = true;
-        }
-        else if ('false' === req.query.rpc || '0' === req.query.rpc)
-        {
-            opt.rpc = false;
-        }
-    }
-    let sessions = sessionRegistry.getSessions(opt);
-    let list = {};
-    _.forEach(sessions, (session, sid) => {
-        list[sid] = session.toHash()
+(function(){
+    const schema = Joi.object({
+        rpc: Joi.boolean().truthy('1').falsy('0').insensitive(true)
     });
-    res.send(list);
-});
+
+    /**
+     * List existing sessions
+     *
+     * @param {boolean} rpc if true, only RPC sessions will be retrieved. If false only non-rpc sessions will be retrieved. If not set, all sessions will be retrieved
+     */
+    app.get('/sessions', (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true});
+        if (null !== params.error)
+        {
+            return sendError(res, params.error);
+        }
+        let opt = {};
+        if (undefined !== params.value.rpc)
+        {
+            opt.rpc = params.value.rpc;
+        }
+        let sessions = sessionRegistry.getSessions(opt);
+        let list = {};
+        _.forEach(sessions, (session, sid) => {
+            list[sid] = session.toHash()
+        });
+        return res.send(list);
+    });
+})();
 
 /**
  * Retrieves a single session
@@ -126,141 +145,110 @@ app.get('/sessions/:sid', (req, res) => {
         return;
     }
     list[req.params.sid] = session.toHash();
-    res.send(list);
+    return res.send(list);
 });
 
-/**
+/*
  * Creates a new RPC session
- *
- * NB: no error will be returned if session with same id already exists (unless existing session is a non-RPC session)
- *
- * @param {sid} session identifier
- * @param {boolean} expires whether or not session will expire after all client connections have been closed (optional, default = false)
- * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if expires is false)
  */
-app.post(`/sessions/:sid`, bodyParser, (req, res) => {
-    let session = sessionRegistry.getSession(req.params.sid);
-    let opt = {expires:false};
-    let value = RequestHelper.getParam(req, 'expires');
-    if (undefined !== value && '' !== value)
-    {
-        if ('true' === value || '1' === value)
+(function(){
+
+    const schema = Joi.object({
+        expires: Joi.boolean().truthy('1').falsy('0').insensitive(true).default(false),
+        timeout: Joi.number().integer().min(0).default(600)
+    });
+
+    /**
+     * Creates a new RPC session
+     *
+     * NB: no error will be returned if session with same id already exists (unless existing session is a non-RPC session)
+     *
+     * @param {sid} session identifier
+     * @param {boolean} expires whether or not session will expire after all client connections have been closed (optional, default = false)
+     * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if expires is false)
+     */
+    app.post(`/sessions/:sid`, bodyParsers.urlEncoded, (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true,body:true});
+        if (null !== params.error)
         {
-            opt.expires = true;
+            return sendError(res, params.error);
         }
-        else if ('false' === value || '0' === value)
+        let session = sessionRegistry.getSession(req.params.sid);
+        // session already exists
+        if (null !== session)
         {
-            opt.expires = false;
+            // we cannot re-use a non-rpc session id
+            if (!session.isRpc())
+            {
+                let err = new Errors.GatewayError.InvalidRequest.UnknownError(`Session '${req.params.sid}' is a non RPC session`);
+                return sendError(res, err);
+            }
         }
         else
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'expires' should be a boolean"});
-            return;
+            // create a new session
+            session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
         }
-    }
-    if (undefined !== opt.expires && opt.expires)
-    {
-        value = RequestHelper.getParam(req, 'timeout');
-        if (undefined !== value && '' !== value)
-        {
-            opt.timeout = parseInt(value);
-            if (isNaN(opt.timeout) || opt.timeout < 0)
-            {
-                res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer >= 0"});
-                return;
-            }
-        }
-    }
-    // session already exists
-    if (null !== session)
-    {
-        if (!session.isRpc())
-        {
-            res.status(400).send({origin:"gateway",error:`Session '${req.params.sid}' is a non RPC session`});
-            return;
-        }
-    }
-    else
-    {
-        // create a new session
-        session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-    }
-    // update expiry ?
-    if (undefined !== opt.expires)
-    {
-        if (!opt.expires)
+        // update expiry ?
+        if (!params.value.expires)
         {
             session.disableExpiry();
         }
         else
         {
-            session.enableExpiry(opt.timeout);
+            session.enableExpiry(params.value.timeout);
         }
-    }
-    res.send({});
-});
+        return res.send({});
+    });
+})();
 
-/**
+
+/*
  * Updates expiry for a given RPC session
- *
- * @param {sid} session identifier
- * @param {boolean} expires whether or not session will expire after all client connections have been closed
- * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if expires is false)
  */
-app.patch(`/sessions/:sid/expiry`, bodyParser, (req, res) => {
-    let session = sessionRegistry.getSession(req.params.sid);
-    // session does not exist
-    if (null === session)
-    {
-        res.status(400).send({origin:"gateway",error:`Session '${req.params.sid} does not exist'`});
-        return;
-    }
-    // session is not an RPC session
-    if (!session.isRpc())
-    {
-        res.status(400).send({origin:"gateway",error:"Expiry cannot be changed for a non-RPC session"});
-        return;
-    }
-    let expires = RequestHelper.getParam(req, 'expires');
-    if (undefined === expires || '' === expires)
-    {
-        res.status(400).send({origin:"gateway",error:"Missing parameter 'expires'"});
-        return;
-    }
-    if ('true' === expires || '1' === expires)
-    {
-        expires = true;
-    }
-    else if ('false' === expires || '0' === expires)
-    {
-        expires = false;
-    }
-    else
-    {
-        res.status(400).send({origin:"gateway",error:"Parameter 'expires' should be a boolean"});
-        return;
-    }
-    if (!expires)
-    {
-        session.disableExpiry();
-        res.send({});
-        return;
-    }
-    let timeout = undefined;
-    let value = RequestHelper.getParam(req, 'timeout');
-    if (undefined !== value && '' !== value)
-    {
-        value = parseInt(value);
-        if (isNaN(value) || value < 0)
+(function(){
+
+    const schema = Joi.object({
+        expires: Joi.boolean().truthy('1').falsy('0').insensitive(true).required(),
+        timeout: Joi.number().integer().min(0).default(600)
+    });
+
+    /**
+     * Updates expiry for a given RPC session
+     *
+     * @param {sid} session identifier
+     * @param {boolean} expires whether or not session will expire after all client connections have been closed
+     * @param {integer} timeout number of second to wait before destroying session all client connections have been closed (optional, default = 600) (will be ignored if 'expires' is 'false')
+     */
+    app.patch(`/sessions/:sid/expiry`, bodyParsers.urlEncoded, (req, res) => {
+        const params = JoiHelper.validate(schema, req, {query:true,body:true});
+        if (null !== params.error)
         {
-            res.status(400).send({origin:"gateway",error:"Parameter 'timeout' should be an integer >= 0"});
-            return;
+            return sendError(res, params.error);
         }
-        timeout = value;
-    }
-    session.enableExpiry(timeout);
-    res.send({});
-});
+        let session = sessionRegistry.getSession(req.params.sid);
+        // session does not exist
+        if (null === session)
+        {
+            let err = new Errors.GatewayError.InvalidRequest.ObjectNotFound(`Session '${req.params.sid} does not exist'`);
+            return sendError(res, err);
+        }
+        // session is not an RPC session
+        if (!session.isRpc())
+        {
+            let err = new Errors.GatewayError.InvalidRequest.UnknownError('Expiry cannot be changed for a non-RPC session');
+            return sendError(res, err);
+        }
+        let expires = params.value.expires;
+        if (!expires)
+        {
+            session.disableExpiry();
+            return res.send({});
+        }
+        session.enableExpiry(params.value.timeout);
+        return res.send({});
+    });
+})();
 
 /**
  * Destroy an existing session
@@ -272,11 +260,10 @@ app.delete('/sessions/:sid', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.destroy();
-    res.send({});
+    return res.send({});
 });
 
 /**
@@ -288,12 +275,11 @@ app.get('/sessions/:sid/subscriptions', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send(result);
-        return;
+        return res.send(result);
     }
     let hash = session.toHash();
     result[req.params.sid] = hash.subscriptions;
-    res.send(result);
+    return res.send(result);
 });
 
 /**
@@ -305,8 +291,7 @@ app.get('/sessions/:sid/subscriptions/:exchange', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send(result);
-        return;
+        return res.send(result);
     }
     let hash = session.toHash();
     result[req.params.sid] = {};
@@ -314,7 +299,7 @@ app.get('/sessions/:sid/subscriptions/:exchange', (req, res) => {
     {
         result[req.params.sid][req.params.exchange] = hash.subscriptions[req.params.exchange];
     }
-    res.send(result);
+    return res.send(result);
 });
 
 /**
@@ -326,12 +311,11 @@ app.get('/sessions/:sid/connections', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send(result);
-        return;
+        return res.send(result);
     }
     let hash = session.toHash();
     result[req.params.sid] = hash.connections;
-    res.send(result);
+    return res.send(result);
 });
 
 /**
@@ -342,11 +326,10 @@ app.delete('/sessions/:sid/subscriptions', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribe({remove:true});
-    res.send({});
+    return res.send({});
 });
 
 /**
@@ -357,11 +340,10 @@ app.delete('/sessions/:sid/subscriptions/:exchange', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribe({remove:true,exchangeId:req.params.exchange});
-    res.send({});
+    return res.send({});
 });
 
 /**
@@ -386,55 +368,48 @@ app.post('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) => {
         }
         // create subscription
         session.subscribeToTickers(req.params.exchange, [req.params.pair], false, false);
-        res.send({});
+        return res.send({});
     });
 });
 
 /**
  * Cancel all tickers subscriptions for a given exchange, in a given session
- *
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/tickers', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromAllTickers(req.params.exchange);
-    res.send({});
+    return res.send({});
 });
 
 /**
  * Cancel ticker subscription for a given pair, on a given exchange, in a given session
- *
- * @param {string} pairs pairs to cancel subscriptions for (optional)
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromTickers(req.params.exchange, [req.params.pair]);
-    res.send({});
+    return res.send({});
 });
 
 /**
@@ -459,7 +434,7 @@ app.post('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) =
         }
         // create subscription
         session.subscribeToOrderBooks(req.params.exchange, [req.params.pair], false, false);
-        res.send({});
+        return res.send({});
     });
 });
 
@@ -471,65 +446,56 @@ app.patch('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) 
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.resyncOrderBooks(req.params.exchange, [req.params.pair], false);
-    res.send({});
+    return res.send({});
 });
 
 /**
  * Cancel all order books subscriptions for a given exchange, in a given session
- *
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/orderBooks', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromAllOrderBooks(req.params.exchange);
-    res.send({});
+    return res.send({});
 });
 
 /**
  * Cancel order book subscription for a given pair, on a given exchange, in a given session
- *
- * @param {string} pairs pairs to cancel subscriptions for (optional)
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromOrderBooks(req.params.exchange, [req.params.pair]);
-    res.send({});
+    return res.send({});
 });
 
 /**
@@ -554,94 +520,102 @@ app.post('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => {
         }
         // create subscription
         session.subscribeToTrades(req.params.exchange, [req.params.pair], false, false);
-        res.send({});
+        return res.send({});
     });
 });
 
 /**
  * Cancel all trades subscriptions for a given exchange, in a given session
- *
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/trades', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromAllTrades(req.params.exchange);
-    res.send({});
+    return res.send({});
 });
 
 /**
  * Cancel trades subscription for a given pair, on a given exchange, in a given session
- *
- * @param {string} pairs pairs to cancel subscriptions for (optional)
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromTrades(req.params.exchange, [req.params.pair]);
-    res.send({});
+    return res.send({});
 });
 
-/**
+/*
  * Create klines subscription for a given pair, on a given exchange, in a given session
- *
- * NB: if session does not exist, it will be created automatically
  */
-app.post('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => {
-    // check exchange & pair
-    checkExchangeAndPair(req, res, ['wsKlines']).then((result) => {
-        if (!result)
-        {
-            return;
-        }
-        let exchange = serviceRegistry.getExchange(req.params.exchange);
-        let interval = exchange.instance.getDefaultKlinesInterval();
-        let int = RequestHelper.getParam(req, 'interval');
-        if (undefined != int && '' != int)
-        {
-            if (!exchange.instance.isKlinesIntervalSupported(int))
+(function(){
+    const schemas = {};
+
+    /**
+     * Create klines subscription for a given pair, on a given exchange, in a given session
+     *
+     * @param {string} interval kline interval (optional)
+     *
+     * NB: if session does not exist, it will be created automatically
+     */
+    app.post('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => {
+        // check exchange & pair
+        checkExchangeAndPair(req, res, ['wsKlines']).then((result) => {
+            if (!result)
             {
-                res.status(400).send({origin:"gateway",error:`Parameter 'interval' is not valid : value = '${int}'`});
                 return;
             }
-            interval = int;
-        }
-        let session = sessionRegistry.getSession(req.params.sid);
-        // session does not exist
-        if (null === session)
-        {
-            // creates session
-            session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-            session.disableExpiry();
-        }
-        // create subscription
-        session.subscribeToKlines(req.params.exchange, [req.params.pair], interval, false, false);
-        res.send({});
+            let exchange = serviceRegistry.getExchange(req.params.exchange);
+            let schema = schemas[exchange.getId()];
+            if (undefined === schema)
+            {
+                schemas[exchange.getId()] = Joi.object({
+                    interval: Joi.string().default(exchange.getDefaultKlinesInterval())
+                });
+            }
+            const params = JoiHelper.validate(schema, req, {query:true});
+            if (null !== params.error)
+            {
+                return sendError(res, params.error);
+            }
+            if (!exchange.isKlinesIntervalSupported(params.value.interval))
+            {
+                let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedKlineInterval(exchange.getId(), params.value.interval);
+                return sendError(res, err);
+            }
+            let session = sessionRegistry.getSession(req.params.sid);
+            // session does not exist
+            if (null === session)
+            {
+                // creates session
+                session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
+                session.disableExpiry();
+            }
+            // create subscription
+            session.subscribeToKlines(req.params.exchange, [req.params.pair], params.value.interval, false, false);
+            return res.send({});
+        });
     });
-});
+})();
 
 /**
  * Cancel all klines subscriptions for a given exchange, in a given session
@@ -651,39 +625,35 @@ app.delete('/sessions/:sid/subscriptions/:exchange/klines', (req, res) => {
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     session.unsubscribeFromAllKlines(req.params.exchange);
-    res.send({});
+    return res.send({});
 });
 
 /**
  * Cancel klines subscription for a given pair, on a given exchange, in a given session
  *
- * @param {string} pairs pairs to cancel subscriptions for (optional)
+ * @param {string} interval used to cancel subscription only for a given kline interval (optional)
  */
 app.delete('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => {
     let session = sessionRegistry.getSession(req.params.sid);
     // session does not exist
     if (null === session)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let exchange = serviceRegistry.getExchange(req.params.exchange);
     // exchange dos not exist, do nothing
     if (null === exchange)
     {
-        res.send({});
-        return;
+        return res.send({});
     }
     let interval = undefined;
     let int = RequestHelper.getParam(req, 'interval');
@@ -692,7 +662,7 @@ app.delete('/sessions/:sid/subscriptions/:exchange/klines/:pair', (req, res) => 
         interval = int;
     }
     session.unsubscribeFromKlines(req.params.exchange, [req.params.pair], interval);
-    res.send({});
+    return res.send({});
 });
 
 };

@@ -21,18 +21,27 @@
         "user":"",
         "token":""
     },
+    "tickerMonitor":{
+        "enabled":true
+    },
     "exchanges":{
         "poloniex":{
             "enabled":true,
+            "type":"poloniex",
+            "name":"Poloniex",
             "key":"",
             "secret":""
         },
         "bittrex":{
+            "type":"bittrex",
+            "name":"Bittrex",
             "enabled":true,
             "key":"",
             "secret":""
         },
         "binance":{
+            "type":"binance",
+            "name":"Binance",
             "enabled":true,
             "key":"",
             "secret":""

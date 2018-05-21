@@ -1,5 +1,0 @@
-= Bittrex
-
-include::intro.adoc[leveloffset=1]
-
-include::trades.adoc[leveloffset=1]

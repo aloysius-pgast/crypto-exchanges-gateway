@@ -1,0 +1,62 @@
+= Intro
+
+_Ticker Monitor_ module can be used to be notified when some _ticker_ conditions are met on an _exchange_ or a _service_
+
+Following exchanges are supported :
+
+* All exchanges with support for _wsTicker_ feature
+
+Following services are supported :
+
+* Coin Market Cap
+
+== Supported fields on exchanges
+
+* _last_ : last trade's price
+* _buy_ : highest buy price
+* _sell_ : lowest sell price
+* _high_ : highest price (last 24H)
+* _low_ : lowest price (last 24H)
+* _volume_ : volume (last 24H)
+* _priceChangePercent_ : % change of price in last 24H (0-100)
+
+== Supported fields on CoinMarketCap
+
+* _price_usd_ : per-unit price in _USD_
+* _price_btc_ : per-unit price in _BTC_
+* _volume_24_usd_ : _USD_ volume of last 24H
+* _total_supply_ : the total number of coins in existence
+* _circulating_supply_ : the number of coins in existence available to the public
+* _market_cap_usd_ : _USD_ market cap
+* _percent_change_1h_ : % change of price in last hour (0-100)
+* _percent_change_24h_ : % change of price in last 24H (0-100)
+* _percent_change_7d_ : % change of price in last 7d (0-100)
+
+== Supported operators
+
+* _eq_ : to check if _field value_ == _target value_
+* _neq_ : to check if _field value_ != _target value_
+* _lt_ : to check if _field value_ &lt; _target value_
+* _lte_ : to check if _field value_ &lt;= _target value_
+* _gt_ : to check if _field value_ &gt; _target value_
+* _gte_ : to check if _field value_ &gt;= _target value_
+* _in_ : to check if _field value_ is in range _[a,b]_
+* _out_ : to check if _field value_ is outside of range _[a,b]_
+
+== Ticker Monitor entries
+
+An entry can contain multiple conditions. When creating an entry, it is possible to define :
+
+* if entry will become _active_ only if all conditions are met
+* if entry will become _active_ after one of the condition is met
+
+Following status are possible for a condition :
+
+* _unknown_ : state is unknown, we don't have any value for the requested field yet
+* _active_ : field matches the target value
+* _inactive_ : field does not match the target value
+* _invalid_ : field, exchange or service is not supported anymore
+
+== Checking conditions
+
+Ticker Monitor will check entries every _X_ seconds. Delay can be configured in _config.json_ (default = 30)

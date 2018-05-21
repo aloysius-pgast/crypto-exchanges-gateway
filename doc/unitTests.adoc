@@ -1,0 +1,427 @@
+= Unit Tests
+
+Unit tests are located under _test_ directory
+
+== Available unit tests
+
+=== Unit tests for exchanges
+
+Tests cover the following :
+
+* retrieving tickers
+* retrieving order books
+* retrieving trades
+* retrieving klines
+* testing an order
+* retrieving open orders
+* retrieving closed orders
+* retrieving a single order
+* retrieving available balances
+
+[NOTE]
+====
+Optional file _test/config/config.json_ can be used to indicate the pairs having open/closed orders for a given exchange
+
+Unit tests *will not create any orders* automatically
+====
+
+.Examples
+
+[source,json]
+----
+{
+    "binance":{
+        "openOrders":["USDT-NEO"],
+        "closedOrders":["USDT-NEO"]
+    },
+    "poloniex":{
+        "openOrders":["BTC-GAS"],
+        "closedOrders":["BTC-GAS"]
+    },
+    "bittrex":{
+        "openOrders":["USDT-NEO"],
+        "closedOrders":["USDT-NEO"]
+    }
+}
+----
+
+
+=== Unit tests for services
+
+Tests cover the following :
+
+* Coin Market Cap tickers & history
+* Sending notification using PushOver
+* TickerMonitor alerts
+
+=== Misc unit tests
+
+Tests cover the following :
+
+* WS sessions
+* Gateway services
+
+== Running tests
+
+Tests can be run using one of the _run_ bash scripts under _test_ directory
+
+[source,bash]
+----
+test
+├── run
+└── tests
+    ├── exchanges
+    │   ├── balances
+    │   │   └── run
+    │   ├── closedOrders
+    │   │   └── run
+    │   ├── klines
+    │   │   └── run
+    │   ├── openOrders
+    │   │   ├── run
+    │   │   └── scripts
+    │   ├── order
+    │   │   └── run
+    │   ├── orderBooks
+    │   │   └── run
+    │   ├── pairs
+    │   │   └── run
+    │   ├── run
+    │   ├── testOrder
+    │   │   └── run
+    │   ├── tickers
+    │   │   └── run
+    │   └── trades
+    │       └── run
+    ├── server
+    │   └── run
+    ├── services
+    │   ├── coinmarketcap
+    │   │   └── run
+    │   ├── pushover
+    │   │   └── run
+    │   ├── run
+    │   └── tickerMonitor
+    │       └── run
+    ├── sessions
+    │   └── run
+    └── ws
+        └── run
+----
+
+[NOTE]
+====
+Every _run_ script will run all tests in sub-directories
+====
+
+== Environment variables
+
+Test suites can be customized through environment variables :
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|GATEWAY_URI
+|string
+|http://127.0.0.1:8000
+|Used to define gateway http uri
+
+|GATEWAY_WS_URI
+|string
+|ws://127.0.0.1:8001
+|Used to define gateway ws uri
+
+|API_KEY
+|string
+|_undefined_
+|In case an API key is configured on gateway to restrict access
+
+|EXCHANGES
+|string[] (comma-separated)
+|_undefined_
+|Used to only perform unit testing for a list of exchanges. By default, all enabled exchanges will be processed
+
+|TRACE
+|string or integer[] (comma-separated)
+|_undefined_
+|Used to trace all http requests made to the gateway (disabled by default)
+
+* If value is _ALL_, all requests will be traced
+* If value is a comma-separated list of HTTP codes, only requests for those http codes will be traced
+
+|TRACE_DIR
+|string
+|_temporary directory of the OS_
+|Directory where trace should be saved
+
+
+|===
+
+== Traces
+
+When traces are enabled, informations regarding each REST request will be saved to disk
+
+.Examples
+
+Example to run all tests for _Coin Market Cap_, with traces
+
+[source,bash]
+----
+cd test/tests/services/coinmarketcap
+TRACE=ALL ./run
+----
+
+It should generate an output similar to
+
+[source,bash]
+----
+Traces will be saved in '/tmp/20180515_161921_15541'
+Please wait during initialization...
+
+
+  /coinmarketcap
+    GET /coinmarketcap/convertCurrencies
+      ✓ it should return the list of supported 'convert' currencies
+    GET /coinmarketcap/tickers {"convert":"INVALID_CURRENCY"}
+      ✓ it should fail with a 400 error (GatewayError.InvalidRequest.InvalidParameter) when using an unsupported currency for 'convert'
+    GET /coinmarketcap/symbols
+      ✓ it should return the list of symbols (404ms)
+    GET /coinmarketcap/tickers
+      ✓ it should return first 100 tickers from Coin Market Cap (6045ms)
+    GET /coinmarketcap/tickers {"limit":5,"convert":"GBP"}
+      ✓ it should return first 5 tickers from Coin Market Cap, converted to GBP (6143ms)
+    GET /coinmarketcap/tickers {"symbols":["BTC","ETH"]}
+      ✓ it should return tickers for BTC & ETH from Coin Market Cap (5884ms)
+
+
+  6 passing (19s)
+----
+
+Directory _/tmp/20180515_160857_14263_ will contain traces for each REST request
+
+[source,bash]
+----
+.
+└── coinmarketcap
+    ├── GET_coinmarketcap.convertCurrencies
+    │   └── 001_200
+    │       ├── request.json
+    │       └── response.json
+    ├── GET_coinmarketcap.symbols
+    │   └── 001_200
+    │       ├── request.json
+    │       └── response.json
+    └── GET_coinmarketcap.tickers
+        ├── 001_400
+        │   ├── request.json
+        │   └── response.json
+        ├── 002_200
+        │   ├── request.json
+        │   └── response.json
+        ├── 003_200
+        │   ├── request.json
+        │   └── response.json
+        └── 004_200
+            ├── request.json
+            └── response.json
+----
+
+Content of _/tmp/20180515_160857_14263/coinmarketcap/GET_coinmarketcap.tickers/003_200/request.json_
+
+[source,json]
+----
+{
+    "method": "GET",
+    "path": "/coinmarketcap/tickers",
+    "timestamp": 1526393967.984,
+    "params": {
+        "limit": 5,
+        "convert": "GBP"
+    },
+    "json": false
+}
+----
+
+Content of _/tmp/20180515_160857_14263/coinmarketcap/GET_coinmarketcap.tickers/003_200/response.json_
+
+[source,json]
+----
+{
+    "httpCode": 200,
+    "body": [
+        {
+            "name":"Bitcoin",
+            "symbol":"BTC",
+            "rank":1,
+            "circulating_supply":17040550,
+            "total_supply":17040550,
+            "max_supply":21000000,
+            "last_updated":1526652872,
+            "converted":{
+
+            },
+            "price_usd":8111.23,
+            "market_cap_usd":138219820377,
+            "volume_24h_usd":6120730000,
+            "percent_change_1h":-0.3,
+            "percent_change_24h":-2.6,
+            "percent_change_7d":-6.34,
+            "price_btc":1,
+            "market_cap_btc":17040550,
+            "volume_24h_btc":754599.4873773769
+        },
+        {
+            "name":"Ethereum",
+            "symbol":"ETH",
+            "rank":2,
+            "circulating_supply":99512624,
+            "total_supply":99512624,
+            "max_supply":null,
+            "last_updated":1526652856,
+            "converted":{
+
+            },
+            "price_usd":679.625,
+            "market_cap_usd":67631267085,
+            "volume_24h_usd":2463910000,
+            "percent_change_1h":-0.55,
+            "percent_change_24h":-3.48,
+            "percent_change_7d":-1.25,
+            "price_btc":0.0837881554,
+            "market_cap_btc":8337979,
+            "volume_24h_btc":303765.2735774969
+        },
+        {
+            "name":"Ripple",
+            "symbol":"XRP",
+            "rank":3,
+            "circulating_supply":39189968239,
+            "total_supply":99992233977,
+            "max_supply":100000000000,
+            "last_updated":1526652841,
+            "converted":{
+
+            },
+            "price_usd":0.663241,
+            "market_cap_usd":25992393725,
+            "volume_24h_usd":360078000,
+            "percent_change_1h":-1.3,
+            "percent_change_24h":-4.86,
+            "percent_change_7d":-4.03,
+            "price_btc":0.0000817682,
+            "market_cap_btc":3204495,
+            "volume_24h_btc":44392.5273972012
+        },
+        {
+            "name":"Bitcoin Cash",
+            "symbol":"BCH",
+            "rank":4,
+            "circulating_supply":17134500,
+            "total_supply":17134500,
+            "max_supply":21000000,
+            "last_updated":1526652854,
+            "converted":{
+
+            },
+            "price_usd":1165.77,
+            "market_cap_usd":19974886065,
+            "volume_24h_usd":878361000,
+            "percent_change_1h":-0.79,
+            "percent_change_24h":-9.1,
+            "percent_change_7d":-16.94,
+            "price_btc":0.1437229619,
+            "market_cap_btc":2462621,
+            "volume_24h_btc":108289.4949348003
+        },
+        {
+            "name":"EOS",
+            "symbol":"EOS",
+            "rank":5,
+            "circulating_supply":863050858,
+            "total_supply":900000000,
+            "max_supply":1000000000,
+            "last_updated":1526652852,
+            "converted":{
+
+            },
+            "price_usd":12.3815,
+            "market_cap_usd":10685864193,
+            "volume_24h_usd":1397350000,
+            "percent_change_1h":-1.37,
+            "percent_change_24h":-7.11,
+            "percent_change_7d":-18.62,
+            "price_btc":0.0015264639,
+            "market_cap_btc":1317416,
+            "volume_24h_btc":172273.5022925007
+        }
+    ],
+    "timestamp": 1526393974.125,
+    "duration": 6141
+}
+----
+
+== Examples
+
+=== Running all tests
+
+In order to run all tests, script _run_ in _test_ directory should be started
+
+[source,bash]
+----
+cd test
+./run
+----
+
+=== Running only tests related to _Push Over_, providing an API key
+
+[source,bash]
+----
+cd test/tests/services/pushover
+API_KEY=myapikey ./run
+----
+
+=== Running only exchanges related tests for _Binance_ & _Bittrex_, providing an API key
+
+[source,bash]
+----
+cd test/tests/exchanges
+API_KEY=myapikey EXCHANGES=binance,bittrex ./run
+----
+
+== Testing order creation
+
+In order to test order creation, script _test/test/tests/exchanges/openOrders/scripts/createOrder_ can be used
+
+[source,bash]
+----
+cd test/tests/exchanges/openOrders/scripts
+./createOrder -h
+Options:
+  --help, -h        display help                                       [boolean]
+  --exchange, -e    exchange identifier                               [required]
+  --orderType, -t   orderType (buy|sell)     [required] [choices: "buy", "sell"]
+  --pair, -p        pair (X-Y)                                        [required]
+  --targetRate, -r  target rate (float)
+  --quantity, -q    quantity to buy/sell (float)
+  --uri, -u         base gateway uri (http://{host}:{port})
+                                              [default: "http://127.0.0.1:8000"]
+  --apiKey, -k      API key declared on gateway
+  --dry             only simulate orders
+----
+
+When provided with _quantity_ & _rate_, script will perform the following :
+
+* try to create order
+* automatically cancel order if it was successfully created
+
+Otherwise, script will perform the following :
+
+* try to create an order with an invalid _quantity_ or invalid _rate_ (ie: < min)
+* compute _targetRate_ as _lowest(ask) / 10_ for _buy_ order and _highest(bid) * 10_ for _sell_ orders (to ensure order will stay open)
+* try to create an order with a valid _quantity_
+* automatically cancel order if it was successfully created

@@ -5,48 +5,38 @@ const util = require('util');
 const _ = require('lodash');
 const logger = require('winston');
 const pairFinder = require('../../pair-finder');
+const Errors = require('../../errors');
 
-module.exports = function(app, bodyParser, config) {
+/**
+ * Sends an http error to client
+ *
+ * @param {object} res express response object
+ * @param {string|object} err error message or exception
+ */
+const sendError = (res, err) => {
+    return Errors.sendHttpError(res, err);
+}
+
+module.exports = function(app, bodyParsers, config) {
 
 let enabledExchanges = [];
 
-// load every enabled exchange (except dummy ones)
-let dummyExchanges = [];
+// load every enabled exchange
 _.forEach(config.exchanges, function (entry, exchangeId) {
     if (undefined === entry.enabled || !entry.enabled)
     {
         return;
     }
-    if (true === entry.dummy)
-    {
-        dummyExchanges.push(entry);
-        return;
-    }
-    let file = path.join(__dirname, '../../exchanges', exchangeId, 'routes.js');
+    let file = path.join(__dirname, '../../exchanges', entry.type, 'routes.js');
     if (!fs.existsSync(file))
     {
-        logger.warn(util.format("Exchange '%s' is enabled in config but file '%s' does not exist (exchange will be disabled)", exchangeId, file));
+        logger.warn("Exchange '%s' (%s) is enabled in config but file '%s' does not exist (exchange will be disabled)", exchangeId, entry.type, file);
         return;
     }
     enabledExchanges.push(exchangeId);
     // load exchange routes
-    require(file)(app, bodyParser, config);
+    require(file)(app, bodyParsers, config, exchangeId);
 });
-// handle dummy exchanges
-if (0 != dummyExchanges.length)
-{
-    _.forEach(dummyExchanges, (entry) => {
-        let file = path.join(__dirname, '../../exchanges', 'dummy', 'routes.js');
-        if (!fs.existsSync(file))
-        {
-            logger.warn(util.format("Exchange '%s' is enabled in config but file '%s' does not exist (exchange will be disabled)", entry.id, file));
-            return;
-        }
-        enabledExchanges.push(entry.id);
-        // load exchange routes
-        require(file)(app, bodyParser, config, entry.id);
-    });
-}
 
 /**
  * List available exchanges
@@ -69,20 +59,16 @@ app.get('/exchanges', (req, res) => {
     {
         opt.baseCurrency = req.query.baseCurrency;
     }
-    // return all enable exchanges
+    // return all enabled exchanges
     else
     {
-        res.send(enabledExchanges);
-        return;
+        return res.send(enabledExchanges);
     }
-    pairFinder.find(opt)
-        .then(function(data) {
-            res.send(data);
-        })
-        .catch(function(err)
-        {
-            res.status(503).send({origin:"remote",error:err});
-        });
+    pairFinder.find(opt).then(function(data) {
+        res.send(data);
+    }).catch(function(err) {
+        return sendError(res, err);
+    });
 });
 
 };

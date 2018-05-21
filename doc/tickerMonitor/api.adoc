@@ -1,0 +1,677 @@
+= Ticker Monitor API
+
+[NOTE]
+====
+Those routes will only be available if _tickerMonitor_ service is enabled
+====
+
+== Retrieve a list of entries
+
+*GET* _/tickerMonitor_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|name
+|string
+|_undefined_
+|Use to retrieve only entries matching a given name
+
+|===
+
+[id='api-tickerMonitor-get-list-result']
+=== Result
+
+Result will be an array of objects
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|id
+|integer
+|Unique indentifier of the _Ticker Monitor_ entry
+
+|name
+|string
+|Name of the entry
+
+|enabled
+|boolean
+|Whether or not entry is enabled
+
+|any
+|boolean
+|If _true_, entry will become _active_ as soon as one condition is _active_. Otherwise, entry will become _active_ only if all conditions are _active_
+
+|status
+|object
+|Entry status
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|string
+|One of (_active_,_inactive_,_unknown_,_invalid_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when status value changed for the last time
+
+|conditions
+|object[]
+|List of _condition_ objects
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}origin
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}type
+|string
+|One of (_exchange_,_service_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|string
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}condition
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}field
+|string
+|The field we want to compare value (ex: _last_ for exchanges ticker)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}operator
+|string
+|The operator used to compare (ex: _lte_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|float
+|The target value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|The ticker pair (ex: _USDT-NEO_). Only defined when _type_ is _exchange_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
+|string
+|_Coinmarketcap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _coinmarketcap_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}status
+|object
+|Entry status
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|string
+|One of (_active_,_inactive_,_unknown_,_invalid_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when status value changed for the last time
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|float
+|Last value for the field _field_ retrieved from _exchange_ or _service_
+
+|pushover
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}enabled
+|boolean
+|Whether or not pushover notifications are enabled
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priority
+|string
+|Pushover priority. Will only be defined if _pushover.enabled_ is _true_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}minDelay
+|integer
+|Minimum delay in second between pushover notifications (to avoid spam). Will only be defined if _pushover.enabled_ is _true_
+
+|===
+
+.Examples
+
+Example for *GET* _/tickerMonitor_
+
+[source,json]
+----
+[
+    {
+        "id":1,
+        "name":"Alert1",
+        "any":false,
+        "status":{
+            "value":"active",
+            "timestamp":1518911109.751
+        },
+        "conditions":[
+            {
+                "status":{
+                    "value":"active",
+                    "timestamp":1518911104.728
+                },
+                "origin":{
+                    "type":"exchange",
+                    "id":"binance"
+                },
+                "value":134.103,
+                "condition":{
+                    "field":"buy",
+                    "operator":"gt",
+                    "value":134,
+                    "pair":"USDT-NEO"
+                }
+            },
+            {
+                "status":{
+                    "value":"active",
+                    "timestamp":1518911104.728
+                },
+                "origin":{
+                    "type":"service",
+                    "id":"coinmarketcap"
+                },
+                "value":136.402,
+                "condition":{
+                    "field":"price_usd",
+                    "operator":"in",
+                    "value":[
+                        120,
+                        140
+                    ],
+                    "symbol":"NEO"
+                }
+            }
+        ],
+        "enabled":true,
+        "pushover":{
+            "enabled":false
+        }
+    }
+]
+----
+
+== Retrieve a single entry
+
+*GET* _/tickerMonitor/{id}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{id}
+|integer
+|Unique identifier of the entry
+
+|===
+
+=== Result
+
+Result will be an array of objects with a single element. See xref:api-tickerMonitor-get-list-result[here]
+
+[NOTE]
+====
+In case entry does not exist, a _404 Not Found_ error will be returned
+====
+
+.Examples
+
+Example for *GET* _/tickerMonitor/0_
+
+[source,json]
+----
+{
+    "origin":"gateway",
+    "error":"No entry with id '0'",
+    "route":{
+        "method":"GET",
+        "path":"/tickerMonitor/0"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"No entry with id '0'",
+        "data":{
+
+        }
+    }
+}
+----
+
+== Create a new entry
+
+*POST* _/tickerMonitor_
+
+[NOTE]
+====
+API expects the following :
+
+* _content-type_ must be _application/json_
+* body must be a JSON object
+====
+
+[id='api-tickerMonitor-condition-object']
+=== Condition object
+
+A condition object should have following format :
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|origin
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}type
+|string
+|One of (_exchange_,_service_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|string
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+
+|condition
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}field
+|string
+|The field we want to compare value (ex: _last_ for exchanges ticker)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}operator
+|string
+|The operator used to compare (ex: _lte_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|float
+|The target value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|The ticker pair (ex: _USDT-NEO_). Only supported when _type_ is _exchange_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
+|string
+|_Coinmarketcap_ symbol (ex: _NEO_). Only supported when _type_ is _service_ and _id_ is _coinmarketcap_
+
+|===
+
+=== Mandatory body parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|name
+|string
+|Name of the entry. Cannot be empty
+
+|conditions
+|object[]
+|Array of conditions (see xref:api-tickerMonitor-condition-object[here]). Cannot be empty
+
+|===
+
+=== Optional body parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|enabled
+|boolean
+|true
+|Whether or not entry should be enabled
+
+|any
+|boolean
+|false
+|If _true_, entry will become _active_ as soon as one condition is _active_. Otherwise, entry will become _active_ only if all conditions are _active_
+
+|pushover
+|object
+|
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}enabled
+|boolean
+|false
+|Whether or not pushover notifications should be enabled
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priority
+|string
+|normal
+|Pushover priority. Will be ignored if _pushover.enabled_ is _false_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}minDelay
+|integer
+|300
+|Minimum delay in second between pushover notifications (to avoid spam). Will be ignored if _pushover.enabled_ is _false_
+
+|===
+
+=== Result
+
+Result will be a JSON object
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|id
+|integer
+|Unique identifier of the new entry
+
+|===
+
+.Examples
+
+Example for *POST* _/tickerMonitor_
+
+**Request body**
+
+Creation of a new entry with following properties :
+
+* name : _Alert1_
+* enabled : _true_ (default)
+* any : _false_ (default)
+* pushover : _disabled_ (default)
+* conditions : _buy price on binance for NEO-USDT > 130.5_ AND _price for NEO on Coin Market Cap in range [120,125]_
+
+[source,json]
+----
+{
+    "name":"Alert1",
+    "conditions":[
+        {
+            "origin":{
+                "type":"exchange",
+                "id":"binance"
+            },
+            "condition":{
+                "pair":"USDT-NEO",
+                "field":"buy",
+                "operator":"gt",
+                "value":130.5
+            }
+        },
+        {
+            "origin":{
+                "type":"service",
+                "id":"coinmarketcap"
+            },
+            "condition":{
+                "symbol":"NEO",
+                "field":"price_usd",
+                "operator":"in",
+                "value":[120,125]
+            }
+        }
+    ]
+}
+----
+
+**Response body**
+
+[source,json]
+----
+{
+    "id":5
+}
+----
+
+== Update an existing entry
+
+*PATCH* _/tickerMonitor/{id}_
+
+[NOTE]
+====
+API expects the following :
+
+* _content-type_ must be _application/json_
+* body must be a JSON object
+====
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{id}
+|integer
+|Unique identifier of the entry
+
+|===
+
+=== Mandatory body parameters
+
+None
+
+=== Optional body parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|enabled
+|boolean
+|_none_
+|Whether or not entry should be enabled
+
+|any
+|boolean
+|_none_
+|If _true_, entry will become _active_ as soon as one condition is _active_. Otherwise, entry will become _active_ only if all conditions are _active_
+
+|conditions
+|object[]
+|_none_
+|Array of conditions (see xref:api-tickerMonitor-condition-object[here]). Cannot be empty
+
+|pushover
+|object
+|
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}enabled
+|boolean
+|false
+|Whether or not pushover notifications should be enabled
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priority
+|string
+|normal
+|Pushover priority. Will be ignored if _pushover.enabled_ is not defined or _false_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}minDelay
+|integer
+|300
+|Minimum delay in second between pushover notifications (to avoid spam). Will be ignored if _pushover.enabled_ is not defined or _false_
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+In case entry does not exist, a _404 Not Found_ error will be returned
+====
+
+.Examples
+
+Example for *PATCH* _/tickerMonitor/0_
+
+[source,json]
+----
+{
+    "origin":"gateway",
+    "error":"No entry with id '0'",
+    "route":{
+        "method":"GET",
+        "path":"/tickerMonitor/0"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"No entry with id '0'",
+        "data":{
+
+        }
+    }
+}
+----
+
+== Enable / disable entries
+
+*PATCH* _/tickerMonitor_
+
+[NOTE]
+====
+API expects the following :
+
+* _content-type_ must be _application/json_
+* body must be a JSON object
+====
+
+=== Mandatory body parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|enabled
+|boolean
+|Whether or not entries should be enabled
+
+|list
+|integer[]
+|Array of entries id
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+Non existent entries will be ignored
+====
+
+.Examples
+
+Example for *PATCH* _/tickerMonitor_
+
+**Request body**
+
+[source,json]
+----
+{
+    "enabled":false,
+    "list":[1,2,3]
+}
+----
+
+**Response body**
+
+[source,json]
+----
+{
+}
+----
+
+== Delete entries
+
+*DELETE* _/tickerMonitor_
+
+[NOTE]
+====
+API expects the following :
+
+* _content-type_ must be _application/json_
+* body must be a JSON object
+====
+
+=== Mandatory body parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|list
+|integer[]
+|Array of entries id
+
+|===
+
+=== Result
+
+Result will be an empty dictionary
+
+[NOTE]
+====
+Non existent entries will be ignored
+====
+
+.Examples
+
+Example for *DELETE* _/tickerMonitor_
+
+**Request body**
+
+[source,json]
+----
+{
+    "list":[1,2,3]
+}
+----
+
+**Response body**
+
+[source,json]
+----
+{
+}
+----

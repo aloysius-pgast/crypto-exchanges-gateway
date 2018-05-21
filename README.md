@@ -18,6 +18,10 @@ Yes, gateway provides a WS endpoint
 
 _ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. It is probably something I will try to integrate at some point (to help adding more exchanges). While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
 
+* What is the monthly fee for the service ?
+
+There is no monthly fee. It's free since you will be the one running the service on your own server
+
 * Where is your service hosted ?
 
 This is a self-hosted service. You need to install it on your own server
@@ -34,6 +38,8 @@ Besides the privilege to go to bed, knowing that you did the right thing ? Not m
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
 * Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc))
+* Access to a portfolio portfolio overview across all exchanges with estimated value in USD
+* Advanced alerting system
 
 <img src="doc/ui/img/tickers.png" width="400"/>
 
@@ -57,7 +63,7 @@ In order to have a full experience, just follow [installation steps](#installati
 
 Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
 
-A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-exchanges-http-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-http-client)
+A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-exchanges-rest-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-rest-client)
 
 ## Available Exchanges
 
@@ -74,14 +80,28 @@ Following API are currently supported :
 * Retrieve tickers
 * Retrieve order book
 * Retrieve last executed trades
+* Retrieve klines (charts data)
 * List open orders
 * List closed orders
+* Retrieve a single order
+* Test an order (to ensure quantity and price match exchange filters)
+* Create an order
 * Retrieve balances
-* Retrieve portfolio across all exchanges with estimated value in USD
 
 See [documentation in _doc_ directory](doc/exchanges/index.adoc) for an overview of each REST API
 
-See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the _websocket protocol_ supported (similar to _JSON-RPC_)
+See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of the supported _websocket protocol_ (similar to _JSON-RPC_)
+
+See [documentation in _doc_ directory](doc/unitTests.adoc) for informations regarding unit tests
+
+## Alerts
+
+Have you ever wanted to receive an alert in case ALL of the following conditions are met :
+* NEO-USDT price in range [120, 135] on Binance
+* NEO-BTC price on Bittrex < 0.010
+* NEO price on CoinMarketCap > 125$
+
+Probably not ;) Anyway, you will now be able to define this kind of custom alerts. See [documentation in _doc_ directory](doc/tickerMonitor/index.adoc)
 
 ## Limitations
 
@@ -91,10 +111,22 @@ See [documentation in _doc_ directory](doc/ws/index.adoc) for a description of t
 
 ## Other services
 
-Currently supports following services :
+### Coin Market Cap
 
-* [CoinMarket](https://coinmarketcap.com/) (see [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API)
-* [PushOver](https://pushover.net/) (see [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
+[CoinMarketCap](https://coinmarketcap.com/) module supports :
+
+* Tickers
+* History (history of USD prices)
+
+See [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API
+
+### Push Over
+
+[PushOver](https://pushover.net/) module supports :
+
+* Push notifications
+
+See [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
 
 ## Rate limiting
 
@@ -142,39 +174,43 @@ Open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser
         "name":"Bitcoin",
         "symbol":"BTC",
         "rank":1,
-        "last_updated":1505472872,
-        "convert_currency":null,
-        "price_converted":null,
-        "24h_volume_converted":null,
-        "market_cap_converted":null,
-        "price_usd":2991.55,
+        "circulating_supply":17040712,
+        "total_supply":17040712,
+        "max_supply":21000000,
+        "last_updated":1526661572,
+        "converted":{
+
+        },
+        "price_usd":8117.73,
+        "market_cap_usd":138331899024,
+        "volume_24h_usd":6104730000,
+        "percent_change_1h":0.08,
+        "percent_change_24h":-2.29,
+        "percent_change_7d":-5.63,
         "price_btc":1,
-        "24h_volume_usd":3303620000,
-        "market_cap_usd":49561792636,
-        "available_supply":16567262,
-        "total_supply":16567262,
-        "percent_change_1h":-0.99,
-        "percent_change_24h":-18.73,
-        "percent_change_7d":-34.09
+        "market_cap_btc":17040712,
+        "volume_24h_btc":752024.2727954737
     },
     {
         "name":"Ethereum",
         "symbol":"ETH",
         "rank":2,
-        "last_updated":1505472866,
-        "convert_currency":null,
-        "price_converted":null,
-        "24h_volume_converted":null,
-        "market_cap_converted":null,
-        "price_usd":199.814,
-        "price_btc":0.0660232,
-        "24h_volume_usd":1490080000,
-        "market_cap_usd":18908734638,
-        "available_supply":94631681,
-        "total_supply":94631681,
-        "percent_change_1h":-3.49,
-        "percent_change_24h":-21.93,
-        "percent_change_7d":-37.43
+        "circulating_supply":99514883,
+        "total_supply":99514883,
+        "max_supply":null,
+        "last_updated":1526661558,
+        "converted":{
+
+        },
+        "price_usd":678.931,
+        "market_cap_usd":67563739348,
+        "volume_24h_usd":2444350000,
+        "percent_change_1h":0.13,
+        "percent_change_24h":-3.28,
+        "percent_change_7d":-0.76,
+        "price_btc":0.083635573,
+        "market_cap_btc":8322984,
+        "volume_24h_btc":301112.5031258739
     }
 ]
 ```
@@ -244,6 +280,9 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
+* cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor)
+* cfg.coinmarketcap.enabled : enable/disable CoinMarketCap module (value should be set to _1_ to enable CoinMarketCap module, _0_ to disable CoinMarketCap module)
+* cfg.coinmarketcap.history : enable/disable CoinMarketCap history feature (value should be set to _1_ to enable CoinMarketCap history, _0_ to disable CoinMarketCap history) (will be ignored if CoinMarketCap is disabled)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
 * cfg.exchanges.poloniex.key : Poloniex user key
@@ -267,20 +306,27 @@ docker run --rm -p 8000:8000 -p 8001:8001 --name ceg -e cfg.exchanges.bittrex.ke
 
 This project was made possible thanks to following projects :
 
-* [express](https://www.npmjs.com/package/express)
-* [body-parser](https://www.npmjs.com/package/body-parser)
-* [lodash](https://www.npmjs.com/package/lodash)
-* [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
-* [binance](https://www.npmjs.com/package/binance)
-* [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
-* [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
-* [winston](https://www.npmjs.com/package/winston) (for logging)
-* [chump](https://www.npmjs.com/package/chump) (for PushOver)
-* [uuid](https://www.npmjs.com/package/uuid)
-* [ws](https://www.npmjs.com/package/ws)
-* [express-ws](https://www.npmjs.com/package/express-ws)
-* [sqlite3](https://www.npmjs.com/package/sqlite3)
 * [big.js](https://www.npmjs.com/package/big.js)
+* [binance](https://www.npmjs.com/package/binance)
+* [body-parser](https://www.npmjs.com/package/body-parser)
+* [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
+* [chump](https://www.npmjs.com/package/chump) (for PushOver)
+* [css-select](https://www.npmjs.com/package/css-select) (for HTML parsing)
+* [express](https://www.npmjs.com/package/express)
+* [express-ws](https://www.npmjs.com/package/express-ws)
+* [htmlparser2](https://www.npmjs.com/package/htmlparser2) (for HTML parsing)
+* [joi](https://www.npmjs.com/package/joi) (for JSON schema validation)
+* [lodash](https://www.npmjs.com/package/lodash)
+* [mocha](https://www.npmjs.com/package/mocha) (for unit tests)
+* [node-bittrex-api](https://www.npmjs.com/package/node-bittrex-api)
+* [poloniex-api-node](https://www.npmjs.com/package/poloniex-api-node)
+* [retry](https://www.npmjs.com/package/retry) (for custom retry strategies upon network failure)
+* [request](https://www.npmjs.com/package/request)
+* [sqlite3](https://www.npmjs.com/package/sqlite3) (for data storage)
+* [uuid](https://www.npmjs.com/package/uuid)
+* [winston](https://www.npmjs.com/package/winston) (for logging)
+* [ws](https://www.npmjs.com/package/ws)
+* [yargs](https://www.npmjs.com/package/yargs) (for CLI commands)
 
 ## Donate
 

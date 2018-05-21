@@ -2,10 +2,20 @@
 
 include::intro.adoc[leveloffset=1]
 
-include::common/index.adoc[leveloffset=1]
+include::pairs.adoc[leveloffset=1]
 
-include::poloniex/index.adoc[leveloffset=1]
+include::tickers.adoc[leveloffset=1]
 
-include::bittrex/index.adoc[leveloffset=1]
+include::orderBooks.adoc[leveloffset=1]
 
-include::binance/index.adoc[leveloffset=1]
+include::trades.adoc[leveloffset=1]
+
+include::testOrder.adoc[leveloffset=1]
+
+include::openOrders.adoc[leveloffset=1]
+
+include::closedOrders.adoc[leveloffset=1]
+
+include::orders.adoc[leveloffset=1]
+
+include::balances.adoc[leveloffset=1]

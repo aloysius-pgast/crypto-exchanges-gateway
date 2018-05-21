@@ -155,7 +155,7 @@ render()
                 {
                     price_usd = 0.0;
                 }
-                let volume_24h = item['24h_volume_usd'];
+                let volume_24h = item.volume_24h_usd;
                 if (null === volume_24h)
                 {
                     volume_24h = 0;

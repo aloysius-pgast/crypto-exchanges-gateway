@@ -7,6 +7,7 @@ Following notifications can be sent
 * _orderBookUpdate_ : notification containing order book update for a single pair, on a given exchange
 * _trades_ : notification containing last trades for a single pair, on a given exchange
 * _kline_ : notification containing klines data for a single pair, on a given exchange
+* _tickerMonitor_ : notification when some conditions regarding _ticker fields_ are met
 
 == _ticker_ notifications
 
@@ -476,6 +477,154 @@ Following notifications can be sent
             "low":1130.13,
             "volume":74.30783
         }
+    }
+}
+----
+
+== _tickerMonitor_ notifications
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|n
+|string
+|Notification type (will always be _tickerMonitor_)
+
+|d
+|object
+|Notification data
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|integer
+|Unique indentifier of the _Ticker Monitor_ entry
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}name
+|string
+|Name of the entry
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}any
+|boolean
+|If _true_, entry will become _active_ as soon as one condition is _active_. Otherwise, entry will become _active_ only if all conditions are _active_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}status
+|object
+|Entry status
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|string
+|One of (_active_,_inactive_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
+|float (unix timestamp sec.msec)
+|Unix timestamp when entry became _active_ or _inactive_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}conditions
+|object[]
+|List of conditions
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}origin
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}type
+|string
+|One of (_exchange_,_service_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
+|string
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}condition
+|object
+|
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}field
+|string
+|The field we want to compare value (ex: _last_ for exchanges ticker)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}operator
+|string
+|The operator used to compare (ex: _lte_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|float
+|The target value
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|The ticker pair (ex: _USDT-NEO_). Only defined when _type_ is _exchange_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
+|string
+|_Coinmarketcap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _coinmarketcap_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
+|float
+|Last value for the field _field_ retrieved from _exchange_ or _service_
+
+|===
+
+.Examples
+
+Below event will be emitted if all following conditions are met :
+
+* _buy_ price for _USDT-NEO_ pair is _> 134_ on _Binance_ exchange
+* _USD price_ of _NEO_ on _CoinMarketCap_ is in range _[130,140]_
+
+[source,json]
+----
+{
+    "n":"tickerMonitor",
+    "d":{
+        "id":1,
+        "name":"Alert1",
+        "any":false,
+        "status":{
+            "value":"active",
+            "timestamp":1518907143.763
+        },
+        "conditions":[
+            {
+                "status":{
+                    "value":"active",
+                    "timestamp":1518907138.742
+                },
+                "origin":{
+                    "type":"exchange",
+                    "id":"binance"
+                },
+                "value":134.764,
+                "condition":{
+                    "field":"buy",
+                    "operator":"gt",
+                    "value":134,
+                    "pair":"USDT-NEO"
+                }
+            },
+            {
+                "status":{
+                    "value":"active",
+                    "timestamp":1518907138.742
+                },
+                "origin":{
+                    "type":"service",
+                    "id":"coinmarketcap"
+                },
+                "value":135.968,
+                "condition":{
+                    "field":"price_usd",
+                    "operator":"in",
+                    "value":[
+                        130,
+                        140
+                    ],
+                    "symbol":"NEO"
+                }
+            }
+        ]
     }
 }
 ----
