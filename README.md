@@ -63,11 +63,7 @@ In order to have a full experience, just follow [installation steps](#installati
 
 Just use you favorite language (_python_, _javascript_, _ruby_, _bash_, ...) to send request to the gateway. Your own service, your own rules !
 
-A _Node.js_ client is available
-
-TODO : update CLI
-
-[here](https://github.com/aloysius-pgast/crypto-exchanges-rest-client-nodejs)
+A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-exchanges-rest-client-nodejs) or as a [npm package](https://www.npmjs.com/package/crypto-exchanges-rest-client)
 
 ## Available Exchanges
 
@@ -117,16 +113,20 @@ Probably not ;) Anyway, you will now be able to define this kind of custom alert
 
 ### Coin Market Cap
 
-[CoinMarket](https://coinmarketcap.com/) (see [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API)
+[CoinMarketCap](https://coinmarketcap.com/) module supports :
 
 * Tickers
 * History (history of USD prices)
 
+See [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API
+
 ### Push Over
 
-[PushOver](https://pushover.net/) (see [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
+[PushOver](https://pushover.net/) module supports :
 
 * Push notifications
+
+See [documentation in _doc_ directory](doc/pushover/index.adoc) for an overview of each API)
 
 ## Rate limiting
 
