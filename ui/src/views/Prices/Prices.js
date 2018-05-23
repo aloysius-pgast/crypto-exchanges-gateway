@@ -73,7 +73,7 @@ componentWillReceiveProps(nextProps)
     this.setState(function(prevState, props){
         return {
             loaded:false,
-            exchange:exchange,
+            exchange:exchangeId,
             exchangeType:exchangeInstance.type,
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair
         };

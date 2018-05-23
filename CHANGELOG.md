@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.6.1]
+### UI
+* Changing _pair_ in the url was not not working in _Prices_ view
+
 ## [v1.6.0]
 ### Gateway
 * Refactoring of code related to exchanges & services
