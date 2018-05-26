@@ -75,6 +75,11 @@ componentWillReceiveProps(nextProps)
     this._demoMode = serviceRegistry.checkExchangeDemoMode(exchangeId);
     this.setState(function(prevState, props){
         return {
+            pairs:{
+                loaded:false,
+                err:null,
+                data:null
+            },
             exchange:exchangeId,
             pair:pair
         };

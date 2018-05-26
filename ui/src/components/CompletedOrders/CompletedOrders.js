@@ -75,6 +75,10 @@ _loadData()
         // add url
         _.forEach(data, (item, orderNumber) => {
             let arr = item.pair.split('-');
+            if (null === item.closedTimestamp)
+            {
+                item.closedTimestamp = item.openTimestamp;
+            }
             item.pricesUrl = self._pricesBaseUrl + item.pair;
             item.newOrderUrl = self._newOrderBaseUrl + item.pair + '/' + item.actualRate;
         });
