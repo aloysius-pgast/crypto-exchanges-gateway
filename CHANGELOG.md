@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.6.2]
+### UI
+* Ensure cancelled orders are displayed correctly when listing completed orders
+* Changing _pair_ in the url was not not working in _My Orders_ view
+
 ## [v1.6.1]
 ### UI
 * Changing _pair_ in the url was not not working in _Prices_ view
