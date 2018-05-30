@@ -101,6 +101,9 @@ app.get('/portfolio', (req, res) => {
                 case 'IOTA':
                     symbol = 'MIOTA';
                     break;
+                case 'XRB':
+                    symbol = 'NANO';
+                    break;
             }
             symbols.push(symbol);
         });
@@ -121,6 +124,9 @@ app.get('/portfolio', (req, res) => {
                     {
                         case 'MIOTA':
                             entry.symbol = 'IOTA';
+                            break;
+                        case 'NANO':
+                            entry.symbol = 'XRB';
                             break;
                         default:
                             return;
