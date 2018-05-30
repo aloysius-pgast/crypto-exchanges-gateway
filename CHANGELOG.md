@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.6.3]
+### Gateway
+* Support for new _limit_ parameter in _/exchanges/{exchange}/klines_ route
+* Support for new error _ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.UnknownError_
+* Added mapping _XRB_ <=> _NANO_ in _/portfolio_ route
+### UI
+* Fix pair caching
+
 ## [v1.6.2]
 ### UI
 * Ensure cancelled orders are displayed correctly when listing completed orders
