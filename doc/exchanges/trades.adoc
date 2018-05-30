@@ -70,7 +70,7 @@ Result will be an array of trade object (*the first one being the newest*)
 
 |id
 |integer
-|Unique identifier of the trade
+|Unique identifier of the trade (will be null if not supported by exchange)
 
 |quantity
 |float
