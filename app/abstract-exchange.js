@@ -307,15 +307,16 @@ _getCachedOrder(orderNumber)
  * Adds a new order to the cache
  *
  * @param {string} orderNumber order number
+ * @param {string} orderType order type
  * @param {string} pair order pair
  * @param {string} state order state (open|closed|cancelled)
  */
-_cacheOrder(orderNumber, pair, state)
+_cacheOrder(orderNumber, orderType, pair, state)
 {
     if (undefined === this.__cachedOrders.orders[orderNumber])
     {
         let timestamp = new Date().getTime();
-        this.__cachedOrders.orders[orderNumber] = {pair:pair, state:state, timestamp:timestamp};
+        this.__cachedOrders.orders[orderNumber] = {orderType:orderType, pair:pair, state:state, timestamp:timestamp};
         ++this.__cachedOrders.size;
     }
     else if (this.__cachedOrders.orders[orderNumber].state != state)
@@ -969,7 +970,7 @@ Output example
 async getOrderBook(pair, opt)
 {
     let _opt = {custom:{}};
-    let requestedLimit = undefined;
+    let requestedLimit = this.getDefaultOrderBookLimit();
     if (undefined !== opt)
     {
         if (undefined !== opt.limit && opt.limit > 0)
@@ -981,6 +982,10 @@ async getOrderBook(pair, opt)
         {
             _opt.custom = opt.custom;
         }
+    }
+    if (undefined === _opt.limit)
+    {
+        _opt.limit = requestedLimit;
     }
     let data;
     try
@@ -1020,6 +1025,15 @@ async getOrderBook(pair, opt)
         }
     }
     return data;
+}
+
+/**
+ * Returns the default value for order book limit
+ * @return {integer}
+ */
+getDefaultOrderBookLimit()
+{
+    return undefined;
 }
 
 /**
@@ -1099,7 +1113,10 @@ Output example
 async getTrades(pair, opt)
 {
     let _opt = {custom:{}};
-    let requestedLimit = undefined;
+    let requestedLimit = this.getDefaultTradesLimit();
+    let afterTradeId = 0;
+    let afterTimestamp = 0;
+
     if (undefined !== opt)
     {
         if (undefined !== opt.limit && opt.limit > 0)
@@ -1111,10 +1128,20 @@ async getTrades(pair, opt)
         {
             _opt.custom = opt.custom;
         }
+        // handle afterTradeId & afterTimestamp
+        if (undefined !== opt.afterTradeId)
+        {
+            afterTradeId = opt.afterTradeId;
+        }
+        if (undefined !== opt.afterTimestamp)
+        {
+            afterTimestamp = opt.afterTimestamp;
+        }
     }
-    // afterTradeId & afterTimestamp can be handled here
-    let afterTradeId = undefined !== opt.afterTradeId ? opt.afterTradeId : 0;
-    let afterTimestamp = undefined !== opt.afterTimestamp ? opt.afterTimestamp : 0;
+    if (undefined === _opt.limit)
+    {
+        _opt.limit = requestedLimit;
+    }
 
     let data;
     try
@@ -1151,9 +1178,14 @@ async getTrades(pair, opt)
     // handle limits, afterTradeId & afterTimestamp
     let r = [];
     _.forEach(data, (entry) => {
-        // check afterTradeId (trade id might not be defined for all exchanges)
-        if (0 != afterTradeId && undefined !== entry.id)
+        // check afterTradeId
+        if (0 != afterTradeId)
         {
+            // trade id might not be supported for all exchanges, and might be set to null
+            if (null === entry.id)
+            {
+                return;
+            }
             if (entry.id <= afterTradeId)
             {
                 return;
@@ -1172,6 +1204,15 @@ async getTrades(pair, opt)
         }
     });
     return r;
+}
+
+/**
+ * Returns the default value for trades limit
+ * @return {integer}
+ */
+getDefaultTradesLimit()
+{
+    return undefined;
 }
 
 /**
@@ -1228,8 +1269,9 @@ async _getTrades(pair, opt)
  *
  * @param {string} pair pair to retrieve chart data for
  * @param {string} opt.interval charts interval (optional, if not set will use default interval for exchange)
- * @param {float} opt.fromTimestamp unix timestamp in seconds (optional, if not set will return last 500 entries)
- * @param {float} opt.toTimestamp unix timestamp in seconds (optional, if not set will return first 500 entries from opt.fromTimestamp)
+ * @param {float} opt.fromTimestamp unix timestamp in seconds (optional, if not set will return last 'limit' entries)
+ * @param {float} opt.toTimestamp unix timestamp in seconds (optional, if not set will return first 500 entries from 'opt.fromTimestamp')
+ * @param {integer} opt.limit number of entries to return (optional, default = 500, max = 5000) (will be ignored if 'opt.toTimestamp' is set)
  * @return {Promise}
  */
 /*
@@ -1269,6 +1311,7 @@ async getKlines(pair, opt)
     let fromTimestamp;
     let toTimestamp;
     let now = parseInt(Date.now() / 1000.0);
+    let limit;
     if (undefined === opt)
     {
         opt = {};
@@ -1280,7 +1323,16 @@ async getKlines(pair, opt)
     // compute timestamp so that we retrieve MAX_KLINES_ENTRIES_PER_ITER entries
     if (undefined === opt.fromTimestamp || opt.fromTimestamp > now)
     {
-        fromTimestamp = now - klinesIntervalsMapping[interval] * MAX_KLINES_ENTRIES_PER_ITER;
+        limit = MAX_KLINES_ENTRIES_PER_ITER;
+        if (undefined !== opt.limit)
+        {
+            limit = opt.limit;
+            if (limit > MAX_KLINES_ENTRIES)
+            {
+                limit = MAX_KLINES_ENTRIES;
+            }
+        }
+        fromTimestamp = now - klinesIntervalsMapping[interval] * limit;
         toTimestamp = now;
     }
     else
@@ -1292,7 +1344,16 @@ async getKlines(pair, opt)
         }
         if (undefined === opt.toTimestamp)
         {
-            toTimestamp = fromTimestamp + klinesIntervalsMapping[interval] * MAX_KLINES_ENTRIES_PER_ITER;
+            limit = MAX_KLINES_ENTRIES_PER_ITER;
+            if (undefined !== opt.limit)
+            {
+                limit = opt.limit;
+                if (limit > MAX_KLINES_ENTRIES)
+                {
+                    limit = MAX_KLINES_ENTRIES;
+                }
+            }
+            toTimestamp = fromTimestamp + klinesIntervalsMapping[interval] * limit;
         }
         else
         {
@@ -1366,6 +1427,12 @@ async getKlines(pair, opt)
                 return;
             }
             list.push(e);
+            // we reached requested limit
+            if (undefined !== limit && limit == list.length)
+            {
+                stop = true;
+                return false;
+            }
             // we reached the maximum number of entries
             if (MAX_KLINES_ENTRIES == list.length)
             {
@@ -1490,6 +1557,16 @@ isKlinesIntervalSupported(interval)
         return false;
     }
     return -1 !== this.__features.klines.intervals.indexOf(interval);
+}
+
+/**
+ * Returns the duration (in sec) of a given klines interval
+ * @param {string} interval klines interval
+ * @return {integer} duration in sec
+ */
+_getKlinesIntervalDuration(interval)
+{
+    return klinesIntervalsMapping[interval];
 }
 
 //-- order methods
@@ -2404,7 +2481,15 @@ async getOrder(orderNumber, pair)
         }
         try
         {
-            pair = await this._getOrderPair(orderNumber);
+            let cachedOrder = this._getCachedOrder(orderNumber);
+            if (null !== cachedOrder)
+            {
+                pair = cachedOrder.pair;
+            }
+            else
+            {
+                pair = await this._getOrderPair(orderNumber);
+            }
         }
         catch (e)
         {
@@ -2452,7 +2537,7 @@ async getOrder(orderNumber, pair)
         {
             orderState = 'closed';
         }
-        this._cacheOrder(order.orderNumber, pair, orderState);
+        this._cacheOrder(order.orderNumber, order.orderType, pair, orderState);
         return order;
     }
     catch (e)
@@ -2482,12 +2567,73 @@ async getOrder(orderNumber, pair)
 /**
  * Used to retrieve the pair for a given order (will be called in case _getOrder cannot be called without a pair)
  *
- * @param {string} orderNumber orderNumber
+ * @param {string} orderNumber order number
  * @return {Promise} Promise which will resolve to a string (X-Y). Result should be null if pair was not found
  */
 async _getOrderPair(orderNumber)
 {
-    throw new Error('Override');
+    let pairs = await this.getPairsSymbols(true);
+    let orderPair = await this.__getOrderPair(orderNumber, pairs);
+    return orderPair;
+}
+
+/**
+ * Calls _getOrder multiple times (probably very inefficient but still good as fallback)
+ *
+ * NB: with Kucoin, it will take =~ 11min to find the pair with a 1 req/s rate :)
+ *
+ * @param {string} orderNumber order number
+ * @param {string[]} pairs list of pairs
+ * @return {Promise}
+ */
+async __getOrderPair(orderNumber, pairs)
+{
+    let pair = null;
+    if (0 == pairs.length)
+    {
+        return pair;
+    }
+    // TODO : use a bottleneck instance to send queries in batch
+
+    let arr = [];
+    _.forEach(pairs, (pair) => {
+        let p = this._getOrder(orderNumber, pair);
+        arr.push({promise:p, context:{exchange:this.__id,api:'_getOrder',pair:pair}});
+    });
+    let data = await PromiseHelper.all(arr, {logError:false});
+    _.forEach(data, function (entry) {
+        if (!entry.success)
+        {
+            if (entry.value instanceof Errors.BaseError)
+            {
+                // this one can be ignored
+                if (entry.value instanceof Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound)
+                {
+                    return;
+                }
+            }
+            // log unexpected errors
+            let message;
+            // not a BaseError
+            if (entry.value instanceof Error && undefined === entry.value.errorType)
+            {
+                message = entry.value.message;
+            }
+            else
+            {
+                message = JSON.stringify(entry.value);
+            }
+            logger.error(`${JSON.stringify(entry.context)} => ${message}`);
+            if (undefined !== entry.value.stack)
+            {
+                logger.error(entry.value.stack);
+            }
+            return;
+        }
+        pair = entry.value.pair;
+        return false;
+    });
+    return pair;
 }
 
 /**
@@ -2637,7 +2783,15 @@ async cancelOrder(orderNumber, pair)
         }
         try
         {
-            pair = await this._getOrderPair(orderNumber);
+            let cachedOrder = this._getCachedOrder(orderNumber);
+            if (null !== cachedOrder)
+            {
+                pair = cachedOrder.pair;
+            }
+            else
+            {
+                pair = await this._getOrderPair(orderNumber);
+            }
         }
         catch (e)
         {

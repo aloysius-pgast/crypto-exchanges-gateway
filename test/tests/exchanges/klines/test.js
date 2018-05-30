@@ -5,13 +5,13 @@ const Assert = require('../../../lib/assert');
 const MochaHelper = require('../../../lib/mocha-helper');
 const restClient = require('../../../lib/rest-client').getInstance();
 
-// schema for a single kline entry
+// schema for a single kline entry (if there was not trade, ohlc values will be null and volume will be 0)
 const klineSchema = joi.object({
     timestamp:joi.number().positive().required(),
-    open:joi.number().required(),
-    high:joi.number().required(),
-    low:joi.number().required(),
-    close:joi.number().required(),
+    open:joi.number().required().allow(null),
+    high:joi.number().required().allow(null),
+    low:joi.number().required().allow(null),
+    close:joi.number().required().allow(null),
     volume:joi.number().required()
 });
 

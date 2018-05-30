@@ -401,7 +401,8 @@ static defineGetKlinesRoute(app, exchange)
         pair: Joi.string().pair(),
         interval: Joi.string().default(exchange.getDefaultKlinesInterval()),
         fromTimestamp: Joi.number().positive(),
-        toTimestamp: Joi.number().positive()
+        toTimestamp: Joi.number().positive(),
+        limit: Joi.number().integer().positive()
     });
 
     /**
@@ -411,6 +412,7 @@ static defineGetKlinesRoute(app, exchange)
      * @param {string} interval charts interval (optional, default = 5m)
      * @param {float} fromTimestamp only retrieve klines with timestamp >= 'fromTimestamp' (optional)
      * @param {float} toTimestamp only retrieve klines with timestamp <= 'toTimestamp' (optional, will be ignored if 'fromTimestamp' is not defined) (if not set will return first 500 entries from 'fromTimestamp')
+     * @param {integer} limit number of entries to return (optional, default = 500, max = 5000) (will be ignored if 'toTimestamp' is set)
      */
     app.get(`/exchanges/${exchange.getId()}/klines/:pair`, (req, res) => {
         const params = JoiHelper.validate(schema, req, {query:true,params:true});
@@ -433,6 +435,10 @@ static defineGetKlinesRoute(app, exchange)
         if (undefined !== params.value.toTimestamp)
         {
             opt.toTimestamp = params.value.toTimestamp;
+        }
+        if (undefined !== params.value.limit)
+        {
+            opt.limit = params.value.limit;
         }
         exchange.getKlines(params.value.pair, opt).then(function(data) {
             statistics.increaseExchangeStatistic(exchange.getId(), 'getKlines', true);
