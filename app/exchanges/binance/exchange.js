@@ -445,6 +445,15 @@ async _finalizeTickers(list)
 }
 
 /**
+ * Returns the default value for order book limit
+ * @return {integer}
+ */
+getDefaultOrderBookLimit()
+{
+    return ORDER_BOOK_DEFAULT_LIMIT;
+}
+
+/**
  * Used to ensure we use a supported limit
  *
  * @param {integer} limit requested order book limit
@@ -654,6 +663,15 @@ async _getTrades(pair, opt)
 }
 
 /**
+ * Returns the default value for trades limit
+ * @return {integer}
+ */
+getDefaultTradesLimit()
+{
+    return TRADES_DEFAULT_LIMIT;
+}
+
+/**
  * Returns charts data
  *
  * @param {string} pair pair to retrieve chart data for
@@ -797,6 +815,7 @@ async _getOpenOrdersForPair(pair)
                     orderType = 'sell';
                     break;
                 default:
+                    logger.warn(`Unknown order type '${entry.side}' for '${self.getId()}' order '${entry.clientOrderId}'`);
                     return;
             }
             let order = {
@@ -900,7 +919,20 @@ async _getOrdersForSymbol(symbol, opt)
                     }
             }
             // update cached orders
-            self._cacheOrder(entry.clientOrderId, pair, orderState);
+            let orderType;
+            switch (entry.side)
+            {
+                case 'BUY':
+                    orderType = 'buy';
+                    break;
+                case 'SELL':
+                    orderType = 'sell';
+                    break;
+                default:
+                    logger.warn(`Unknown order type '${entry.side}' for '${self.getId()}' order '${entry.clientOrderId}'`);
+                    return;
+            }
+            self._cacheOrder(entry.clientOrderId, orderType, pair, orderState);
 
             // not the status we are looking for
             if (undefined !== opt.orderStates && undefined === opt.orderStates[entry.status])
@@ -962,6 +994,7 @@ async _getClosedOrdersForPair(pair, completeHistory)
                 orderType = 'sell';
                 break;
             default:
+                logger.warn(`Unknown order type '${entry.side}' for '${this.getId()}' order '${entry.clientOrderId}'`);
                 return;
         }
         let order = {
@@ -1044,12 +1077,6 @@ async _getClosedOrdersForPair(pair, completeHistory)
 async _getOrderPair(orderNumber)
 {
     let self = this;
-    let cachedOrder = this._getCachedOrder(orderNumber);
-    // we already know the pair for this order
-    if (null !== cachedOrder)
-    {
-        return cachedOrder.pair;
-    }
     let pairs = await this.getPairsSymbols(true);
     // we don't have any cached pair
     if (0 == pairs.length)
@@ -1461,7 +1488,7 @@ async _createOrder(orderType, pair, targetRate, quantity)
             throw e;
         }
         // update cached orders
-        self._cacheOrder(data.clientOrderId, pair, 'open');
+        self._cacheOrder(data.clientOrderId, orderType, pair, 'open');
         // only return order number
         return data.clientOrderId;
     });

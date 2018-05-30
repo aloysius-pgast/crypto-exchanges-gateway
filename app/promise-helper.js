@@ -18,7 +18,7 @@ const reflect = (descriptor, opt) => {
                 message = JSON.stringify(err);
             }
             logger.error(`${JSON.stringify(descriptor.context)} => ${message}`);
-            if (undefined !== err && undefined !== err.stack)
+            if (undefined !== err.stack)
             {
                 logger.error(err.stack);
             }

@@ -70,10 +70,9 @@ _cacheExchangeData(exchange, key, data)
     // we don't have data for this exchange yet
     if (undefined === this._exchangeCache[key].exchanges[exchange])
     {
-        this._exchangeCache[key].exchanges[exchange] = {
-            expireAt: timestamp + this._exchangeCache[key].cachePeriod * 1000,
-        };
+        this._exchangeCache[key].exchanges[exchange] = {};
     }
+    this._exchangeCache[key].exchanges[exchange].expireAt = timestamp + this._exchangeCache[key].cachePeriod * 1000;
     this._exchangeCache[key].exchanges[exchange].data = data;
     return true;
 }

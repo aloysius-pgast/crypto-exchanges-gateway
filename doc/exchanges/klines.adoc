@@ -61,6 +61,11 @@ Those routes require the feature _klines_ to be enabled for the requested exchan
 |
 |Used to only retrieve klines with a timestamp <= _toTimestamp_
 
+|limit
+|integer
+|500
+|Used to limit the number of results (will be ignored if _toTimestamp_ is set)
+
 |===
 
 [NOTE]
@@ -81,23 +86,23 @@ Result will be an array of klines object (*the first one being the oldest*)
 
 |open
 |float
-|Open price
+|Open price (will be _null_ if there was no trade during the period)
 
 |close
 |float
-|Close price
+|Close price (will be _null_ if there was no trade during the period)
 
 |high
 |float
-|Highest price (last 24H)
+|Highest price (will be _null_ if there was no trade during the period)
 
 |low
 |float
-|Lowest price (last 24H)
+|Lowest price (will be _null_ if there was no trade during the period)
 
 |volume
 |float
-|Volume
+|Volume (will be _0_ if there was no trade during the period)
 
 |timestamp
 |float (unix timestamp sec.msec)

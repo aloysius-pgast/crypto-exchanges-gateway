@@ -9,7 +9,7 @@ const restClient = require('../../../lib/rest-client').getInstance();
 const balanceSchema = joi.object({
     currency:joi.string().regex(/^[A-Z0-9]+$/).required(),
     total:joi.number().positive().required(),
-    available:joi.number().positive().required(),
+    available:joi.number().required(),
     onOrders:joi.number().required()
 });
 

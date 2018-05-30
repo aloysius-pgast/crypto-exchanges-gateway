@@ -113,7 +113,21 @@ function createClass(errorType, newClass, httpCode, description)
  */
 function getErrorData(data, error)
 {
-    if (undefined === error || null === error || 'object' != typeof error || error instanceof Error)
+    if (undefined === error || null === error || 'object' != typeof error)
+    {
+        return data;
+    }
+    // this is a ccxt error
+    if (undefined !== error.ccxtError)
+    {
+        // add response if it's defined
+        if (undefined !== error.response)
+        {
+            data.error = error.response;
+        }
+        return data;
+    }
+    if (error instanceof Error)
     {
         return data;
     }
@@ -144,6 +158,10 @@ function getErrorMessage(defaultMessage, message)
     if ('string' == typeof message)
     {
         return message;
+    }
+    if (undefined !== message.ccxtError)
+    {
+        return message.ccxtError.message;
     }
     if (undefined !== message.message)
     {
@@ -656,7 +674,7 @@ createClass('ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.Inva
 
 /**
  * @param {string} exchangeId identifier of the exchange
- * @param {string} pair unsupported pair
+ * @param {string} pair requested pair
  * @param {float} rate requested rate
  * @param {string|object} message error message or object (optional)
  */
@@ -680,7 +698,7 @@ createClass('ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.Inva
 
 /**
  * @param {string} exchangeId identifier of the exchange
- * @param {string} pair unsupported pair
+ * @param {string} pair requested pair
  * @param {float} rate requested rate
  * @param {float} quantity requested quantity
  * @param {string|object} message error message or object (optional)
@@ -707,7 +725,7 @@ createClass('ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.Insu
 
 /**
  * @param {string} exchangeId identifier of the exchange
- * @param {string} pair unsupported pair
+ * @param {string} pair requested pair
  * @param {float} rate requested rate
  * @param {float} quantity requested quantity
  * @param {string|object} message error message or object (optional)
@@ -726,6 +744,32 @@ constructor(exchangeId, pair, rate, quantity, message)
 }
 
 }, 400, 'Used when the user has not enough funds to create an order'); // ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InsufficientFunds
+
+/*
+ * Used when the requested quantity does not match exchange filters
+ */
+createClass('ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.UnknownError', class extends BaseError {
+
+/**
+ * @param {string} exchangeId identifier of the exchange
+ * @param {string} pair requested pair
+ * @param {float} rate requested rate
+ * @param {float} quantity requested quantity
+ * @param {string|object} message error message or object (optional)
+ */
+ constructor(exchangeId, pair, rate, quantity, message)
+{
+    let defaultMessage = `Order definition is not valid`;
+    let data = {
+        exchange:exchangeId,
+        pair:pair,
+        quantity:quantity,
+        rate:rate,
+    };
+    super(getErrorMessage(defaultMessage, message), getErrorData(data, message));
+}
+
+}, 400, 'Used when order was refused because of an unknown error'); // ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.UnknownError
 
 /*
  * Used when a request to an exchange times out

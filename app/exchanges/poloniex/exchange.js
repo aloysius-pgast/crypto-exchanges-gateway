@@ -485,6 +485,15 @@ async _getOrderBook(pair, opt)
 }
 
 /**
+ * Returns the default value for order book limit
+ * @return {integer}
+ */
+getDefaultOrderBookLimit()
+{
+    return ORDER_BOOK_DEFAULT_LIMIT;
+}
+
+/**
  * Returns last trades
  *
  * @param {string} pair pair to retrieve trades for
