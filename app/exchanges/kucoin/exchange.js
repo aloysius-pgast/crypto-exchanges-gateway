@@ -223,9 +223,22 @@ _getKlines(pair, interval, fromTimestamp, toTimestamp)
  * @param {string} pair pair to retrieve open orders for
  * @return {Promise}
  */
-_getOpenOrdersForPair(pair)
+async _getOpenOrdersForPair(pair)
 {
-    return super._getOpenOrdersForPair(pair);
+    let data;
+    try
+    {
+        data = await super._getOpenOrdersForPair(pair);
+    }
+    catch (e)
+    {
+        throw e;
+    }
+    // update cached orders
+    _.forEach(data, (order, orderNumber) => {
+        this._cacheOrder(orderNumber, order.orderType, order.pair, 'open');
+    });
+    return data;
 }
 
 /**
@@ -237,40 +250,41 @@ _getOpenOrdersForPair(pair)
  */
 async _getClosedOrdersForPair(pair, completeHistory)
 {
-    if (!completeHistory)
+    let list = {};
+    let page = 1;
+    while (true)
     {
-        return super._getClosedOrdersForPair(pair, completeHistory);
-    }
-    else
-    {
-        let list = {};
-        let page = 1;
-        while (true)
+        let data;
+        let params = {page:page,limit:CLOSED_ORDERS_LIMIT_PER_ITER};
+        try
         {
-            let data;
-            let params = {page:page,limit:CLOSED_ORDERS_LIMIT_PER_ITER};
-            try
-            {
-                data = await this._client.getClosedOrdersForPair(pair, params);
-            }
-            catch (e)
-            {
-                throw e;
-            }
-            let count = 0;
-            _.forEach(data.custom, (order) => {
-                list[order.orderNumber] = order;
-                ++count;
-            });
-            // stop if we received less result than requested
-            if (count < params.limit)
-            {
-                break;
-            }
-            ++page;
+            data = await this._client.getClosedOrdersForPair(pair, params);
         }
-        return list;
+        catch (e)
+        {
+            throw e;
+        }
+        let count = 0;
+        _.forEach(data.custom, (order) => {
+            list[order.orderNumber] = order;
+            ++count;
+        });
+        // stop if we received less result than requested
+        if (count < params.limit)
+        {
+            break;
+        }
+        if (!completeHistory)
+        {
+            break;
+        }
+        ++page;
     }
+    // update cached orders
+    _.forEach(list, (order, orderNumber) => {
+        this._cacheOrder(orderNumber, order.orderType, order.pair, 'closed');
+    });
+    return list;
 }
 
 /**
@@ -333,6 +347,7 @@ async _getOrder(orderNumber, pair)
     {
         orderState = 'open';
     }
+    // update cached orders
     this._cacheOrder(data.custom.orderNumber, data.custom.orderType, pair, orderState);
     return data.custom;
 }
@@ -348,10 +363,10 @@ async _getOrder(orderNumber, pair)
  */
 async _createOrder(orderType, pair, targetRate, quantity)
 {
-    let data;
+    let orderNumber;
     try
     {
-        data = await super._createOrder(orderType, pair, targetRate, quantity);
+        orderNumber = await super._createOrder(orderType, pair, targetRate, quantity);
     }
     catch (e)
     {
@@ -382,7 +397,9 @@ async _createOrder(orderType, pair, targetRate, quantity)
         }
         throw e;
     }
-    return data;
+    // update cached orders
+    this._cacheOrder(orderNumber, orderType, pair, 'open');
+    return orderNumber;
 }
 
 /**
@@ -392,9 +409,27 @@ async _createOrder(orderType, pair, targetRate, quantity)
  * @param {string} pair pair (ex: USDT-NEO) (if exchange supports retrieving an order without the pair, value will be undefined)
  * @return {Promise}
  */
-_cancelOrder(orderNumber, pair)
+async _cancelOrder(orderNumber, pair)
 {
-    return super._cancelOrder(orderNumber, pair);
+    let order;
+    try
+    {
+        order = await this.getOrder(orderNumber, pair);
+    }
+    catch (e)
+    {
+        throw e;
+    }
+    let params = {type:order.orderType.toUpperCase()};
+    try
+    {
+        await this._client.cancelOrder(orderNumber, pair, params);
+    }
+    catch (e)
+    {
+        throw e;
+    }
+    return true;
 }
 
 /**
