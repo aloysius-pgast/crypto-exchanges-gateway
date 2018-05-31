@@ -237,7 +237,7 @@ const sendPortfolio = (res, balances, tickers) => {
     _.forEach(Object.keys(totalPriceConverted), (symbol) => {
         totalPriceConverted[symbol] = parseFloat(totalPriceConverted[symbol].toFixed(8));
     });
-    return res.send({balances:balances,price:totalPriceUSD,priceConverted:totalPriceConverted});
+    return res.send({balances:balances,price:totalPriceUSD,convertedPrice:totalPriceConverted});
 }
 
 };
