@@ -588,12 +588,27 @@ _getTickersPage(page)
 }
 
 /**
- * Returns how much is 1 USD in a given currency
+ * Returns how much is 1 USD in a given currency (crypto or fiat)
  *
  * @param {string} symbol ticker symbol
  * @return {Promise} promise which will resolve to an object {symbol:string,rate:Big} (or null if ticker was not found) or reject a BaseError
  */
-async _getUSDRate(symbol)
+_getUSDRate(symbol)
+{
+    if (undefined !== fiatCurrencies[symbol])
+    {
+        return this._getUSDRateForFiatCurrency(symbol);
+    }
+    return this._getUSDRateForCryptoCurrency(symbol);
+}
+
+/**
+ * Returns how much is 1 USD in a given crypto currency
+ *
+ * @param {string} symbol crypto currency symbol
+ * @return {Promise} promise which will resolve to an object {symbol:string,rate:Big} (or null if ticker was not found) or reject a BaseError
+ */
+async _getUSDRateForCryptoCurrency(symbol)
 {
     let timestamp = Date.now();
     if (undefined !== this._cachedUSDRates.cache[symbol])
@@ -618,7 +633,7 @@ async _getUSDRate(symbol)
             options.url = `${BASE_URL}/ticker/${id}`;
             if (debug.enabled)
             {
-                debug(`Retrieving USD rate for ${symbol}`);
+                debug(`Retrieving USD rate for crypto currency ${symbol}`);
             }
             request(options, function (error, response, body) {
                 if (null !== error)
@@ -655,6 +670,86 @@ async _getUSDRate(symbol)
                     return resolve(null);
                 }
                 let rate = new Big(1).div(body.data.quotes['USD'].price);
+                let entry = {symbol:symbol,rate:rate};
+                // update cache
+                timestamp = Date.now();
+                self._cachedUSDRates.cache[symbol] = {
+                    entry:entry,
+                    lastTimestamp:timestamp,
+                    nextTimestamp:timestamp + self._cachedUSDRates.cachePeriod
+                };
+                return resolve(entry);
+            });
+        });
+    });
+}
+
+/**
+ * Returns how much is 1 USD in a given crypto currency
+ *
+ * @param {string} symbol fiat currency symbol
+ * @return {Promise} promise which will resolve to an object {symbol:string,rate:Big} (or null if ticker was not found) or reject a BaseError
+ */
+async _getUSDRateForFiatCurrency(symbol)
+{
+    let timestamp = Date.now();
+    if (undefined !== this._cachedUSDRates.cache[symbol])
+    {
+        if (timestamp < this._cachedUSDRates.cache[symbol].nextTimestamp)
+        {
+            return this._cachedUSDRates.cache[symbol].entry;
+        }
+    }
+    let id = this._cachedSymbols.cache['USDT'].id;
+    let self = this;
+    return this._limiterPublic.schedule(function(){
+        return new Promise((resolve, reject) => {
+            let params = {convert:symbol};
+            let options = {};
+            options.json = true;
+            options.timeout = DEFAULT_SOCKETTIMEOUT;
+            options.method = 'GET';
+            options.url = `${BASE_URL}/ticker/${id}`;
+            options.qs = params;
+            if (debug.enabled)
+            {
+                debug(`Retrieving USD rate for fiat currency ${symbol}`);
+            }
+            request(options, function (error, response, body) {
+                if (null !== error)
+                {
+                    self._logNetworkError(error, '_getUSDRate');
+                    if (self._isTimeoutError(error))
+                    {
+                        return reject(new Errors.ServiceError.NetworkError.RequestTimeout(self.getId(), error));
+                    }
+                    if (self._isDDosProtectionError(error))
+                    {
+                        return reject(new Errors.ServiceError.NetworkError.DDosProtection(self.getId(), error));
+                    }
+                    return reject(new Errors.ServiceError.NetworkError.UnknownError(self.getId(), error));
+                }
+                if (200 != response.statusCode)
+                {
+                    // probably an invalid id
+                    if (404 == response.statusCode && 'object' === typeof body && null === body.data)
+                    {
+                        return resolve(null);
+                    }
+                    // maybe a wrong url ?
+                    self._logNetworkError(response, '_getUSDRate');
+                    return reject(new Errors.ServiceError.NetworkError.UnknownError(self.getId(), response));
+                }
+                if (undefined === body.data)
+                {
+                    return reject(new Errors.ServiceError.NetworkError.UnknownError(self.getId(), "Missing 'data' in response"));
+                }
+                // API did not return any price for this symbol
+                if (undefined === body.data.quotes[symbol] || null === body.data.quotes[symbol].price)
+                {
+                    return resolve(null);
+                }
+                let rate = new Big(body.data.quotes[symbol].price).div(body.data.quotes['USD'].price);
                 let entry = {symbol:symbol,rate:rate};
                 // update cache
                 timestamp = Date.now();
