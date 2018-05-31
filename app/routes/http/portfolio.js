@@ -35,6 +35,11 @@ if (null === coinmarketcap || _.isEmpty(exchanges))
     return;
 }
 
+
+const logError = (e, method) => {
+    Errors.logError(e, `portfolio|${method}`)
+}
+
 /**
  * @param {string} exchanges list of exchanges to include in the result (optional, all by default)
  * @param {string[]} convertTo used to convert result to some others symbols/currencies (optional)
@@ -165,8 +170,28 @@ app.get('/portfolio', (req, res) => {
 /**
  * When exchange is in demo mode, only generate balances for symbols in the top 20
  */
+let top20TickersPromise = null;
+const getTop20Tickers = () => {
+    if (null === top20TickersPromise)
+    {
+        top20TickersPromise = new Promise((resolve, reject) => {
+            coinmarketcap.getTickers({limit:20}).then((list) => {
+                top20TickersPromise = null;
+                return resolve(list);
+            }).catch((e) => {
+                logError(e, 'getTop20Tickers');
+                return resolve([]);
+            });
+        });
+    }
+    return top20TickersPromise;
+}
 const getDemoBalances = async (exchange) => {
-    let tickers = await coinmarketcap.getTickers({limit:20});
+    let tickers = await getTop20Tickers();
+    if (0 == tickers.length)
+    {
+        return {};
+    }
     let currencies = _.map(tickers, (e) => {return e.symbol});
     return exchange.getBalances(currencies);
 }

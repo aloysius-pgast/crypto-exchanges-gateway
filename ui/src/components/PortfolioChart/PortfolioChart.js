@@ -67,7 +67,7 @@ render()
         return e.currency;
     }
     const dataValue = (e) => {
-        return e.price;
+        return e.pricePercent;
     }
     let width = this.state.viewPort.width * 0.95;
     if (width > 700)

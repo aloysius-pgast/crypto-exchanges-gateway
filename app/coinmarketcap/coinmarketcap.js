@@ -588,7 +588,7 @@ _getTickersPage(page)
 }
 
 /**
- * Returns USD rate for a single symbol or currency
+ * Returns how much is 1 USD in a given currency
  *
  * @param {string} symbol ticker symbol
  * @return {Promise} promise which will resolve to an object {symbol:string,rate:Big} (or null if ticker was not found) or reject a BaseError
@@ -603,17 +603,19 @@ async _getUSDRate(symbol)
             return this._cachedUSDRates.cache[symbol].entry;
         }
     }
-    let id = this._cachedSymbols.cache['USDT'].id;
+    if (undefined === this._cachedSymbols.cache[symbol])
+    {
+        return null;
+    }
+    let id = this._cachedSymbols.cache[symbol].id;
     let self = this;
     return this._limiterPublic.schedule(function(){
         return new Promise((resolve, reject) => {
-            let params = {convert:symbol};
             let options = {};
             options.json = true;
             options.timeout = DEFAULT_SOCKETTIMEOUT;
             options.method = 'GET';
             options.url = `${BASE_URL}/ticker/${id}`;
-            options.qs = params;
             if (debug.enabled)
             {
                 debug(`Retrieving USD rate for ${symbol}`);
@@ -648,11 +650,11 @@ async _getUSDRate(symbol)
                     return reject(new Errors.ServiceError.NetworkError.UnknownError(self.getId(), "Missing 'data' in response"));
                 }
                 // API did not return any price for this symbol
-                if (undefined === body.data.quotes[symbol] || null === body.data.quotes[symbol].price)
+                if (undefined === body.data.quotes['USD'] || null === body.data.quotes['USD'].price)
                 {
                     return resolve(null);
                 }
-                let rate = new Big(body.data.quotes[symbol].price).div(body.data.quotes['USD'].price);
+                let rate = new Big(1).div(body.data.quotes['USD'].price);
                 let entry = {symbol:symbol,rate:rate};
                 // update cache
                 timestamp = Date.now();
