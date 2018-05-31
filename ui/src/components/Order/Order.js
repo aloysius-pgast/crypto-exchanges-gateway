@@ -67,7 +67,7 @@ constructor(props)
     {
         this._limits.price.min = price;
     }
-    this._limits.price.minStr = this._limits.price.min.toFixed(this._limits.quantity.precision);
+    this._limits.price.minStr = this._limits.price.min.toFixed(8);
 
     this._balance = {
         floatValue:new Big(this.props.balance)
