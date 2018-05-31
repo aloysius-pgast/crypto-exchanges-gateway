@@ -37,6 +37,7 @@ if (null === coinmarketcap || _.isEmpty(exchanges))
 
 /**
  * @param {string} exchanges list of exchanges to include in the result (optional, all by default)
+ * @param {string[]} convertTo used to convert result to some others symbols/currencies (optional)
  */
 app.get('/portfolio', (req, res) => {
     let filteredList = [];
@@ -64,7 +65,30 @@ app.get('/portfolio', (req, res) => {
         }
         if (0 == filteredList.length)
         {
-            return res.send({balances:{},price:0.0});
+            return res.send({balances:{},price:0,convertedPrice:{}});
+        }
+    }
+    else
+    {
+        // by default query all supported exchanges
+        filteredList = Object.keys(exchanges);
+    }
+    let convertTo = [];
+    if (undefined !== req.query.convertTo && '' != req.query.convertTo)
+    {
+        // support both array and comma-separated string
+        if (Array.isArray(req.query.convertTo))
+        {
+            _.forEach(req.query.convertTo, (c) => {
+                convertTo.push(c);
+            });
+        }
+        else
+        {
+            let arr = req.query.convertTo.split(',');
+            _.forEach(arr, (c) => {
+                convertTo.push(c);
+            });
         }
     }
     else
@@ -96,14 +120,20 @@ app.get('/portfolio', (req, res) => {
             _.forEach(entry.value, (e, currency) => {
                 if (undefined === balances[currency])
                 {
-                    balances[currency] = {volume:0, price:0, pricePercent:0.0, unknownPrice:true}
+                    balances[currency] = {volume:0,price:0,pricePercent:0,convertedPrice:{},unknownPrice:true}
                 }
                 balances[currency].volume += e.total;
             });
         });
         let symbols = mapExchangeCurrenciesToCoinMarketCapSymbol(Object.keys(balances));
+        let opt = {symbols:symbols};
+        // do we need to convert ?
+        if (0 != convertTo.length)
+        {
+            opt.convertTo = convertTo;
+        }
         // get data from coinmarketcap
-        coinmarketcap.getTickers({symbols:symbols}).then(function(data) {
+        coinmarketcap.getTickers(opt).then(function(data) {
             let tickers = {};
             _.forEach(data, (entry) => {
                 // ignore tickers without price
@@ -120,7 +150,10 @@ app.get('/portfolio', (req, res) => {
                         return;
                     }
                 }
-                tickers[entry.symbol] = entry.price_usd;
+                tickers[entry.symbol] = {'USD':entry.price_usd,'BTC':entry.price_btc};
+                _.forEach(entry.converted, (e, symbol) => {
+                    tickers[entry.symbol][symbol] = e.price;
+                });
             });
             return sendPortfolio(res, balances, tickers);
         }).catch(function(err) {
@@ -164,7 +197,8 @@ const mapCoinMarketCapSymbolToExchangeCurrency = (symbol) => {
 }
 
 const sendPortfolio = (res, balances, tickers) => {
-    let totalPrice = 0;
+    let totalPriceUSD = 0;
+    let totalPriceConverted = {};
     // update balances
     _.forEach(balances, (entry, currency) => {
         if (undefined === tickers[currency])
@@ -172,14 +206,38 @@ const sendPortfolio = (res, balances, tickers) => {
             return;
         }
         entry.unknownPrice = false;
-        entry.price = parseFloat(new Big(entry.volume).times(tickers[currency]).toFixed(4));
-        totalPrice += entry.price;
+        _.forEach(tickers[currency], (p, symbol) => {
+            let price;
+            if ('USD' == symbol)
+            {
+                price = parseFloat(new Big(entry.volume).times(p).toFixed(4));
+                entry.price = price;
+                totalPriceUSD += price;
+            }
+            else
+            {
+                price = parseFloat(new Big(entry.volume).times(p).toFixed(8));
+                entry.convertedPrice[symbol] = price;
+                if (undefined === totalPriceConverted[symbol])
+                {
+                    totalPriceConverted[symbol] = 0;
+                }
+                totalPriceConverted[symbol] += price;
+            }
+        });
+        // format volume
+        entry.volume = parseFloat(entry.volume.toFixed(8));
     });
     // update %
     _.forEach(balances, (entry, currency) => {
-        entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPrice).toFixed(2));
+        entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPriceUSD).toFixed(2));
     });
-    return res.send({balances:balances,price:parseFloat(totalPrice.toFixed(4))});
+    // update total price
+    totalPriceUSD = parseFloat(totalPriceUSD.toFixed(4));
+    _.forEach(Object.keys(totalPriceConverted), (symbol) => {
+        totalPriceConverted[symbol] = parseFloat(totalPriceConverted[symbol].toFixed(8));
+    });
+    return res.send({balances:balances,price:totalPriceUSD,priceConverted:totalPriceConverted});
 }
 
 };

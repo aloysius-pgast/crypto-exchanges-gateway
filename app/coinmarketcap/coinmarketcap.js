@@ -288,7 +288,7 @@ async getSymbols(useCache)
 * Returns tickers
 *
 * @param {string[]} opt.symbols used to retrieve tickers for only a list of symbols (optional)
-* @param {string} opt.convertTo used to convert result to another symbol/currency (optional)
+* @param {string[]} opt.convertTo used to convert result to some others symbols/currencies (optional)
 * @param {integer} opt.limit used to limit results (optional, default to 100) (will be ignored if opt.symbols is set and is not empty)
 * @return {Promise}
 */

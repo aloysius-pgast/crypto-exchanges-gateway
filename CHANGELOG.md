@@ -1,5 +1,10 @@
 # Change Log
 
+## [TO BE DEFINED]
+### Gateway
+* Support for conversion to others currencies in _/portfolio_ route
+### UI
+
 ## [v1.6.3]
 ### Gateway
 * Support for new _limit_ parameter in _/exchanges/{exchange}/klines_ route

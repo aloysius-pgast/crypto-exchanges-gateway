@@ -28,6 +28,11 @@ Those routes will only be available if :
 |
 |Comma-separated list of exchanges to include in portfolio
 
+|convertTo
+|string (comma-separated)
+|
+|Convert portfolio value to fiat currencies (ex: _GBP_ or _EUR_) or any other symbol (ex: _ETH_ or _NEO_)
+
 |===
 
 === Result
@@ -40,14 +45,22 @@ Those routes will only be available if :
 
 |price
 |float
-|Estimated price of portfolio in $
+|Estimated value of portfolio in _USD_
+
+|convertedPrice
+|object
+|Estimated value of portfolio in multiple currencies
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertCurrency_
+|float
+|Estimated value of portfolio in currency _convertCurrency_
 
 |balances
 |object
 |one entry per currency, currency symbol being the key
 
 |_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency_
-|
+|object
 |Information for currency _currency_
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume
@@ -56,7 +69,15 @@ Those routes will only be available if :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
 |float
-|Estimated price in $ for current currency
+|Estimated value in _USD_ of the balance for current currency. Will be _0_ if currency does not exist on _CoinMarketCap_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertedPrice
+|object
+|Estimated value of the balance for current currency in multiple currencies. Will be empty if currency does not exist on _CoinMarketCap_
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertCurrency_
+|float
+|Estimated value in _convertCurrency_ of the balance for current currency
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pricePercent
 |float [0,100]
@@ -64,7 +85,7 @@ Those routes will only be available if :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}unknownPrice
 |boolean
-|Whether or not price is unknown. Price will be unknown if such currency does not exist in Coin Market Cap
+|Whether or not price is unknown. Price will be unknown if such currency does not exist on _CoinMarketCap_
 
 |===
 
@@ -76,55 +97,67 @@ Example for *GET* _/portfolio_
 ----
 {
     "balances":{
-        "PINK":{
-            "volume":1538.5109958399999,
-            "price":0,
-            "pricePercent":0,
-            "unknownPrice":true
-        },
-        "ETH":{
-            "volume":1.11208348,
-            "price":1191.2416,
-            "pricePercent":20.25,
-            "unknownPrice":false
-        },
-        "BLK":{
-            "volume":209.84192613,
-            "price":0,
-            "pricePercent":0,
-            "unknownPrice":true
-        },
         "BTC":{
-            "volume":0.28314554999999997,
-            "price":3380.9561,
-            "pricePercent":57.49,
+            "volume":0.27664163,
+            "price":2088.8297,
+            "pricePercent":0.56,
+            "convertedPrice":{
+                "BTC":0.27664163,
+                "GBP":1570.43053642,
+                "ETH":3.65988132
+            },
             "unknownPrice":false
         },
-        "USDT":{
-            "volume":1292.68608245,
-            "price":1309.1808,
-            "pricePercent":22.26,
+        "ETC":{
+            "volume":1114.68723594,
+            "price":17229.1633,
+            "pricePercent":4.63,
+            "convertedPrice":{
+                "BTC":2.2818059,
+                "GBP":12953.28416138,
+                "ETH":30.1875707
+            },
             "unknownPrice":false
         },
-        "KORE":{
-            "volume":583.04778728,
-            "price":0,
-            "pricePercent":0,
-            "unknownPrice":true
+        "DASH":{
+            "volume":1068.06521149,
+            "price":331179.2524,
+            "pricePercent":89.09,
+            "convertedPrice":{
+                "BTC":43.86090932,
+                "GBP":248988.23577402,
+                "ETH":580.26596709
+            },
+            "unknownPrice":false
         },
-        "XMY":{
-            "volume":1390.18863437,
-            "price":0,
-            "pricePercent":0,
-            "unknownPrice":true
+        "ADA":{
+            "volume":1251.19959559,
+            "price":267.7379,
+            "pricePercent":0.07,
+            "convertedPrice":{
+                "BTC":0.03545887,
+                "GBP":201.29159122,
+                "ETH":0.46910914
+            },
+            "unknownPrice":false
         },
-        "XMG":{
-            "volume":759.00263044,
-            "price":0,
-            "pricePercent":0,
-            "unknownPrice":true
+        "BNB":{
+            "volume":1486.5804252,
+            "price":20990.5156,
+            "pricePercent":5.65,
+            "convertedPrice":{
+                "BTC":2.77995401,
+                "GBP":15781.15600692,
+                "ETH":36.77791335
+            },
+            "unknownPrice":false
         }
     },
-    "price":5881.3785
+    "price":371755.4989,
+    "priceConverted":{
+        "BTC":49.23476973,
+        "GBP":279494.39806996,
+        "ETH":651.3604416
+    }
 }
 ----
