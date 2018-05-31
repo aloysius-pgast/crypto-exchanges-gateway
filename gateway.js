@@ -144,12 +144,43 @@ if (config.coinmarketcap.enabled)
 if (!hasCustomConfig)
 {
     _.forEach(config.exchanges, function(obj, exchange) {
-        let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
-        let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
-        if (undefined !== key && '' != key && undefined !== secret && '' != secret)
+        let enableExchange = process.env[util.format('cfg.exchanges.%s.enabled', exchange)];
+        if (undefined !== enableExchange && '' !== enableExchange)
         {
-            config.exchanges[exchange]['key'] = key;
-            config.exchanges[exchange]['secret'] = secret;
+            if (true === enableExchange || '1' == enableExchange)
+            {
+                config.exchanges[exchange]['enabled'] = true;
+            }
+            else if (false === enableExchange || '0' == enableExchange)
+            {
+                config.exchanges[exchange]['enabled'] = false;
+            }
+        }
+        if (config.exchanges[exchange]['enabled'])
+        {
+            let key = process.env[util.format('cfg.exchanges.%s.key', exchange)];
+            let secret = process.env[util.format('cfg.exchanges.%s.secret', exchange)];
+            if (undefined !== key && '' != key && undefined !== secret && '' != secret)
+            {
+                config.exchanges[exchange]['key'] = key;
+                config.exchanges[exchange]['secret'] = secret;
+            }
+            // check if requirePair is supported
+            if (config.exchanges[exchange].hasOwnProperty('requirePair'))
+            {
+                let requirePair = process.env[util.format('cfg.exchanges.%s.requirePair', exchange)];
+                if (undefined !== requirePair && '' !== requirePair)
+                {
+                    if (true === requirePair || '1' == requirePair)
+                    {
+                        config.exchanges[exchange]['requirePair'] = true;
+                    }
+                    else if (false === requirePair || '0' == requirePair)
+                    {
+                        config.exchanges[exchange]['requirePair'] = false;
+                    }
+                }
+            }
         }
     });
 }
