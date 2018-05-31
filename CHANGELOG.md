@@ -4,6 +4,8 @@
 ### Gateway
 * Support for conversion to others currencies in _/portfolio_ route
 ### UI
+* Support for conversion to a currency != _USD_ in _My Portfolio_ view
+* Support to choose a specific currency in _Coin Market Cap_ view
 
 ## [v1.6.3]
 ### Gateway

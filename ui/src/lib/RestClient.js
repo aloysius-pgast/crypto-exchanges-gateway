@@ -330,16 +330,33 @@ getAlerts(name)
 }
 
 //-- CoinMarketCap
-getCoinMarketCapTickers(limit)
+getCoinMarketCapTickers(limit, symbols)
 {
     let path = '/coinmarketcap/tickers';
     let params = {};
-    if (undefined != limit)
+    if (undefined !== symbols && 0 != symbols.length)
     {
-        params.limit = limit;
+        params.symbols = symbols;
+    }
+    else
+    {
+        if (undefined != limit)
+        {
+            params.limit = limit;
+        }
     }
     let url = this._getUrl(path);
     return this._sendRequest('get', url, params);
+}
+
+/**
+ * Retrieves the symbols supported on CMC
+ */
+getCoinMarketCapSymbols()
+{
+    let path = '/coinmarketcap/symbols';
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url);
 }
 
 /**
