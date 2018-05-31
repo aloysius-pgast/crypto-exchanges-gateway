@@ -16,10 +16,15 @@ constructor(props) {
    this._isMounted = false;
    // exchanges with balance support
    this._exchanges = {};
+   this._demoMode = false;
    _.forEach(serviceRegistry.getExchanges(), (e,id) => {
       if (undefined === e.features['balances'] || !e.features['balances'].enabled)
       {
           return;
+      }
+      if (e.demo)
+      {
+          this._demoMode = true;
       }
       this._exchanges[id] = {id:id,name:e.name};
    });
@@ -112,7 +117,7 @@ _loadCurrencies()
             return;
         }
         self.setState((prevState, props) => {
-            return {currencies:{loaded:true, currency:null, err:null, data: data}};
+            return {currencies:{loaded:true, err:null, data: data}};
         });
     }).catch (function(err){
         if (!self._isMounted)
@@ -121,7 +126,7 @@ _loadCurrencies()
         }
         alert(err);
         self.setState((prevState, props) => {
-            return {currencies:{loaded:false, currency:null, err:err, data: null}};
+            return {currencies:{loaded:false, err:err, data: null}};
         });
     });
 }
@@ -196,6 +201,19 @@ render()
         return null;
     }
 
+    const DemoMode = () => {
+        if (!this._demoMode)
+        {
+            return null;
+        }
+        return (
+            <div style={{color:'#e64400'}}>
+                <br/>
+                Some exchanges are running in <span className="font-italic">demo mode</span>. Random portfolio will be returned by gateway.
+            </div>
+        )
+    }
+
     const Exchanges = () => {
         return (
             <div>
@@ -251,6 +269,7 @@ render()
 
     return (
       <div>
+        <DemoMode/>
         <br/>
         <Exchanges/>
         <br/>
