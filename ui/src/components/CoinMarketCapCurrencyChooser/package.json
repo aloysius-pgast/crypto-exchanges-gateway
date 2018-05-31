@@ -1,0 +1,6 @@
+{
+  "name": "CoinMarketCapCurrencyChooser",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./CoinMarketCapCurrencyChooser.js"
+}

@@ -42,9 +42,9 @@ load()
         let version = 0;
         if (undefined !== obj.version)
         {
-            version = parseInt(obj.version);
+            obj.version = parseInt(obj.version);
         }
-        if (version < this._version)
+        if (obj.version < this._version)
         {
             legacyStarredPairs.push(key);
             let newKey = `starredPair:${obj.exchange}:${obj.pair}`;
@@ -55,7 +55,7 @@ load()
         {
             this._list[obj.exchange] = {};
         }
-        this._list[obj.exchange][obj.pair] = {timestamp:obj.timestamp};
+        this._list[obj.exchange][obj.pair] = {timestamp:obj.timestamp,version:obj.version};
     }
     // declare new keys
     _.forEach(migratedStarredPairs, (obj, key) => {

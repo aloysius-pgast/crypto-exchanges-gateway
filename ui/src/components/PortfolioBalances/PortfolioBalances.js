@@ -69,11 +69,16 @@ render()
                       stylePrice={color:'#e64400'};
                       titlePrice = 'Value is unknown';
                   }
+                  let precision = 4;
+                  if ('USD' != this._props.currency)
+                  {
+                      precision = 8;
+                  }
                   return <tr key={index}>
                       <td>{item.currency}</td>
-                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{item.price.toFixed(2)}</span></td>
+                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{item.price.toFixed(precision)}</span></td>
                       <td className="text-right">{item.pricePercent.toFixed(2)} %</td>
-                      <td className="text-right">{item.volume.toFixed(4)}</td>
+                      <td className="text-right">{item.volume.toFixed(8)}</td>
                   </tr>
                 })
               }
