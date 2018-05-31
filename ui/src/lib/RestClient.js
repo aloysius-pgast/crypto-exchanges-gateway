@@ -297,11 +297,12 @@ getTrades(exchange, pair)
     return this._sendRequest('get', url);
 }
 
-cancelOrder(exchange, orderNumber)
+cancelOrder(exchange, orderNumber, pair)
 {
     let path = '/openOrders/' + orderNumber;
+    let params = {pair:pair};
     let url = this._getExchangeUrl(exchange, path);
-    return this._sendRequest('delete', url);
+    return this._sendRequest('delete', url, params);
 }
 
 createOrder(exchange, pair, orderType, quantity, rate)
