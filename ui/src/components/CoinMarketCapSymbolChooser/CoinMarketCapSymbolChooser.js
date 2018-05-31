@@ -43,7 +43,7 @@ constructor(props)
 _handleClearSymbol(event)
 {
     this.setState((prevState, props) => {
-        return {symbol:'',filteredSymbols:[]};
+        return {symbol:'',symbolFilter:'',filteredSymbols:[]};
     }, function(){
         // call symbol event handler in parent ?
         if (undefined !== this.props.OnSelectSymbol)

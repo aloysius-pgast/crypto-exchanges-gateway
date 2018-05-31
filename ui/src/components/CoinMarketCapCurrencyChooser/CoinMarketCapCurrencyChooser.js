@@ -52,6 +52,19 @@ constructor(props)
     }
 }
 
+_handleResetCurrency(event)
+{
+    this.setState((prevState, props) => {
+        return {currency:'USD',currencyFilter:'',filteredCurrencies:[]};
+    }, function(){
+        // call symbol event handler in parent ?
+        if (undefined !== this.props.OnSelectCurrency)
+        {
+            this.props.OnSelectCurrency(this.state.currency);
+        }
+    });
+}
+
 _handleClearCurrencyFilter(event)
 {
     this.setState((prevState, props) => {
@@ -129,13 +142,18 @@ render()
         return (
             <div style={{marginBottom:'5px'}}>
               <span style={{minWidth:'70px',display:'inline-block'}}>C<small>URRENCY</small></span>&nbsp;&nbsp;
-              <select className="custom-select" style={{backgroundColor:"white"}} onChange={this._handleSelectCurrency.bind(this)} value={this.state.currency}>
-                {
-                  _.map(this.state.currencies).map((item, index) => {
-                    return <option key={index} value={item}>{item}</option>
-                  })
-                }
-              </select>
+              <InputGroup style={{maxWidth:"250px",marginBottom:'5px'}}>
+                <select className="custom-select" style={{backgroundColor:"white"}} onChange={this._handleSelectCurrency.bind(this)} value={this.state.currency}>
+                  {
+                    _.map(this.state.currencies).map((item, index) => {
+                      return <option key={index} value={item}>{item}</option>
+                    })
+                  }
+                </select>
+                <button type="button" className="input-group-addon btn btn-link" onClick={this._handleResetCurrency.bind(this)}>
+                    <i className="fa fa-remove" style={{fontSize:'1rem'}}></i>
+                </button>
+              </InputGroup>
             </div>
         )
     }
