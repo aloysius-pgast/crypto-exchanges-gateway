@@ -41,7 +41,7 @@ _reloadData()
 _loadData()
 {
     let self = this;
-    restClient.coinMarketCap(this.state.limit).then(function(data){
+    restClient.getCoinMarketCapTickers(this.state.limit).then(function(data){
         if (!self._isMounted)
         {
             return;

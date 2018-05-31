@@ -330,7 +330,7 @@ getAlerts(name)
 }
 
 //-- CoinMarketCap
-coinMarketCap(limit)
+getCoinMarketCapTickers(limit)
 {
     let path = '/coinmarketcap/tickers';
     let params = {};
@@ -342,18 +342,67 @@ coinMarketCap(limit)
     return this._sendRequest('get', url, params);
 }
 
+/**
+ * Retrieves the list of all possible currencies on CMC (fiat & symbols)
+ */
+getCoinMarketCapCurrencies()
+{
+    return new Promise((resolve, reject) => {
+        let list = ['USD'];
+        let arr = [];
+        let self = this;
+        // retrieve symbols
+        arr.push(new Promise((resolve, reject) => {
+            let path = '/coinmarketcap/symbols';
+            let url = self._getUrl.call(self, path);
+            self._sendRequest.call(self, 'get', url).then(function(data){
+                return resolve({data:data,success:true});
+            }).catch (function(err){
+                return resolve({data:null,success:false,err:err});
+            });
+        }));
+        // retrieve fiat currencies
+        arr.push(new Promise((resolve, reject) => {
+            let path = '/coinmarketcap/fiatCurrencies';
+            let url = self._getUrl.call(self, path);
+            self._sendRequest.call(self, 'get', url).then(function(data){
+                return resolve({data:data,success:true});
+            }).catch (function(err){
+                return resolve({data:null,success:false,err:err});
+            });
+        }));
+        Promise.all(arr).then(function(values){
+            _.forEach(values, (entry) => {
+                if (!entry.success)
+                {
+                    return;
+                }
+                _.forEach(entry.data, (c) => {
+                    list.push(c);
+                });
+            });
+            return resolve(list.sort());
+        });
+    });
+}
+
 //-- Portfolio
 /**
  * Loads portfolio
- * @param {exchangeId} exchange id, if not null, overall portfolio will be retrieved
+ * @param {string} exchangeId exchange id, if not null, overall portfolio will be retrieved
+ * @param {string} currency currency used to compute portfolio value
  */
-portfolio(exchangeId)
+portfolio(exchangeId, currency)
 {
     let path = '/portfolio';
     let params = {};
     if (null !== exchangeId)
     {
         params.exchanges = exchangeId;
+    }
+    if ('USD' != currency)
+    {
+        params.convertTo = [currency];
     }
     let url = this._getUrl(path);
     return this._sendRequest('get', url, params);
