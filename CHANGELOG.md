@@ -1,6 +1,6 @@
 # Change Log
 
-## [TO BE DEFINED]
+## [v1.6.4]
 ### Gateway
 * Support for conversion to others currencies in _/portfolio_ route
 ### UI
