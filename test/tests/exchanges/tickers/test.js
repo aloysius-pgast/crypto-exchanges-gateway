@@ -8,12 +8,12 @@ const restClient = require('../../../lib/rest-client').getInstance();
 //-- schema for a single ticker entry
 const tickerSchema = joi.object({
     pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
-    last:joi.number().required(),
+    last:joi.number().allow(null).required(),
     priceChangePercent:joi.number().allow(null).required(),
-    sell:joi.number().required(),
-    buy:joi.number().required(),
-    high:joi.number().required(),
-    low:joi.number().required(),
+    sell:joi.number().allow(null).required(),
+    buy:joi.number().allow(null).required(),
+    high:joi.number().allow(null).required(),
+    low:joi.number().allow(null).required(),
     volume:joi.number().required(),
     timestamp:joi.number().positive().required()
 });
