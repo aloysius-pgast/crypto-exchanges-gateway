@@ -109,6 +109,12 @@ restore(obj)
             store = true;
             return;
         }
+        if (null === exchange.manager)
+        {
+            logger.warn("Exchange '%s' does not support subscriptions anymore. Subscriptions for this exchange will be ignored", exchangeId);
+            store = true;
+            return;
+        }
         _.forEach(subscriptions, (entry, entity) => {
             this._exchanges[exchangeId].subscriptions[entity] = {
                 timestamp:entry.timestamp,
@@ -955,7 +961,7 @@ _addListeners()
     }
     _.forEach(this._exchanges, (exchange, id) => {
         _.forEach(exchange.listeners, (obj, eventName) => {
-            // do nothing if listener is elready enabled
+            // do nothing if listener is already enabled
             if (obj.enabled)
             {
                 return;
