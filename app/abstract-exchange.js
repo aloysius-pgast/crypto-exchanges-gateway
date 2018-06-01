@@ -101,10 +101,23 @@ hasCredentials()
 
 /**
  * Whether or not pair we should require pair when tickers, orders are requeted
+ * @param {string} feature (optional)
  */
-doesRequirePair()
+doesRequirePair(feature)
 {
-    return this.__requirePair;
+    if (!this.__requirePair)
+    {
+        return false;
+    }
+    if (undefined === feature || undefined === this.__features[feature])
+    {
+        return this.__requirePair;
+    }
+    if (undefined === this.__features[feature].withoutPair || this.__features[feature].withoutPair)
+    {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -438,6 +451,21 @@ getFeesPercent()
 getFeatures()
 {
     return this.__features;
+}
+
+/**
+ * Returns a specific feature
+ *
+ * @param {string} feature feature to return
+ * @return {object} feature object
+ */
+getFeature(feature)
+{
+    if (undefined === this.__features[feature])
+    {
+        return null;
+    }
+    return this.__features[feature];
 }
 
 /**
