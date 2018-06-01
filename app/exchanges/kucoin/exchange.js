@@ -58,8 +58,12 @@ constructor(exchangeId, exchangeName, config)
         enableRateLimit:true,
         rateLimit:delay,
         fetchOrderBookWarning:false,
-        verbose:true
+        verbose:false
     };
+    if (true === config.exchanges[exchangeId].verbose)
+    {
+        opt.verbose = true;
+    }
     if ('' != config.exchanges[exchangeId].key && '' != config.exchanges[exchangeId].secret)
     {
         opt.apiKey = config.exchanges[exchangeId].key;

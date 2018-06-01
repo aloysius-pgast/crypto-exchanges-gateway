@@ -23,6 +23,7 @@ constructor()
         key:"",
         secret:"",
         feesPercent:0.1,
+        verbose:false,
         throttle:{
             global:{
                 maxRequestsPerSecond:ConfigChecker.GLOBAL_API_MAX_REQUESTS_PER_SECOND
@@ -76,6 +77,12 @@ _check()
         {
             this._finalConfig.requirePair = true;
         }
+    }
+
+    //-- check whether or not verbose should be enabled
+    if (true === this._config.verbose)
+    {
+        this._finalConfig.verbose = true;
     }
 
     //-- check feesPercent
