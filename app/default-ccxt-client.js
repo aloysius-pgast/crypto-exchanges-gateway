@@ -514,11 +514,11 @@ formatTicker(pair, ccxtData)
     }
     return {
         pair:pair,
-        last:ccxtData.last,
-        sell:ccxtData.ask,
-        buy:ccxtData.bid,
-        high:ccxtData.high,
-        low:ccxtData.low,
+        last:undefined === ccxtData.last ? null : ccxtData.last,
+        sell:undefined === ccxtData.ask ? null : ccxtData.ask ,
+        buy:undefined === ccxtData.bid ? null : ccxtData.bid,
+        high:undefined === ccxtData.high ? null : ccxtData.high,
+        low:undefined === ccxtData.low ? null : ccxtData.low,
         volume:ccxtData.baseVolume,
         priceChangePercent:priceChangePercent,
         timestamp:ccxtData.timestamp / 1000.0
