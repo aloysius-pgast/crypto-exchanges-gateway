@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.0] (NOT RELEASED YET)
+### Gateway
+* Initial implementation of Kucoin exchange through _ccxt_
+
 ## [v1.6.4]
 ### Gateway
 * Support for conversion to others currencies in _/portfolio_ route

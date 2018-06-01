@@ -5,6 +5,7 @@ const Big = require('big.js');
 const Bottleneck = require('bottleneck');
 const PromiseHelper = require('./promise-helper');
 const Errors = require('./errors');
+const CcxtErrors = require('./ccxt-errors');
 
 const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
 
@@ -128,6 +129,14 @@ doesRequirePair(feature)
 isDemo()
 {
     return this.__credentials.isDemo;
+}
+
+/**
+ * Indicates whether or not we're using a ccxt exchange
+ */
+isCcxt()
+{
+    return false;
 }
 
 /**
@@ -805,6 +814,10 @@ async getTickers(pairs)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+            }
             this.__logError(e, 'getTickers');
             throw new Errors.GatewayError.InternalError();
         }
@@ -858,6 +871,10 @@ async getTickers(pairs)
                     throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+            }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
             }
             this.__logError(e, 'getTickers');
             throw new Errors.GatewayError.InternalError();
@@ -1039,6 +1056,10 @@ async getOrderBook(pair, opt)
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
         }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+        }
         this.__logError(e, 'getOrderBook');
         throw new Errors.GatewayError.InternalError();
     }
@@ -1194,6 +1215,10 @@ async getTrades(pair, opt)
                 throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+        }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
         }
         this.__logError(e, 'getTrades');
         throw new Errors.GatewayError.InternalError();
@@ -1423,6 +1448,10 @@ async getKlines(pair, opt)
                     throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+            }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
             }
             this.__logError(e, 'getKlines');
             throw new Errors.GatewayError.InternalError();
@@ -1658,6 +1687,10 @@ async testOrder(orderType, pair, targetRate, opt)
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
         }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+        }
         this.__logError(e, 'testOrder');
         throw new Errors.GatewayError.InternalError();
     }
@@ -1846,6 +1879,17 @@ async getOpenOrders(pairs, opt)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+            }
             this.__logError(e, 'getOpenOrders');
             throw new Errors.GatewayError.InternalError();
         }
@@ -1915,6 +1959,17 @@ async getOpenOrders(pairs, opt)
                     throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+            }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
             }
             this.__logError(e, 'getOpenOrders');
             throw new Errors.GatewayError.InternalError();
@@ -2153,6 +2208,17 @@ async getClosedOrders(pairs, opt)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+            }
             this.__logError(e, 'getClosedOrders');
             throw new Errors.GatewayError.InternalError();
         }
@@ -2227,6 +2293,17 @@ async getClosedOrders(pairs, opt)
                     throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+            }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
             }
             this.__logError(e, 'getClosedOrders');
             throw new Errors.GatewayError.InternalError();
@@ -2490,6 +2567,19 @@ async getOrder(orderNumber, pair)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                    case 'OrderNotFound':
+                        throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+            }
             this.__logError(e, 'getOrder');
             throw new Errors.GatewayError.InternalError();
         }
@@ -2537,6 +2627,19 @@ async getOrder(orderNumber, pair)
                     throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+            }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                    case 'OrderNotFound':
+                        throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
             }
             this.__logError(e, 'getOrder');
             throw new Errors.GatewayError.InternalError();
@@ -2587,6 +2690,19 @@ async getOrder(orderNumber, pair)
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
         }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            switch (e.ccxtErrorType)
+            {
+                case 'AuthenticationError':
+                    throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                case 'PermissionDenied':
+                    throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                case 'OrderNotFound':
+                    throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+            }
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+        }
         this.__logError(e, 'getOrder');
         throw new Errors.GatewayError.InternalError();
     }
@@ -2636,6 +2752,14 @@ async __getOrderPair(orderNumber, pairs)
             {
                 // this one can be ignored
                 if (entry.value instanceof Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound)
+                {
+                    return;
+                }
+            }
+            else if (entry.value instanceof CcxtErrors.BaseError)
+            {
+                // this one can be ignored
+                if ('OrderNotFound'  == entry.value.ccxtErrorType)
                 {
                     return;
                 }
@@ -2743,6 +2867,21 @@ async createOrder(orderType, pair, targetRate, quantity)
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
         }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            switch (e.ccxtErrorType)
+            {
+                case 'AuthenticationError':
+                    throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                case 'PermissionDenied':
+                    throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                case 'InsufficientFunds':
+                    throw new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InsufficientFunds(this.__id, pair, targetRate, quantity, e);
+                case 'InvalidOrder':
+                    throw new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.UnknownError(this.__id, pair, targetRate, quantity, e);
+            }
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+        }
         this.__logError(e, 'createOrder');
         throw new Errors.GatewayError.InternalError();
     }
@@ -2797,6 +2936,21 @@ async cancelOrder(orderNumber, pair)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                    case 'OrderNotFound':
+                        throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+                    case 'CancelPending':
+                        return true;
+                }
+                throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
+            }
             this.__logError(e, 'cancelOrder');
             throw new Errors.GatewayError.InternalError();
         }
@@ -2840,6 +2994,20 @@ async cancelOrder(orderNumber, pair)
                 }
                 throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
             }
+            if (e instanceof CcxtErrors.BaseError)
+            {
+                switch (e.ccxtErrorType)
+                {
+                    case 'AuthenticationError':
+                        throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                    case 'PermissionDenied':
+                        throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                    case 'OrderNotFound':
+                        throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+                    case 'CancelPending':
+                        return true;
+                }
+            }
             this.__logError(e, 'cancelOrder');
             throw new Errors.GatewayError.InternalError();
         }
@@ -2871,6 +3039,21 @@ async cancelOrder(orderNumber, pair)
                 throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+        }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            switch (e.ccxtErrorType)
+            {
+                case 'AuthenticationError':
+                    throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                case 'PermissionDenied':
+                    throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+                case 'OrderNotFound':
+                    throw new Errors.ExchangeError.InvalidRequest.OrderError.OrderNotFound(this.__id, orderNumber, e);
+                case 'CancelPending':
+                    return true;
+            }
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
         }
         this.__logError(e, 'cancelOrder');
         throw new Errors.GatewayError.InternalError();
@@ -2945,6 +3128,17 @@ async getBalances(currencies)
                 throw new Errors.ExchangeError.NetworkError.DDosProtection(this.__id, e);
             }
             throw new Errors.ExchangeError.NetworkError.UnknownError(this.__id, e);
+        }
+        if (e instanceof CcxtErrors.BaseError)
+        {
+            switch (e.ccxtErrorType)
+            {
+                case 'AuthenticationError':
+                    throw new Errors.ExchangeError.Forbidden.InvalidAuthentication(this.__id, e);
+                case 'PermissionDenied':
+                    throw new Errors.ExchangeError.Forbidden.PermissionDenied(this.__id, e);
+            }
+            throw new Errors.ExchangeError.InvalidRequest.UnknownError(this.__id, e);
         }
         this.__logError(e, 'getBalances');
         throw new Errors.GatewayError.InternalError();

@@ -40,6 +40,10 @@ ENV cfg.exchanges.binance.enabled "1"
 ENV cfg.exchanges.binance.requirePair "0"
 ENV cfg.exchanges.binance.key ""
 ENV cfg.exchanges.binance.secret ""
+ENV cfg.exchanges.kucoin.enabled "1"
+ENV cfg.exchanges.kucoin.requirePair "0"
+ENV cfg.exchanges.kucoin.key ""
+ENV cfg.exchanges.kucoin.secret ""
 
 EXPOSE 8000
 EXPOSE 8001

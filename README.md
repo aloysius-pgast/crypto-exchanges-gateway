@@ -16,7 +16,9 @@ Yes, gateway provides a WS endpoint
 
 * What about _ccxt_ ?
 
-_ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. It is probably something I will try to integrate at some point (to help adding more exchanges). While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
+_ccxt_ is a very nice project which provides a library to connect to multiple exchanges (_php_,_js_,_python_). When I started, I wasn't aware of the project. While _ccxt_ aims at providing a library, I want to offer an http gateway as an independant service to be used by any REST client (so virtually any language).
+
+Btw, _ccxt_ library is now used to interface with some exchanges ;)
 
 * What is the monthly fee for the service ?
 
@@ -69,9 +71,10 @@ A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-
 
 Currently supports for following exchanges :
 
-* [Bittrex](https://www.bittrex.com/) (my favorite)
-* [Binance](https://www.binance.com/) (nice Chinese exchange with good support)
+* [Bittrex](https://www.bittrex.com/)
+* [Binance](https://www.binance.com/) (my favorite)
 * [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
+* [Kucoin](https://www.kucoin.com)
 * More to come...
 
 Following API are currently supported :
@@ -159,7 +162,7 @@ node gateway.js
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
 
 ```javascript
-["binance","bittrex","poloniex"]
+["binance","bittrex","poloniex","kucoin"]
 ```
 
 By default, only public API will be enabled. In order to access trading/private API, you need to update _config.json_ with appropriate _user_ and _secret_ provided by exchange (check [documentation in _doc_ directory](doc/config.adoc) )
@@ -270,7 +273,7 @@ WS endpoint will be available on _ws://127.0.0.1:8001_
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
 
 ```javascript
-["binance","bittrex","poloniex"]
+["binance","bittrex","poloniex","kucoin"]
 ```
 
 By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
@@ -295,6 +298,10 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.exchanges.binance.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.binance.key : Binance user key
 * cfg.exchanges.binance.secret : Binance secret
+* cfg.exchanges.kucoin.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
+* cfg.exchanges.kucoin.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
+* cfg.exchanges.kucoin.key : Kucoin user key
+* cfg.exchanges.kucoin.secret : Kucoin secret
 
 If you don't want to use environment variables or want to customize config for a running container, you can create and edit *custom_config/config.json*
 
@@ -314,6 +321,7 @@ This project was made possible thanks to following projects :
 * [binance](https://www.npmjs.com/package/binance)
 * [body-parser](https://www.npmjs.com/package/body-parser)
 * [bottleneck](https://www.npmjs.com/package/bottleneck) (for rate limiting)
+* [ccxt](https://www.npmjs.com/package/ccxt) (used to interface with some exchanges)
 * [chump](https://www.npmjs.com/package/chump) (for PushOver)
 * [css-select](https://www.npmjs.com/package/css-select) (for HTML parsing)
 * [express](https://www.npmjs.com/package/express)

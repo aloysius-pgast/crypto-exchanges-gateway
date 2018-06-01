@@ -829,6 +829,7 @@ async _getOpenOrdersForPair(pair)
             order.targetPrice = parseFloat(new Big(order.targetRate).times(order.quantity).toFixed(8));
             order.remainingQuantity = order.quantity - parseFloat(entry.executedQty);
             list[order.orderNumber] = order;
+            self._cacheOrder(order.orderNumber, order.orderType, order.pair, 'open');
         });
         return list;
     });
