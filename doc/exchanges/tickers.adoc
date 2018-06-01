@@ -81,7 +81,7 @@ Result will be a dictionary using pairs as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}last
 |float
-|Last trade's price
+|Last trade's price (can be _null_ for pairs with very low volume)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
 |float
@@ -89,19 +89,19 @@ Result will be a dictionary using pairs as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
-|Lowest sell price
+|Lowest sell price (can be _null_ for pairs with very low volume)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}buy
 |float
-|Highest buy price
+|Highest buy price (can be _null_ for pairs with very low volume)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}high
 |float
-|Highest price (last 24H)
+|Highest price (last 24H) (can be _null_ for pairs with very low volume)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}low
 |float
-|Lowest price (last 24H)
+|Lowest price (last 24H) (can be _null_ for pairs with very low volume)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}volume
 |float
