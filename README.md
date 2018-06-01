@@ -289,15 +289,19 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
-* cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor)
-* cfg.coinmarketcap.enabled : enable/disable CoinMarketCap module (value should be set to _1_ to enable CoinMarketCap module, _0_ to disable CoinMarketCap module)
-* cfg.coinmarketcap.history : enable/disable CoinMarketCap history feature (value should be set to _1_ to enable CoinMarketCap history, _0_ to disable CoinMarketCap history) (will be ignored if CoinMarketCap is disabled)
+* cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor) (default = _1_)
+* cfg.coinmarketcap.enabled : enable/disable CoinMarketCap module (value should be set to _1_ to enable CoinMarketCap module, _0_ to disable CoinMarketCap module) (default = _1_)
+* cfg.coinmarketcap.history : enable/disable CoinMarketCap history feature (value should be set to _1_ to enable CoinMarketCap history, _0_ to disable CoinMarketCap history) (will be ignored if CoinMarketCap is disabled) (default = _1_)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
+* cfg.exchanges.poloniex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
 * cfg.exchanges.poloniex.key : Poloniex user key
 * cfg.exchanges.poloniex.secret : Poloniex secret
+* cfg.exchanges.bittrex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
 * cfg.exchanges.bittrex.key : Bittrex user key
 * cfg.exchanges.bittrex.secret : Bittrex secret
+* cfg.exchanges.binance.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
+* cfg.exchanges.binance.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.binance.key : Binance user key
 * cfg.exchanges.binance.secret : Binance secret
 

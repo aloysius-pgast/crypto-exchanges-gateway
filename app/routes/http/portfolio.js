@@ -15,11 +15,11 @@ _.forEach(serviceRegistry.getExchanges(), (obj, id) => {
         // use fakeExchange if demo mode is enabled for exchange
         if (obj.demo)
         {
-            exchanges[id] = new FakeExchangeClass(obj.instance);
+            exchanges[id] = {isDemo:true, instance:new FakeExchangeClass(obj.instance)};
         }
         else
         {
-            exchanges[id] = obj.instance;
+            exchanges[id] = {isDemo:false, instance:obj.instance};
         }
     }
 });
@@ -35,8 +35,14 @@ if (null === coinmarketcap || _.isEmpty(exchanges))
     return;
 }
 
+
+const logError = (e, method) => {
+    Errors.logError(e, `portfolio|${method}`)
+}
+
 /**
  * @param {string} exchanges list of exchanges to include in the result (optional, all by default)
+ * @param {string[]} convertTo used to convert result to some others symbols/currencies (optional)
  */
 app.get('/portfolio', (req, res) => {
     let filteredList = [];
@@ -64,7 +70,30 @@ app.get('/portfolio', (req, res) => {
         }
         if (0 == filteredList.length)
         {
-            return res.send({balances:{},price:0.0});
+            return res.send({balances:{},price:0,convertedPrice:{}});
+        }
+    }
+    else
+    {
+        // by default query all supported exchanges
+        filteredList = Object.keys(exchanges);
+    }
+    let convertTo = [];
+    if (undefined !== req.query.convertTo && '' != req.query.convertTo)
+    {
+        // support both array and comma-separated string
+        if (Array.isArray(req.query.convertTo))
+        {
+            _.forEach(req.query.convertTo, (c) => {
+                convertTo.push(c);
+            });
+        }
+        else
+        {
+            let arr = req.query.convertTo.split(',');
+            _.forEach(arr, (c) => {
+                convertTo.push(c);
+            });
         }
     }
     else
@@ -74,7 +103,15 @@ app.get('/portfolio', (req, res) => {
     }
     let arr = [];
     _.forEach(filteredList, (id) => {
-        let p = exchanges[id].getBalances();
+        let p;
+        if (exchanges[id].isDemo)
+        {
+            p = getDemoBalances(exchanges[id].instance);
+        }
+        else
+        {
+            p = exchanges[id].instance.getBalances();
+        }
         arr.push({promise:p, context:{exchange:id,api:'getBalances'}});
     });
     let balances = {};
@@ -88,27 +125,20 @@ app.get('/portfolio', (req, res) => {
             _.forEach(entry.value, (e, currency) => {
                 if (undefined === balances[currency])
                 {
-                    balances[currency] = {volume:0, price:0, pricePercent:0.0, unknownPrice:true}
+                    balances[currency] = {volume:0,price:0,pricePercent:0,convertedPrice:{},unknownPrice:true}
                 }
                 balances[currency].volume += e.total;
             });
         });
-        let symbols = [];
-        _.forEach(Object.keys(balances), (s) => {
-            let symbol = s;
-            switch (s)
-            {
-                case 'IOTA':
-                    symbol = 'MIOTA';
-                    break;
-                case 'XRB':
-                    symbol = 'NANO';
-                    break;
-            }
-            symbols.push(symbol);
-        });
+        let symbols = mapExchangeCurrenciesToCoinMarketCapSymbol(Object.keys(balances));
+        let opt = {symbols:symbols};
+        // do we need to convert ?
+        if (0 != convertTo.length)
+        {
+            opt.convertTo = convertTo;
+        }
         // get data from coinmarketcap
-        coinmarketcap.getTickers({symbols:symbols}).then(function(data) {
+        coinmarketcap.getTickers(opt).then(function(data) {
             let tickers = {};
             _.forEach(data, (entry) => {
                 // ignore tickers without price
@@ -119,20 +149,16 @@ app.get('/portfolio', (req, res) => {
                 // ignore tickers we're not interested in
                 if (undefined === balances[entry.symbol])
                 {
-                    // try to map currency to coinmarketcap symbol
-                    switch (entry.symbol)
+                    entry.symbol = mapCoinMarketCapSymbolToExchangeCurrency(entry.symbol);
+                    if (undefined === balances[entry.symbol])
                     {
-                        case 'MIOTA':
-                            entry.symbol = 'IOTA';
-                            break;
-                        case 'NANO':
-                            entry.symbol = 'XRB';
-                            break;
-                        default:
-                            return;
+                        return;
                     }
                 }
-                tickers[entry.symbol] = entry.price_usd;
+                tickers[entry.symbol] = {'USD':entry.price_usd,'BTC':entry.price_btc};
+                _.forEach(entry.converted, (e, symbol) => {
+                    tickers[entry.symbol][symbol] = e.price;
+                });
             });
             return sendPortfolio(res, balances, tickers);
         }).catch(function(err) {
@@ -141,8 +167,63 @@ app.get('/portfolio', (req, res) => {
     });
 });
 
+/**
+ * When exchange is in demo mode, only generate balances for symbols in the top 20
+ */
+let top20TickersPromise = null;
+const getTop20Tickers = () => {
+    if (null === top20TickersPromise)
+    {
+        top20TickersPromise = new Promise((resolve, reject) => {
+            coinmarketcap.getTickers({limit:20}).then((list) => {
+                top20TickersPromise = null;
+                return resolve(list);
+            }).catch((e) => {
+                logError(e, 'getTop20Tickers');
+                return resolve([]);
+            });
+        });
+    }
+    return top20TickersPromise;
+}
+const getDemoBalances = async (exchange) => {
+    let tickers = await getTop20Tickers();
+    if (0 == tickers.length)
+    {
+        return {};
+    }
+    let currencies = _.map(tickers, (e) => {return e.symbol});
+    return exchange.getBalances(currencies);
+}
+
+const mapExchangeCurrenciesToCoinMarketCapSymbol = (list) => {
+    return _.map(list, (c) => {
+        switch (c)
+        {
+            case 'IOTA':
+                return 'MIOTA';
+            case 'XRB':
+                return 'NANO';
+        }
+        return c;
+    });
+}
+
+const mapCoinMarketCapSymbolToExchangeCurrency = (symbol) => {
+    // try to map currency to coinmarketcap symbol
+    switch (symbol)
+    {
+        case 'MIOTA':
+            return 'IOTA';
+        case 'NANO':
+            return 'XRB';
+    }
+    return symbol;
+}
+
 const sendPortfolio = (res, balances, tickers) => {
-    let totalPrice = 0;
+    let totalPriceUSD = 0;
+    let totalPriceConverted = {};
     // update balances
     _.forEach(balances, (entry, currency) => {
         if (undefined === tickers[currency])
@@ -150,14 +231,38 @@ const sendPortfolio = (res, balances, tickers) => {
             return;
         }
         entry.unknownPrice = false;
-        entry.price = parseFloat(new Big(entry.volume).times(tickers[currency]).toFixed(4));
-        totalPrice += entry.price;
+        _.forEach(tickers[currency], (p, symbol) => {
+            let price;
+            if ('USD' == symbol)
+            {
+                price = parseFloat(new Big(entry.volume).times(p).toFixed(4));
+                entry.price = price;
+                totalPriceUSD += price;
+            }
+            else
+            {
+                price = parseFloat(new Big(entry.volume).times(p).toFixed(8));
+                entry.convertedPrice[symbol] = price;
+                if (undefined === totalPriceConverted[symbol])
+                {
+                    totalPriceConverted[symbol] = 0;
+                }
+                totalPriceConverted[symbol] += price;
+            }
+        });
+        // format volume
+        entry.volume = parseFloat(entry.volume.toFixed(8));
     });
     // update %
     _.forEach(balances, (entry, currency) => {
-        entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPrice).toFixed(2));
+        entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPriceUSD).toFixed(2));
     });
-    return res.send({balances:balances,price:parseFloat(totalPrice.toFixed(4))});
+    // update total price
+    totalPriceUSD = parseFloat(totalPriceUSD.toFixed(4));
+    _.forEach(Object.keys(totalPriceConverted), (symbol) => {
+        totalPriceConverted[symbol] = parseFloat(totalPriceConverted[symbol].toFixed(8));
+    });
+    return res.send({balances:balances,price:totalPriceUSD,convertedPrice:totalPriceConverted});
 }
 
 };

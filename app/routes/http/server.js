@@ -106,11 +106,18 @@ app.get('/server/services', (req, res) => {
     };
     let services = serviceRegistry.getServices();
     _.forEach(services.exchanges, (entry, id) => {
+        let features = _.cloneDeep(entry.instance.getFeatures());
+        _.forEach(features, (obj, name) => {
+            if (false === obj.withoutPair)
+            {
+                obj.requirePair = entry.instance.doesRequirePair(name);
+            }
+        });
         data.exchanges[id] = {
             id:entry.id,
             type:entry.type,
             name:entry.name,
-            features:entry.features,
+            features:features,
             demo:entry.demo,
             feesPercent:config.exchanges[id].feesPercent
         }

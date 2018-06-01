@@ -25,7 +25,7 @@ const fakeData = {
         maxCount:15
     },
     balances:{
-        minCount:0,
+        minCount:1,
         maxCount:5,
         min:0.1,
         max:1000,
@@ -492,7 +492,8 @@ _generateCurrencies(pairs, count)
         }
         list[currency] = true;
     });
-    return _.slice(_.shuffle(Object.keys(list)), 0, c);
+    let currencies = _.shuffle(Object.keys(list));
+    return _.slice(currencies, 0, c);
 }
 
 _generatePair(pairs)

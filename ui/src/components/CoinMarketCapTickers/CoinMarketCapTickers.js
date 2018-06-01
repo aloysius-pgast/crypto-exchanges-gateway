@@ -12,6 +12,7 @@ constructor(props)
     this._isMounted = false;
     this.state = {
         limit:10,
+        symbol:this.props.symbol,
         loaded:false,
         loadedTimestamp:0,
         err: null,
@@ -41,8 +42,19 @@ _reloadData()
 _loadData()
 {
     let self = this;
-    restClient.coinMarketCap(this.state.limit).then(function(data){
+    let symbol = this.state.symbol;
+    let symbols = undefined;
+    if (symbol != '')
+    {
+        symbols = [symbol];
+    }
+    restClient.getCoinMarketCapTickers(this.state.limit, symbols).then(function(data){
         if (!self._isMounted)
+        {
+            return;
+        }
+        // not the symbol we're expecting
+        if (symbol != self.state.symbol)
         {
             return;
         }
@@ -161,7 +173,7 @@ render()
                     volume_24h = 0;
                 }
                 return <tr key={index}>
-                    <td>{index + 1}</td>
+                    <td>{item.rank}</td>
                     <td>{item.name}</td>
                     <td>{item.symbol}</td>
                     <td className="text-right">{price_usd.toFixed(6)}</td>

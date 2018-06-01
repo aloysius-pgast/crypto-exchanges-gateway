@@ -7,7 +7,7 @@ const restClient = require('../../../lib/rest-client').getInstance();
 
 // schema for a single trade
 const tradeSchema = joi.object({
-    id:joi.number().integer().positive().required(),
+    id:joi.number().integer().positive().allow(null).required(),
     quantity:joi.number().positive().required(),
     rate:joi.number().positive().required(),
     // seems like it's possible to have a price = 0 (see below example for Poloniex)
@@ -69,7 +69,7 @@ const defineForExchange = (exchangeId) => {
 
             // retrieve trades with an id > afterTradeId
             MochaHelper.describe('GET', {path:`/exchanges/${exchangeId}/trades/${symbols[0]}`,params:'{"afterTradeId":xxxx}}'}, function(method, path, params){
-                it(`it should retrieve last trades with an id > xxxx for pair '${symbols[0]}'`, (done) => {
+                it(`it should retrieve last trades with an id > xxxx for pair '${symbols[0]}'`, function(done){
                     const schema = joi.array().items(tradeSchema);
                     restClient.makeRequest(method, path, {}).then((result) => {
                         Assert.validateResult(result, schema);
@@ -77,6 +77,10 @@ const defineForExchange = (exchangeId) => {
                         {
                             // if we search all trades with an id > (id(last) - 1) we should have an entry with id = id(last)
                             let lastTrade = result.body[0];
+                            if (null === lastTrade.id)
+                            {
+                                this.skip();
+                            }
                             let afterTradeId = lastTrade.id - 1;
                             restClient.makeRequest(method, path, {afterTradeId:afterTradeId}).then((result) => {
                                 Assert.validateResult(result, schema);

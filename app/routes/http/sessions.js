@@ -35,7 +35,8 @@ const checkExchange = (req, res, features) => {
     if (null === exchange)
     {
         let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchange(req.params.exchange);
-        return sendError(res, err);
+        sendError(res, err);
+        return null;
     }
     let exchangeInstance = exchange.instance;
     if (undefined !== features)
@@ -44,7 +45,9 @@ const checkExchange = (req, res, features) => {
             if (undefined === exchange.features[f] || !exchange.features[f].enabled)
             {
                 let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedExchangeFeature(req.params.exchange, f);
-                return sendError(res, err);
+                exchangeInstance = null;
+                sendError(res, err);
+                return false;
             }
         });
     }
@@ -90,7 +93,7 @@ const checkPair = (exchange, req, res) => {
  */
 const checkExchangeAndPair = (req, res, features) => {
     let exchange = checkExchange(req, res, features);
-    if (false === exchange)
+    if (null === exchange)
     {
         return Promise.resolve(false);
     }

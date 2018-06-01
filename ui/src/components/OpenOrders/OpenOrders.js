@@ -34,10 +34,10 @@ _getBaseUrls(exchange)
     this._newOrderBaseUrl = '#' + routes[this.props.exchange]['newOrder']['path'] + '/';
 }
 
-_handleCancel(orderNumber)
+_handleCancel(order)
 {
     let self = this;
-    restClient.cancelOrder(this.props.exchange, orderNumber).then(function(data){
+    restClient.cancelOrder(this.props.exchange, order.orderNumber, order.pair).then(function(data){
         self._reloadData();
     }).catch (function(err){
         if (undefined !== err.response && undefined !== err.response.data && undefined !== err.response.data.error)
@@ -159,9 +159,9 @@ render()
         return <span style={style}>{s}</span>
     }
 
-    const cancelButton = (orderNumber) => {
+    const cancelButton = (order) => {
         return (
-            <button type="button" className="btn btn-link p-0" onClick={this._handleCancel.bind(this, orderNumber)}>
+            <button type="button" className="btn btn-link p-0" onClick={this._handleCancel.bind(this, order)}>
                 <i className="fa fa-remove" style={{fontSize:'1.2rem',color:'#cc3300'}}></i>
             </button>
         )
@@ -213,7 +213,7 @@ render()
                     <td className="text-right">{item.quantity.toFixed(8)}</td>
                     <td className={classNamesRemainingQuantity}>{item.remainingQuantity.toFixed(8)}</td>
                     <td className="text-right">{item.targetPrice.toFixed(8)}</td>
-                    <td>{cancelButton(item.orderNumber)}</td>
+                    <td>{cancelButton({orderNumber:item.orderNumber,pair:item.pair})}</td>
                 </tr>
               })
             }

@@ -6,9 +6,6 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "reactstrap";
-import dateTimeHelper from '../../lib/DateTimeHelper';
-import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
-import ComponentLoadedTimestamp from '../../components/ComponentLoadedTimestamp';
 import dataStore from '../../lib/DataStore';
 import starredPairs from '../../lib/StarredPairs';
 

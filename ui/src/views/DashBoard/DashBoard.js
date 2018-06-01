@@ -66,11 +66,18 @@ _loadData()
 
 _loadStarredPairs()
 {
-    this._starredPairs = starredPairs.getStarredPairs();
-    _.forEach(this._starredPairs, (entry) => {
+    this._starredPairs = [];
+    let list = starredPairs.getStarredPairs();
+    _.forEach(list, (entry) => {
         // update url
         entry.url = this._baseUrlList[entry.exchange] + entry.pair;
         entry.exchangeName = serviceRegistry.getExchangeName(entry.exchange);
+        // exchange is not supported anymore
+        if (undefined === entry.exchangeName)
+        {
+            return;
+        }
+        this._starredPairs.push(entry);
     });
 }
 
