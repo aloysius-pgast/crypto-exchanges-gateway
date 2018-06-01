@@ -96,11 +96,6 @@ app.get('/portfolio', (req, res) => {
             });
         }
     }
-    else
-    {
-        // by default query all supported exchanges
-        filteredList = Object.keys(exchanges);
-    }
     let arr = [];
     _.forEach(filteredList, (id) => {
         let p;
