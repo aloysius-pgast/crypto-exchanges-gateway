@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-const yargs = require('yargs')
+const yargs = require('yargs');
 const _ = require('lodash');
 const Big = require('big.js');
 const RestClient = require('../../../../lib/rest-client');

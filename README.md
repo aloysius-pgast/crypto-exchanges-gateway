@@ -1,5 +1,3 @@
-*THIS BRANCH IS EXPERIMENTAL AND MIGHT BE BROKEN AT SOME POINT*
-
 # crypto-exchanges-gateway
 
 Your gateway to the world of crypto !
