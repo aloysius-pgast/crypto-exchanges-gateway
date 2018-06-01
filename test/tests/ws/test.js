@@ -206,108 +206,108 @@ MochaHelper.prepare(() => {
                     });
                 });
             });
-        }
 
-        //-- rpc sessions
-        // ensure session is destroyed upon disconnection by setting timeout to 0
-        wsUri = restClient.getWsUri('', {sid:SID,expires:true,timeout:0});
-        describe(`WS ${wsUri} (please be patient, shouldn't be longer than ${HELLO_MESSAGE_DELAY}s)`, function(){
-            const uri = wsUri;
-            let gotHello = false;
-            let gotTicker = false;
-            let ws;
-            it(`it should create session '${SID}' and receive 'hello' message`, (done) => {
-                ws = new WebSocket(uri);
-                let timer = null;
-                ws.on('open', function() {
-                    timer = setTimeout(function(){
-                        if (WebSocket.OPEN == ws.readyState)
+            //-- rpc sessions
+            // ensure session is destroyed upon disconnection by setting timeout to 0
+            wsUri = restClient.getWsUri('', {sid:SID,expires:true,timeout:0});
+            describe(`WS ${wsUri} (please be patient, shouldn't be longer than ${HELLO_MESSAGE_DELAY}s)`, function(){
+                const uri = wsUri;
+                let gotHello = false;
+                let gotTicker = false;
+                let ws;
+                it(`it should create session '${SID}' and receive 'hello' message`, (done) => {
+                    ws = new WebSocket(uri);
+                    let timer = null;
+                    ws.on('open', function() {
+                        timer = setTimeout(function(){
+                            if (WebSocket.OPEN == ws.readyState)
+                            {
+                                ws.close(4408, 'DATA_TIMEOUT');
+                            }
+                        }, HELLO_MESSAGE_DELAY * 1000);
+                    });
+                    ws.on('message', function(message) {
+                        let obj = MochaHelper.safeJSONparse(message);
+                        if (null === obj)
                         {
-                            ws.close(4408, 'DATA_TIMEOUT');
+                            Assert.fail(`Received invalid JSON message : ${message}`);
                         }
-                    }, HELLO_MESSAGE_DELAY * 1000);
-                });
-                ws.on('message', function(message) {
-                    let obj = MochaHelper.safeJSONparse(message);
-                    if (null === obj)
-                    {
-                        Assert.fail(`Received invalid JSON message : ${message}`);
-                    }
-                    if (undefined !== obj.hello)
-                    {
-                        gotHello = true;
-                        clearTimeout(timer);
-                        done();
-                        return;
-                    }
-                    if ('ticker' == obj.n)
-                    {
-                        gotTicker = true;
-                    }
-                });
-                ws.on('error', function(e) {
-                    this.terminate();
-                    done(e);
-                });
-                // likely to be an auth error
-                ws.on('unexpected-response', function(request, response){
-                    let err = {code:response.statusCode,message:response.statusMessage};
-                    done(err);
-                });
-                ws.on('close', function(code, reason){
-                    if (!gotHello)
-                    {
-                        Assert.fail(`We should have received 'hello' message withing ${HELLO_MESSAGE_DELAY}s (${code},${reason})`);
-                    }
-                });
-                // reply to ping
-                ws.on('ping', function(data){
-                    this.pong('', true, true);
-                });
-            });
-
-            // send subscription
-            let pairs = getSupportedPairsSymbolsForExchange(exchange);
-            let params = {exchange:exchange,pairs:pairs};
-            let message = {m:'subscribeToTickers',p:params};
-            describe(`WS ${wsUri} ${JSON.stringify(message)} (please be patient, shouldn't be longer than ${TICKERS_DATA_DELAY}s)`, function(){
-                it(`it should receive tickers data within ${TICKERS_DATA_DELAY}s`, (done) => {
-                    ws.send(JSON.stringify(message));
-                    let timeoutTimestamp = Date.now() + TICKERS_DATA_DELAY * 1000;
-                    // check every 5s if we received a ticker message
-                    let timer = setInterval(function(){
-                        let timestamp = Date.now();
-                        if (gotTicker)
+                        if (undefined !== obj.hello)
                         {
+                            gotHello = true;
                             clearTimeout(timer);
-                            ws.terminate();
                             done();
+                            return;
                         }
-                        if (timestamp > timeoutTimestamp)
+                        if ('ticker' == obj.n)
                         {
-                            ws.terminate();
-                            Assert.fail(`We should have received ticker data within ${TICKERS_DATA_DELAY}s`);
+                            gotTicker = true;
                         }
-                    }, 5000);
-                });
-            });
-
-            // session should not exist anymore
-            MochaHelper.describe('GET', `/sessions`, function(method, path, params){
-                it(`it should list existing sessions and session '${SID}' should not be in the list`, (done) => {
-                    restClient.makeRequest(method, path, params).then((result) => {
-                        Assert.validateResult(result, undefined, {httpCode:200});
-                        if (undefined !== result.body[SID])
-                        {
-                            Assert.fail(`Session '${SID}' should not be in the list`, result.body);
-                        }
-                        done();
-                    }).catch((e) => {
+                    });
+                    ws.on('error', function(e) {
+                        this.terminate();
                         done(e);
+                    });
+                    // likely to be an auth error
+                    ws.on('unexpected-response', function(request, response){
+                        let err = {code:response.statusCode,message:response.statusMessage};
+                        done(err);
+                    });
+                    ws.on('close', function(code, reason){
+                        if (!gotHello)
+                        {
+                            Assert.fail(`We should have received 'hello' message withing ${HELLO_MESSAGE_DELAY}s (${code},${reason})`);
+                        }
+                    });
+                    // reply to ping
+                    ws.on('ping', function(data){
+                        this.pong('', true, true);
+                    });
+                });
+
+                // send subscription
+                let pairs = getSupportedPairsSymbolsForExchange(exchange);
+                let params = {exchange:exchange,pairs:pairs};
+                let message = {m:'subscribeToTickers',p:params};
+                describe(`WS ${wsUri} ${JSON.stringify(message)} (please be patient, shouldn't be longer than ${TICKERS_DATA_DELAY}s)`, function(){
+                    it(`it should receive tickers data within ${TICKERS_DATA_DELAY}s`, (done) => {
+                        ws.send(JSON.stringify(message));
+                        let timeoutTimestamp = Date.now() + TICKERS_DATA_DELAY * 1000;
+                        // check every 5s if we received a ticker message
+                        let timer = setInterval(function(){
+                            let timestamp = Date.now();
+                            if (gotTicker)
+                            {
+                                clearTimeout(timer);
+                                ws.terminate();
+                                done();
+                            }
+                            if (timestamp > timeoutTimestamp)
+                            {
+                                ws.terminate();
+                                Assert.fail(`We should have received ticker data within ${TICKERS_DATA_DELAY}s`);
+                            }
+                        }, 5000);
+                    });
+                });
+
+                // session should not exist anymore
+                MochaHelper.describe('GET', `/sessions`, function(method, path, params){
+                    it(`it should list existing sessions and session '${SID}' should not be in the list`, (done) => {
+                        restClient.makeRequest(method, path, params).then((result) => {
+                            Assert.validateResult(result, undefined, {httpCode:200});
+                            if (undefined !== result.body[SID])
+                            {
+                                Assert.fail(`Session '${SID}' should not be in the list`, result.body);
+                            }
+                            done();
+                        }).catch((e) => {
+                            done(e);
+                        });
                     });
                 });
             });
-        })
+        }
 
     }, (services) => {
         return Object.keys(services.exchanges).length > 0;
