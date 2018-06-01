@@ -19,19 +19,6 @@ const sendError = (exchangeId, res, err) => {
     return Errors.sendHttpError(res, err, exchangeId);
 }
 
-/**
- * Updates a feature to indicate whether or not pair is required, based on exchange config
- * @param {object} feature feature object
- * @param {exchange} exchange object
- */
-const updateRequirePairInFeature = (feature, exchange) => {
-    if (undefined === feature.withoutPair || feature.withoutPair)
-    {
-        return;
-    }
-    feature.requirePair = exchange.doesRequirePair();
-}
-
 class DefaultExchangeRoutes
 {
 
@@ -77,7 +64,6 @@ static defineRoutes(app, exchange, bodyParsers)
     //-- tickers
     if (undefined !== features['tickers'] && features['tickers'].enabled)
     {
-        updateRequirePairInFeature(features['tickers'], exchange);
         this.defineGetTickersRoute(app, exchange);
         this.defineGetTickerRoute(app, exchange);
     }
@@ -122,7 +108,6 @@ static defineRoutes(app, exchange, bodyParsers)
     //-- open orders
     if (undefined !== features['openOrders'] && features['openOrders'].enabled)
     {
-        updateRequirePairInFeature(features['openOrders'], exchange);
         this.defineGetOpenOrdersRoute(app, exchange, {isDemo:isDemo, fakeExchange:fakeExchange});
         this.defineGetOpenOrderRoute(app, exchange, {isDemo:isDemo, fakeExchange:fakeExchange});
         this.definePostOpenOrderRoute(app, exchange, bodyParsers.urlEncoded, {isDemo:isDemo, fakeExchange:fakeExchange});
@@ -132,7 +117,6 @@ static defineRoutes(app, exchange, bodyParsers)
     //-- closed orders
     if (undefined !== features['closedOrders'] && features['closedOrders'].enabled)
     {
-        updateRequirePairInFeature(features['closedOrders'], exchange);
         this.defineGetClosedOrdersRoute(app, exchange, {isDemo:isDemo, fakeExchange:fakeExchange});
         this.defineGetClosedOrderRoute(app, exchange, {isDemo:isDemo, fakeExchange:fakeExchange});
     }
@@ -140,7 +124,6 @@ static defineRoutes(app, exchange, bodyParsers)
     //-- order
     if (undefined !== features['orders'] && features['orders'].enabled)
     {
-        updateRequirePairInFeature(features['orders'], exchange);
         this.defineGetOrderRoute(app, exchange, {isDemo:isDemo, fakeExchange:fakeExchange});
     }
 
@@ -246,7 +229,8 @@ static defineGetTickersRoute(app, exchange)
     const obj = {
         pairs: Joi.csvArray().items(Joi.string().pair()).single(true)
     };
-    if (exchange.doesRequirePair())
+
+    if (exchange.doesRequirePair('tickers'))
     {
         obj.pairs = obj.pairs.required();
     }
@@ -579,7 +563,7 @@ static defineGetOpenOrdersRoute(app, exchange, opt)
     const obj = {
         pairs: Joi.csvArray().items(Joi.string().pair()).single(true)
     };
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('openOrders'))
     {
         obj.pairs = obj.pairs.required();
     }
@@ -632,7 +616,7 @@ static defineGetOpenOrderRoute(app, exchange, opt)
     const obj = {
         pair: Joi.string().pair()
     };
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('openOrders'))
     {
         obj.pair = obj.pair.required();
     }
@@ -747,7 +731,7 @@ static defineDeleteOpenOrderRoute(app, exchange, opt)
     const obj = {
         pair: Joi.string().pair()
     }
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('openOrders'))
     {
         obj.pair = obj.pair.required();
     }
@@ -803,7 +787,7 @@ static defineGetClosedOrdersRoute(app, exchange, opt)
         pairs: Joi.csvArray().items(Joi.string().pair()).single(true),
         completeHistory: Joi.boolean().truthy('1').falsy('0').insensitive(true).default(false)
     }
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('closedOrders'))
     {
         obj.pairs = obj.pairs.required();
     }
@@ -862,7 +846,7 @@ static defineGetClosedOrderRoute(app, exchange, opt)
     const obj = {
         pair: Joi.string().pair()
     }
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('closedOrders'))
     {
         obj.pair = obj.pair.required();
     }
@@ -922,7 +906,7 @@ static defineGetOrderRoute(app, exchange, opt)
     const obj = {
         pair: Joi.string().pair()
     }
-    if (exchange.doesRequirePair())
+    if (exchange.doesRequirePair('orders'))
     {
         obj.pair = obj.pair.required();
     }
