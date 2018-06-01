@@ -1,6 +1,6 @@
 # Change Log
 
-## [TO BE DEFINED]
+## [v1.7.0] (NOT RELEASED YET)
 ### Gateway
 * Initial implementation of Kucoin exchange through _ccxt_
 
