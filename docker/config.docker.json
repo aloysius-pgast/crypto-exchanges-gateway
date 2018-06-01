@@ -43,6 +43,15 @@
             "type":"binance",
             "name":"Binance",
             "enabled":true,
+            "requirePair":false,
+            "key":"",
+            "secret":""
+        },
+        "kucoin":{
+            "type":"kucoin",
+            "name":"Kucoin",
+            "enabled":true,
+            "requirePair":false,
             "key":"",
             "secret":""
         }
