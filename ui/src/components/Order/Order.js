@@ -313,20 +313,20 @@ _handleSetTotal(e)
     switch (e.target.id)
     {
         case '25%':
-            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.25), this._limits.quantity.precision, this._limits.quantity.step);
-            value = floatValue.toFixed(this._limits.quantity.precision);
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.25));
+            value = floatValue.toFixed(8);
             break;
         case '50%':
-            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.5), this._limits.quantity.precision, this._limits.quantity.step);
-            value = floatValue.toFixed(this._limits.quantity.precision);
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.5));
+            value = floatValue.toFixed(8);
             break;
         case '75%':
-            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.75), this._limits.quantity.precision, this._limits.quantity.step);
-            value = floatValue.toFixed(this._limits.quantity.precision);
+            floatValue = this._getRoundedFloat(this._balance.floatValue.times(0.75));
+            value = floatValue.toFixed(8);
             break;
         case 'max':
-            floatValue = this._getRoundedFloat(this._balance.floatValue, this._limits.quantity.precision, this._limits.quantity.step);
-            value = floatValue.toFixed(this._limits.quantity.precision);
+            floatValue = this._getRoundedFloat(this._balance.floatValue);
+            value = floatValue.toFixed(8);
             break;
     }
     this._setValue('total', value);
