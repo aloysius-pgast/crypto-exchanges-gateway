@@ -3,6 +3,7 @@
 ## [v1.7.0] (NOT RELEASED YET)
 ### Gateway
 * Initial implementation of Kucoin exchange through _ccxt_
+* Provide default _wsTickers_ implementation for exchange which do not support tickers over ws by querying REST endpoint periodically
 
 ## [v1.6.4]
 ### Gateway
