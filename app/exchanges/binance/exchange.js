@@ -1002,7 +1002,7 @@ async _getClosedOrdersForPair(pair, completeHistory)
             pair:pair,
             orderType:orderType,
             orderNumber:entry.clientOrderId,
-            actualRate:null,
+            actualRate:parseFloat(entry.price),
             actualPrice:0,
             quantity:parseFloat(entry.executedQty),
             openTimestamp:parseFloat(entry.time / 1000.0),
@@ -1015,7 +1015,6 @@ async _getClosedOrdersForPair(pair, completeHistory)
         // keep this order in the list we need to finalize (ie: retrieve fees and closedTimestamp)
         if (0 != order.quantity)
         {
-            order.actualRate = parseFloat(entry.price);
             order.actualPrice = parseFloat(new Big(order.actualRate).times(order.quantity).toFixed(8));
             ordersToFinalize[entry.orderId] = order.orderNumber;
         }
@@ -1337,7 +1336,7 @@ async _getOrder(orderNumber, pair)
         else
         {
             order.quantity = parseFloat(data.executedQty);
-            order.actualRate = null;
+            order.actualRate = parseFloat(data.price);
             order.actualPrice = 0;
             order.closedTimestamp = null;
             order.fees = null;
@@ -1347,7 +1346,6 @@ async _getOrder(orderNumber, pair)
             // only if order as been filled
             if (0 != order.quantity)
             {
-                order.actualRate = parseFloat(data.price);
                 order.actualPrice = parseFloat(new Big(order.actualRate).times(order.quantity).toFixed(8));
                 try
                 {
