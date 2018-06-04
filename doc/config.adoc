@@ -57,6 +57,16 @@ Below config will only give access to public API (since no key/secret combinatio
             "requirePair":false,
             "key":"",
             "secret":""
+        },
+        "kucoin":{
+            "type":"kucoin",
+            "enabled":true,
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            /* how often in second tickers should be retrieved using REST API, to provide ws stream for tickers */
+            "tickerLoopPeriod":30,
+            "key":"",
+            "secret":""
         }
     }
 }
@@ -233,6 +243,27 @@ Access will be restricted using the following :
             "throttle":{
                 "global":{
                     "maxRequestsPerSecond":20
+                }
+            }
+        },
+        "kucoin":{
+            "enabled":true,
+            "type":"kucoin",
+            "name":"Kucoin",
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            /* how often in second tickers should be retrieved using REST API, to provide ws stream for tickers */
+            "tickerLoopPeriod":30,
+            /* API key provided by Kucoin */
+            "key":"ABCD",
+            /* Secret provided by Kucoin */
+            "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.10,
+            /* rate limiting to comply with Kucoin */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":1
                 }
             }
         }

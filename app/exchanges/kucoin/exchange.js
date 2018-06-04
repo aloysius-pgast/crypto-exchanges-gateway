@@ -5,7 +5,7 @@ const Errors = require('../../errors');
 const CcxtErrors = require('../../ccxt-errors');
 const CcxtClient = require('../../default-ccxt-client');
 const AbstractCcxtExchangeClass = require('../../abstract-ccxt-exchange');
-//const SubscriptionManagerClass = require('./subscription-manager');
+const SubscriptionManagerClass = require('./subscription-manager');
 
 const exchangeType = 'kucoin';
 
@@ -31,7 +31,7 @@ const defaultKlinesInterval = '5m';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:false},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true,'emulated':true},
     'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:false},
     'trades':{enabled:true}, 'wsTrades':{enabled:false},
     'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:false},
@@ -71,8 +71,8 @@ constructor(exchangeId, exchangeName, config)
     }
     let client = new CcxtClient('kucoin', opt);
     super(exchangeId, exchangeType, exchangeName, supportedFeatures, config, client);
-    //let subscriptionManager = new SubscriptionManagerClass(this, config);
-    //this._setSubscriptionManager(subscriptionManager);
+    let subscriptionManager = new SubscriptionManagerClass(this, config);
+    this._setSubscriptionManager(subscriptionManager);
 }
 
 /**

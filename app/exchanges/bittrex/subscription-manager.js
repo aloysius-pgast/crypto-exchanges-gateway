@@ -13,7 +13,8 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 {
 
 /**
- * Constructor
+ * @param {object} exchange exchange instance
+ * @param {object} config full config object
  */
 constructor(exchange)
 {

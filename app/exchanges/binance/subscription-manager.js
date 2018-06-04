@@ -7,14 +7,14 @@ const StreamClientClass = require('./stream-client');
 
 const BASE_WS_URI = 'wss://stream.binance.com:9443/ws';
 
-// request ticker update every 30s (since we don't have access to all information through WS)
-const TICKER_LOOP_PERIOD = 30 * 1000;
-
 class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 {
 
 /**
  * Constructor
+ *
+ * @param {object} exchange exchange instance
+ * @param {object} config full config object
  */
 constructor(exchange)
 {

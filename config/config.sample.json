@@ -54,6 +54,7 @@
             "name":"Kucoin",
             "enabled":true,
             "requirePair":false,
+            "tickerLoopPeriod":30,
             "key":"",
             "secret":""
         }

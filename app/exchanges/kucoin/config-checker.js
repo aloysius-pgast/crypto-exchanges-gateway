@@ -24,6 +24,7 @@ constructor()
         secret:"",
         feesPercent:0.1,
         verbose:false,
+        tickerLoopPeriod:30,
         throttle:{
             global:{
                 maxRequestsPerSecond:ConfigChecker.GLOBAL_API_MAX_REQUESTS_PER_SECOND
@@ -83,6 +84,21 @@ _check()
     if (true === this._config.verbose)
     {
         this._finalConfig.verbose = true;
+    }
+
+    //-- check ticker loop period
+    if (undefined !== this._config.tickerLoopPeriod)
+    {
+        let value = parseFloat(this._config.tickerLoopPeriod);
+        if (isNaN(value) || value <= 0)
+        {
+            this._invalid({name:'tickerLoopPeriod',value:this._config.tickerLoopPeriod});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.tickerLoopPeriod = value;
+        }
     }
 
     //-- check feesPercent

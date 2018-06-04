@@ -1,0 +1,25 @@
+"use strict";
+const _ = require('lodash');
+const debug = require('debug')('CEG:ExchangeSubscriptionManager:Kucoin');
+const logger = require('winston');
+const AbstractExchangeSubscriptionManagerClass = require('../../abstract-exchange-subscription-manager');
+const internalConfig = require('../../internal-config');
+
+class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
+{
+
+/**
+ * Constructor
+ *
+ * @param {object} exchange exchange instance
+ * @param {object} config full config object
+ */
+constructor(exchange, config)
+{
+    let exchangeId = exchange.getId();
+    super(exchange, {globalTickersSubscription:true, tickerLoop:{enabled:true, period:config.exchanges[exchangeId].tickerLoopPeriod}});
+}
+
+}
+
+module.exports = SubscriptionManager;
