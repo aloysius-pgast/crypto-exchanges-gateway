@@ -16,9 +16,9 @@ const exchangeType = 'dummy';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true},
-    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
-    'trades':{enabled:true}, 'wsTrades':{enabled:true},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true,emulated:false},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:false},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:false},
     'klines':{enabled:false}, 'wsKlines':{enabled:false},
     'orders':{enabled:true, withoutPair:true},
     'openOrders':{enabled:true, withoutPair:true},

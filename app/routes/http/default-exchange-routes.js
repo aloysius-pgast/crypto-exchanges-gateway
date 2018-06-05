@@ -29,8 +29,7 @@ static defineRoutes(app, exchange, bodyParsers)
 {
     let hasCredentials = exchange.hasCredentials();
     let isDemo = exchange.isDemo();
-    // we need to clone the features since we're gonna make some changes
-    let features = _.cloneDeep(exchange.getFeatures());
+    let features = exchange.getFeatures();
 
     //-- pairs
     if (undefined !== features['pairs'] && features['pairs'].enabled)

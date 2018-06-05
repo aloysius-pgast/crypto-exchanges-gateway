@@ -33,6 +33,27 @@ const MAX_KLINES_ENTRIES_PER_ITER = 500;
  * All methods prefixed with __ are reserved for internal use
  */
 
+/**
+ * Updates features list from config (will only change the exchanges which need ws emulation)
+ */
+const getUpdatedFeatures = (supportedFeatures, config) => {
+    let features = _.cloneDeep(supportedFeatures);
+    _.forEach(['wsTickers','wsOrderBooks','wsTrades'], (type) => {
+        if (features[type].enabled && features[type].emulated)
+        {
+            if (!config.emulatedWs[type].enabled)
+            {
+                features[type] = {enabled:false};
+            }
+            else
+            {
+                features[type].period = config.emulatedWs[type].period;
+            }
+        }
+    });
+    return features;
+}
+
 class AbstractExchange
 {
 
@@ -50,7 +71,7 @@ constructor(id, type, name, supportedFeatures, config)
     this.__name = name;
 
     // all supported features
-    this.__features = supportedFeatures;
+    this.__features = getUpdatedFeatures(supportedFeatures, config.exchanges[id]);
 
     // whether or not pair is required when requesting tickers, orders ...
     this.__requirePair = false;

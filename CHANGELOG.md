@@ -4,6 +4,8 @@
 ### Gateway
 * Initial implementation of Kucoin exchange through _ccxt_
 * Provide default _wsTickers_ implementation for exchange which do not support tickers over ws by querying REST endpoint periodically
+* Provide default _wsOrderBooks_ implementation for exchange which do not support order books over ws by querying REST endpoint periodically
+* Provide default _wsTrades_ implementation for exchange which do not support trades over ws by querying REST endpoint periodically
 ### UI
 * Possibility to import/export settings (ie: _starred pairs_)
 

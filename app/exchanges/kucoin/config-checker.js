@@ -24,7 +24,20 @@ constructor()
         secret:"",
         feesPercent:0.1,
         verbose:false,
-        tickerLoopPeriod:30,
+        emulatedWs:{
+            wsTickers:{
+                enabled:true,
+                period:30
+            },
+            wsOrderBooks:{
+                enabled:true,
+                period:30
+            },
+            wsTrades:{
+                enabled:true,
+                period:30
+            }
+        },
         throttle:{
             global:{
                 maxRequestsPerSecond:ConfigChecker.GLOBAL_API_MAX_REQUESTS_PER_SECOND
@@ -86,19 +99,41 @@ _check()
         this._finalConfig.verbose = true;
     }
 
-    //-- check ticker loop period
-    if (undefined !== this._config.tickerLoopPeriod)
+    //-- check emulated websocket
+    if (undefined !== this._config.emulatedWs)
     {
-        let value = parseFloat(this._config.tickerLoopPeriod);
-        if (isNaN(value) || value <= 0)
-        {
-            this._invalid({name:'tickerLoopPeriod',value:this._config.tickerLoopPeriod});
-            valid = false;
-        }
-        else
-        {
-            this._finalConfig.tickerLoopPeriod = value;
-        }
+        _.forEach(this._finalConfig.emulatedWs, (obj, type) => {
+            if (undefined !== this._config.emulatedWs[type])
+            {
+                if (undefined !== this._config.emulatedWs[type].enabled)
+                {
+                    if (true === this._config.emulatedWs[type].enabled)
+                    {
+                        obj.enabled = true;
+                    }
+                    else if (false === this._config.emulatedWs[type].enabled)
+                    {
+                        obj.enabled = false;
+                    }
+                }
+                if (obj.enabled)
+                {
+                    if (undefined !== this._config.emulatedWs[type].period)
+                    {
+                        let value = parseFloat(this._config.emulatedWs[type].period);
+                        if (isNaN(value) || value <= 0)
+                        {
+                            this._invalid({name:`emulatedWs[${type}][period]`,value:this._config.emulatedWs[type].period});
+                            valid = false;
+                        }
+                        else
+                        {
+                            obj.period = value;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     //-- check feesPercent

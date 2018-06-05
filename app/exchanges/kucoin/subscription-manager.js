@@ -17,7 +17,7 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 constructor(exchange, config)
 {
     let exchangeId = exchange.getId();
-    super(exchange, {globalTickersSubscription:true, tickerLoop:{enabled:true, period:config.exchanges[exchangeId].tickerLoopPeriod}});
+    super(exchange, {globalTickersSubscription:true,marketsSubscription:false});
 }
 
 }

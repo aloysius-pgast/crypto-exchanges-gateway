@@ -43,10 +43,10 @@ const defaultKlinesInterval = '5m';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:false}, 'wsTickers':{enabled:true},
-    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
-    'trades':{enabled:true}, 'wsTrades':{enabled:true},
-    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
+    'tickers':{enabled:true, withoutPair:false}, 'wsTickers':{enabled:true,emulated:false},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:false},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:false},
+    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:false,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
     'orders':{enabled:true, withoutPair:false},
     'openOrders':{enabled:true, withoutPair:false},
     'closedOrders':{enabled:true, withoutPair:false, completeHistory:true},
