@@ -82,6 +82,17 @@ _definePortfolioEntry(obj)
     );
 }
 
+_defineSettingsEntry(obj)
+{
+    this._menu.push(
+        {
+            name: 'Settings',
+            url: obj.path,
+            icon: 'fa fa-cog'
+        }
+    );
+}
+
 _defineAlertsEntry(obj)
 {
     this._menu.push(
@@ -128,9 +139,10 @@ _defineMenuEntries()
     let servicesRoutes = routeRegistry.getServicesRoutes();
     let marketOverviewRoute = routeRegistry.getRoute('/services/marketOverview');
     let portfolioRoute = routeRegistry.getRoute('/services/portfolio');
+    let settingsRoute = routeRegistry.getRoute('/services/settings');
     let alertsRoute = routeRegistry.getRoute('/services/alerts');
     // do we have services ?
-    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== alertsRoute || 0 != Object.keys(servicesRoutes))
+    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== settingsRoute || undefined !== alertsRoute || 0 != Object.keys(servicesRoutes))
     {
         this._menu.push(
             {
@@ -158,6 +170,10 @@ _defineMenuEntries()
         _.forEach(servicesRoutes, function(obj, id){
             self._defineServiceEntry(obj, id);
         });
+        if (undefined !== settingsRoute)
+        {
+            self._defineSettingsEntry(settingsRoute);
+        }
     }
 }
 

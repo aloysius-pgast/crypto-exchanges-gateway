@@ -28,6 +28,7 @@ import MyBalances from './views/MyBalances';
 import MarketOverview from './views/MarketOverview';
 import Portfolio from './views/Portfolio';
 import CoinMarketCap from './views/CoinMarketCap/';
+import Settings from './views/Settings';
 import Alerts from './views/Alerts/';
 
 class App extends Component {
@@ -170,7 +171,7 @@ _loadRoutes()
         });
     }
 
-    // Market Overview (requires local storage)
+    // Market Overview & Settings (requires local storage)
     if (window.ctx.hasLocalStorage)
     {
         path = '/services/marketOverview';
@@ -179,6 +180,14 @@ _loadRoutes()
             path:path,
             exact:true,
             component:MarketOverview
+        });
+
+        path = '/services/settings';
+        routeRegistry.registerRoute(path, 'settings', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:Settings
         });
     }
 

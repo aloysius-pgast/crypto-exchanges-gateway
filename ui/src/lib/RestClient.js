@@ -19,10 +19,22 @@ initialize(endpoint)
     this._apiEndpoint = endpoint;
 }
 
+hasApiKey()
+{
+    return null !== this._apiKey;
+}
+
+getApiKey()
+{
+    return this._apiKey;
+}
+
 setApiKey(apiKey)
 {
     this._apiKey = apiKey;
 }
+
+
 /**
  * @param {string} exchange exchange identifier
  * @param {string} key to check
