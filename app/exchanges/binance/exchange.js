@@ -293,17 +293,6 @@ async _getPairs()
             }
             ++activePairs;
             let baseCurrency = entry.quoteAsset;
-            switch (baseCurrency)
-            {
-                // only keep BTC, ETH, USD & BNC as base currency
-                case 'BTC':
-                case 'ETH':
-                case 'USDT':
-                case 'BNB':
-                    break;
-                default:
-                    return;
-            }
             let currency = entry.baseAsset;
             let pair = baseCurrency + '-' + currency;
             let filters = {};
