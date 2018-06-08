@@ -1346,7 +1346,8 @@ _registerTradesLoop(pair)
     // initialize loop information
     if (undefined === this._emulatedWs.wsTrades.list[loop_id])
     {
-        this._emulatedWs.wsTrades.list[loop_id] = {enabled:false, timer:null, lastTrade:null};
+        // initialize lastTrade with current timestamp, to only return trades which occur after initialization
+        this._emulatedWs.wsTrades.list[loop_id] = {enabled:false, timer:null, lastTrade:{id:null,timestamp:Date.now() / 1000.0}};
     }
     // we already have a loop
     if (this._emulatedWs.wsTrades.list[loop_id].enabled)
@@ -1361,7 +1362,6 @@ _registerTradesLoop(pair)
     let timestamp = Date.now() / 1000.0;
     this._emulatedWs.wsTrades.list[loop_id].enabled = true;
     this._emulatedWs.wsTrades.list[loop_id].timestamp = timestamp;
-    this._emulatedWs.wsTrades.list[loop_id].lastTrade = null;
     this._registerConnection(`orderBook-${loop_id}`);
     const doRequest = function(){
         if (debug.enabled)
