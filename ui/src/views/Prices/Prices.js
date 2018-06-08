@@ -9,6 +9,28 @@ import ReactStockChartsCandleSticks from '../../components/ReactStockChartsCandl
 import serviceRegistry from '../../lib/ServiceRegistry';
 import dataStore from '../../lib/DataStore';
 
+class TickerComponent extends Component {
+
+constructor(props) {
+    super(props);
+}
+
+render() {
+    if (null === this.props.pair)
+    {
+        return null
+    }
+    return (
+        <div className="animated fadeIn">
+          <br/>
+          <h6>TICKER</h6>
+          <Ticker exchange={this.props.exchange} pair={this.props.pair}/>
+        </div>
+    )
+}
+
+}
+
 const parseData = (data, interval) => {
     let arr = [];
     let lastDay = null;
@@ -240,6 +262,7 @@ componentWillReceiveProps(nextProps)
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair
         };
     }, function(){
+        console.log(this.state);
         this._loadData();
     });
 }
@@ -266,20 +289,6 @@ render() {
         )
     }
 
-    const TickerComponent = () => {
-        if (null === this.state.pair)
-        {
-            return null;
-        }
-        return (
-            <div className="animated fadeIn">
-              <br/>
-                <h6>TICKER</h6>
-                <Ticker exchange={this.state.exchange} pair={this.state.pair}/>
-            </div>
-        )
-    }
-
     const CandleSticksComponent = () => {
         if (null === this.state.pair)
         {
@@ -289,7 +298,7 @@ render() {
         if (tradingViewHelper.hasChartSupport(this.state.exchangeType))
         {
             return (
-                <div className="animated fadeIn" style={{width:'92%'}}>
+                <div id="bubu" className="animated fadeIn" style={{width:'92%'}}>
                   <br/>
                   <h6>CHART</h6>
                   <TradindViewCandleSticks exchange={this.state.exchangeType} pair={this.state.pair}/>
@@ -314,7 +323,7 @@ render() {
         <div className="animated fadeIn">
             <br/>
             <PairChooser exchange={this.state.exchange} pairs={this.state.data} pair={this.state.pair} OnSelectPair={this._handleSelectPair}/>
-            <TickerComponent/>
+            <TickerComponent exchange={this.state.exchange} pair={this.state.pair}/>
             <CandleSticksComponent/>
         </div>
     );
