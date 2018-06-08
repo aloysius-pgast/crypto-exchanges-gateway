@@ -45,6 +45,7 @@
     "react-dom": "^15.6.1",
     "react-markdown": "^3.1.5",
     "react-router-dom": "^4.2.2",
+    "react-stockcharts": "^0.7.6",
     "reactstrap": "^4.8.0",
     "simple-line-icons": "^2.4.1",
     "wolfy87-eventemitter": "^5.2.4"
