@@ -8,6 +8,7 @@
 * Provide default _wsTrades_ implementation for exchange which do not support trades over ws by querying REST endpoint periodically
 ### UI
 * Possibility to import/export settings (ie: _starred pairs_)
+* Home-made charting when exchange is not supported by _Trading view_ (*react-stockcharts is AMAZING*)
 
 ## [v1.6.4]
 ### Gateway
