@@ -47,6 +47,10 @@ _loadChart()
 }
 
 _recomputeDimensions(cb) {
+    if (!this._isMounted)
+    {
+        return;
+    }
     let style = window.getComputedStyle(this._parentNode);
     let width = parseFloat(style.width) - (parseFloat(style.paddingLeft) + parseFloat(style.paddingRight));
     width = Math.round(Math.max(width, 100));
