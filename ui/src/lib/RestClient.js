@@ -167,7 +167,11 @@ _sendRequest(method, url, params, cb)
             }
             resolve(response.data);
         }).catch(function(err){
-            reject(err);
+            if (undefined !== err.response)
+            {
+                return reject(err.response.data);
+            }
+            return reject(err);
         });
     });
 }
@@ -269,6 +273,13 @@ getClosedOrder(exchange, orderNumber)
     let self = this;
     return this._sendRequest('get', url, {}, function(data){
     });
+}
+
+getKlines(exchange, pair)
+{
+    let path = '/klines/' + pair;
+    let url = this._getExchangeUrl(exchange, path);
+    return this._sendRequest('get', url);
 }
 
 getTickers(exchange, pairs)
