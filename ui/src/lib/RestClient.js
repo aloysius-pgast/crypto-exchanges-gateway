@@ -275,11 +275,16 @@ getClosedOrder(exchange, orderNumber)
     });
 }
 
-getKlines(exchange, pair)
+getKlines(exchange, pair, interval)
 {
     let path = '/klines/' + pair;
+    let params = {};
+    if (undefined !== interval)
+    {
+        params.interval = interval;
+    }
     let url = this._getExchangeUrl(exchange, path);
-    return this._sendRequest('get', url);
+    return this._sendRequest('get', url, params);
 }
 
 getTickers(exchange, pairs)
