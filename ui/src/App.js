@@ -244,7 +244,7 @@ render()
         <Header />
         <div className="app-body">
           <SideBar {...this.props}/>
-          <main className="main">
+          <main className="main" style={{overflow:'hidden'}}>
             <TopMenu {...this.props}/>
             <Container fluid>
               <Switch>
