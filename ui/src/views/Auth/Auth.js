@@ -144,7 +144,7 @@ render()
     }
     return (
         <form noValidate style={{marginTop:'50px'}} onSubmit={this._handleCheckApiKey}>
-        <Row>
+        <Row className="mx-auto" style={{width: "95%"}}>
           <Col className="col-auto mx-auto">
             <Card>
               <CardHeader>

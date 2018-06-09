@@ -69,6 +69,29 @@ load()
     return true;
 }
 
+// remove all existing starred pairs
+reset()
+{
+    if (!this._isSupported)
+    {
+        return false;
+    }
+    let keys = [];
+    for (var i = 0; i < window.localStorage.length; i++)
+    {
+        let key = window.localStorage.key(i);
+        if (!key.startsWith('starredPair:'))
+        {
+            continue;
+        }
+        keys.push(key);
+    }
+    this._list = {};
+    _.forEach(keys, (key) => {
+        window.localStorage.removeItem(key);
+    });
+}
+
 isStarred(exchangeId, pair)
 {
     if (!this._isSupported)
@@ -82,7 +105,7 @@ isStarred(exchangeId, pair)
     return true;
 }
 
-star(exchangeId, pair)
+star(exchangeId, pair, timestamp)
 {
     if (!this._isSupported)
     {
@@ -94,7 +117,10 @@ star(exchangeId, pair)
     }
     if (undefined === this._list[exchangeId][pair])
     {
-        let timestamp = parseInt(new Date().getTime() / 1000);
+        if (undefined === timestamp)
+        {
+            timestamp = parseInt(Date.now() / 1000.0);
+        }
         this._list[exchangeId][pair] = {timestamp:timestamp};
         let key = `starredPair:${exchangeId}:${pair}`;
         let data = JSON.stringify({exchange:exchangeId,pair:pair,timestamp:timestamp,version:this._version});

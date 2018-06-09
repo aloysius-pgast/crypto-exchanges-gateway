@@ -2,6 +2,8 @@
 const _ = require('lodash');
 const EventEmitter = require('events');
 const debug = require('debug')('CEG:ExchangeSubscriptionManager');
+const logger = require('winston');
+const Errors = require('./errors');
 const AbstractExchangeClass = require('./abstract-exchange');
 
 /**
@@ -14,6 +16,15 @@ const AbstractExchangeClass = require('./abstract-exchange');
  * - orderBookUpdate (order book update for a single pair)
  * - trades (new trades for a single pair)
  */
+
+// how often in ms should we retrieve tickers
+const TICKERS_LOOP_DEFAULT_PERIOD = 30 * 1000;
+
+// how often in ms should we retrieve order book
+const ORDER_BOOK_LOOP_DEFAULT_PERIOD = 30 * 1000;
+
+// how often in ms should we retrieve trades
+const TRADES_LOOP_DEFAULT_PERIOD = 30 * 1000;
 
 class AbstractExchangeSubscriptionManager extends EventEmitter
 {
@@ -34,13 +45,40 @@ constructor(exchange, options)
     super();
     this._globalTickersSubscription = true;
     this._marketsSubscription = true;
+    // used to emulate ws by doing periodic REST requests
+    this._emulatedWs = {
+        wsTickers:{
+            enabled:false,
+            list:{},
+            period:TICKERS_LOOP_DEFAULT_PERIOD
+        },
+        wsOrderBooks:{
+            enabled:false,
+            list:{},
+            period:ORDER_BOOK_LOOP_DEFAULT_PERIOD
+        },
+        wsTrades:{
+            enabled:false,
+            list:{},
+            period:TRADES_LOOP_DEFAULT_PERIOD
+        }
+    }
+    // check if we need ws emulation
+    let features = exchange.getFeatures();
+    _.forEach(['wsTickers','wsOrderBooks','wsTrades'], (type) => {
+        if (features[type].enabled && features[type].emulated)
+        {
+            this._emulatedWs[type].enabled = true;
+            this._emulatedWs[type].period = features[type].period * 1000;
+        }
+    });
     if (undefined !== options)
     {
-        if (undefined !== options.marketsSubscription && false === options.marketsSubscription)
+        if (false === options.marketsSubscription)
         {
             this._marketsSubscription = false;
         }
-        if (undefined !== options.globalTickersSubscription && false === options.globalTickersSubscription)
+        if (false === options.globalTickersSubscription)
         {
             this._globalTickersSubscription = false;
         }
@@ -260,7 +298,14 @@ updateTickersSubscriptions(sessionId, subscribe, unsubscribe, connect)
         }
         this._subscriptions.tickers.timestamp = timestamp;
         this._subscriptions.tickers.count = Object.keys(this._subscriptions.tickers.pairs).length;
-        this._processChanges(changes, {connect:connect});
+        if (!this._emulatedWs.wsTickers.enabled)
+        {
+            this._processChanges(changes, {connect:connect});
+        }
+        else
+        {
+            this._processTickersLoops(changes, {connect:connect});
+        }
     }
 }
 
@@ -395,7 +440,14 @@ updateOrderBooksSubscriptions(sessionId, subscribe, unsubscribe, resync, connect
         }
         this._subscriptions.orderBooks.count = Object.keys(this._subscriptions.orderBooks.pairs).length;
         this._subscriptions.markets.count = Object.keys(this._subscriptions.markets.pairs).length;
-        this._processChanges(changes, {connect:connect});
+        if (!this._emulatedWs.wsOrderBooks.enabled)
+        {
+            this._processChanges(changes, {connect:connect});
+        }
+        else
+        {
+            this._processOrderBooksLoops(changes, {connect:connect});
+        }
     }
 }
 
@@ -510,7 +562,14 @@ updateTradesSubscriptions(sessionId, subscribe, unsubscribe, connect)
         this._subscriptions.trades.timestamp = timestamp;
         this._subscriptions.trades.count = Object.keys(this._subscriptions.trades.pairs).length;
         this._subscriptions.markets.count = Object.keys(this._subscriptions.markets.pairs).length;
-        this._processChanges(changes, {connect:connect});
+        if (!this._emulatedWs.wsOrderBooks.enabled)
+        {
+            this._processChanges(changes, {connect:connect});
+        }
+        else
+        {
+            this._processTradesLoops(changes, {connect:connect});
+        }
     }
 }
 
@@ -753,6 +812,11 @@ _processSubscriptions(streamClientDescriptor)
         switch (entity)
         {
             case 'tickers':
+                // ignore as it is already managed by tickers loop
+                if (this._emulatedWs.wsTickers.enabled)
+                {
+                    return;
+                }
                 key = 'ticker';
                 break;
             case 'orderBooks':
@@ -779,7 +843,7 @@ _processSubscriptions(streamClientDescriptor)
             }
         });
     });
-    if (this._globalTickersSubscription)
+    if (this._globalTickersSubscription && !this._emulatedWs.wsTickers.enabled)
     {
         if (this._subscriptions.tickers.subscribed)
         {
@@ -791,6 +855,626 @@ _processSubscriptions(streamClientDescriptor)
         return;
     }
     this._processChanges(changes, {connect:true, client:streamClientDescriptor});
+}
+
+//-- tickers loops are used to emulate wsTickers when exchange does not support ws
+
+/**
+ * @param {object} changes list of changes to process
+ * @param {boolean} opt.connect whether or not changes should trigger a connection
+ *
+ *  Each property (subscribe,unsubscribe) is optional
+ *  Entity can be (ticker,tickers)
+ *
+ * {
+ *    "subscribe":[{"entity":"","pair":""},...],
+ *    "unsubscribe":[{"entity":"","pair":""},...]
+ * }
+ */
+_processTickersLoops(changes, opt)
+{
+    // check if we need to unsubscribe
+    if (undefined !== changes.unsubscribe)
+    {
+        _.forEach(changes.unsubscribe, (entry) => {
+            switch (entry.entity)
+            {
+                case 'ticker':
+                    this._unregisterTickersLoop(entry.pair);
+                    break;
+                case 'tickers':
+                    this._unregisterGlobalTickersLoop();
+                    break;
+            }
+        });
+    }
+    // check if we need to subscribe
+    if (undefined !== changes.subscribe)
+    {
+        // only if we'be been asked to connect to exchange streams
+        if (opt.connect)
+        {
+            _.forEach(changes.subscribe, (entry) => {
+                switch (entry.entity)
+                {
+                    case 'ticker':
+                        this._registerTickersLoop(entry.pair);
+                        break;
+                    case 'tickers':
+                        this._registerGlobalTickersLoop();
+                        break;
+                }
+            });
+        }
+    }
+}
+
+/**
+ * Starts a global ticker loop (will be called if exchange supports retrieving tickers for all pairs)
+ */
+_registerGlobalTickersLoop()
+{
+    let loop_id = 'global';
+    // initialize loop information
+    if (undefined === this._emulatedWs.wsTickers.list[loop_id])
+    {
+        this._emulatedWs.wsTickers.list[loop_id] = {enabled:false,timer:null};
+    }
+    // we already have a loop
+    if (this._emulatedWs.wsTickers.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Starting global ticker loop for exchange '${this._exchangeId}'`);
+    }
+    let self = this;
+    let timestamp = Date.now() / 1000.0;
+    this._emulatedWs.wsTickers.list[loop_id].enabled = true;
+    this._emulatedWs.wsTickers.list[loop_id].timestamp = timestamp;
+    this._registerConnection(`ticker-${loop_id}`);
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Retrieving tickers for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getTickers().then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsTickers.list[loop_id].enabled)
+            {
+                return;
+            }
+            // we already have a newer loop
+            if (self._emulatedWs.wsTickers.list[loop_id].timestamp > timestamp)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Got new tickers for exchange '${self._exchangeId}'`);
+            }
+            // process each subscribed pair
+            _.forEach(self._subscriptions.tickers.pairs, (e, pair) => {
+                if (undefined !== data[pair])
+                {
+                    let evt = {
+                        exchange:self._exchangeId,
+                        pair:pair,
+                        data:data[pair]
+                    }
+                    self.emit('ticker', evt);
+                }
+            });
+            // schedule next loop
+            self._emulatedWs.wsTickers.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, self._emulatedWs.wsTickers.period);
+        }).catch((e) => {
+            // try again after 5s
+            let period = 5000;
+            if (period > self._emulatedWs.wsTickers.period)
+            {
+                period = self._emulatedWs.wsTickers.period;
+            }
+            logger.warn(`Could not retrieve tickers for exchange '${self._exchangeId}' : will try again in ${period} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            self._emulatedWs.wsTickers.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        });
+    }
+    doRequest();
+}
+
+/*
+ * Stops global ticker loop (will be called if exchange supports retrieving tickers for all pairs)
+ */
+_unregisterGlobalTickersLoop()
+{
+    let loop_id = 'global';
+    // loop is already disabled
+    if (undefined === this._emulatedWs.wsTickers.list[loop_id] || !this._emulatedWs.wsTickers.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Stopping global ticker loop for exchange '${this._exchangeId}'`);
+    }
+    this._unregisterConnection(`ticker-${loop_id}`);
+    this._emulatedWs.wsTickers.list[loop_id].enabled = false;
+    if (null !== this._emulatedWs.wsTickers.list[loop_id].timer)
+    {
+        clearTimeout(this._emulatedWs.wsTickers.list[loop_id].timer);
+        this._emulatedWs.wsTickers.list[loop_id].timer = null;
+    }
+    this._emulatedWs.wsTickers.list[loop_id].timer = null;
+    this._emulatedWs.wsTickers.list[loop_id].timestamp = Date.now() / 1000.0;
+}
+
+/**
+ * Starts a ticker loop for a given pair (will be called if exchange does not support retrieving tickers for all pairs)
+ *
+ * @param {string} pair pair to retrieve ticker for
+ */
+_registerTickersLoopForPair(pair)
+{
+    let loop_id = pair;
+    // initialize loop information
+    if (undefined === this._emulatedWs.wsTickers.list[loop_id])
+    {
+        this._emulatedWs.wsTickers.list[loop_id] = {enabled:false, timer:null};
+    }
+    // we already have a loop
+    if (this._emulatedWs.wsTickers.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Starting '${pair}' ticker loop for exchange '${this._exchangeId}'`);
+    }
+    let self = this;
+    let timestamp = Date.now() / 1000.0;
+    this._emulatedWs.wsTickers.list[loop_id].enabled = true;
+    this._emulatedWs.wsTickers.list[loop_id].timestamp = timestamp;
+    this._registerConnection(`ticker-${loop_id}`);
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Retrieving '${pair}' tickers for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getTickers().then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsTickers.list[loop_id].enabled)
+            {
+                return;
+            }
+            // we already have a newer loop
+            if (self._emulatedWs.wsTickers.list[loop_id].timestamp > timestamp)
+            {
+                return;
+            }
+            if (undefined !== data[pair])
+            {
+                if (debug.enabled)
+                {
+                    debug(`Got new '${pair}' ticker for exchange '${self._exchangeId}'`);
+                }
+                let evt = {
+                    exchange:self._exchangeId,
+                    pair:pair,
+                    data:data[pair]
+                }
+                self.emit('ticker', evt);
+            }
+            // schedule next loop
+            self._emulatedWs.wsTickers.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, self._emulatedWs.wsTickers.period);
+        }).catch((e) => {
+            // try again after 5s
+            let period = 5000;
+            if (period > self._emulatedWs.wsTickers.period)
+            {
+                period = self._emulatedWs.wsTickers.period;
+            }
+            logger.warn(`Could not retrieve '${pair}' ticker for exchange '${self._exchangeId}' : will try again in ${period} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            self._emulatedWs.wsTickers.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        });
+    }
+    doRequest();
+}
+
+/**
+ * Stops ticker loop for a given pair (will be called if exchange does not support retrieving tickers for all pairs)
+ *
+ * @param {string} pair pair to unsubscribe from
+ */
+_unregisterTickersLoopForPair(pair)
+{
+    let loop_id = pair;
+    // loop is already disabled
+    if (undefined === this._emulatedWs.wsTickers.list[loop_id] || !this._emulatedWs.wsTickers.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Stopping '${pair}' ticker loop for exchange '${this._exchangeId}'`);
+    }
+    this._unregisterConnection(`ticker-${loop_id}`);
+    this._emulatedWs.wsTickers.list[loop_id].enabled = false;
+    if (null !== this._emulatedWs.wsTickers.list[loop_id].timer)
+    {
+        clearTimeout(this._emulatedWs.wsTickers.list[loop_id].timer);
+        this._emulatedWs.wsTickers.list[loop_id].timer = null;
+    }
+    this._emulatedWs.wsTickers.list[loop_id].timestamp = Date.now() / 1000.0;
+}
+
+//-- order books loops are used to emulate wsOrderBooks when exchange does not support ws
+
+/**
+ * @param {object} changes list of changes to process
+ * @param {boolean} opt.connect whether or not changes should trigger a connection
+ *
+ *  Each property (subscribe,unsubscribe) is optional
+ *  Entity can be (orderBook)
+ *
+ * {
+ *    "subscribe":[{"entity":"","pair":""},...],
+ *    "unsubscribe":[{"entity":"","pair":""},...]
+ * }
+ */
+_processOrderBooksLoops(changes, opt)
+{
+    // check if we need to unsubscribe
+    if (undefined !== changes.unsubscribe)
+    {
+        _.forEach(changes.unsubscribe, (entry) => {
+            switch (entry.entity)
+            {
+                case 'orderBook':
+                    this._unregisterOrderBookLoop(entry.pair);
+                    break;
+            }
+        });
+    }
+    // check if we need to subscribe
+    if (undefined !== changes.subscribe)
+    {
+        // only if we'be been asked to connect to exchange streams
+        if (opt.connect)
+        {
+            _.forEach(changes.subscribe, (entry) => {
+                switch (entry.entity)
+                {
+                    case 'orderBook':
+                        this._registerOrderBookLoop(entry.pair);
+                        break;
+                }
+            });
+        }
+    }
+}
+
+/**
+ * Starts an order book loop for a given pair
+ *
+ * @param {string} pair pair to retrieve order book for
+ */
+_registerOrderBookLoop(pair)
+{
+    let loop_id = pair;
+    // initialize loop information
+    if (undefined === this._emulatedWs.wsOrderBooks.list[loop_id])
+    {
+        this._emulatedWs.wsOrderBooks.list[loop_id] = {enabled:false, timer:null};
+    }
+    // we already have a loop
+    if (this._emulatedWs.wsOrderBooks.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Starting '${pair}' order book loop for exchange '${this._exchangeId}'`);
+    }
+    let self = this;
+    let timestamp = Date.now() / 1000.0;
+    this._emulatedWs.wsOrderBooks.list[loop_id].enabled = true;
+    this._emulatedWs.wsOrderBooks.list[loop_id].timestamp = timestamp;
+    this._registerConnection(`orderBook-${loop_id}`);
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Retrieving '${pair}' order book for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getOrderBook(pair).then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsOrderBooks.list[loop_id].enabled)
+            {
+                return;
+            }
+            // we already have a newer loop
+            if (self._emulatedWs.wsOrderBooks.list[loop_id].timestamp > timestamp)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Got new '${pair}' order book for exchange '${self._exchangeId}'`);
+            }
+            let evt = {
+                exchange:self._exchangeId,
+                pair:pair,
+                cseq:Date.now(),
+                data:{
+                    buy:data.buy,
+                    sell:data.sell
+                }
+            }
+            self.emit('orderBook', evt);
+            // schedule next loop
+            self._emulatedWs.wsOrderBooks.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, self._emulatedWs.wsOrderBooks.period);
+        }).catch((e) => {
+            // try again after 5s
+            let period = 5000;
+            if (period > self._emulatedWs.wsOrderBooks.period)
+            {
+                period = self._emulatedWs.wsOrderBooks.period;
+            }
+            logger.warn(`Could not retrieve '${pair}' order book for exchange '${self._exchangeId}' : will try again in ${period} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            self._emulatedWs.wsOrderBooks.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        });
+    }
+    doRequest();
+}
+
+/**
+ * Stops order book loop for a given pair
+ *
+ * @param {string} pair pair to unsubscribe from
+ */
+_unregisterOrderBookLoop(pair)
+{
+    let loop_id = pair;
+    // loop is already disabled
+    if (undefined === this._emulatedWs.wsOrderBooks.list[loop_id] || !this._emulatedWs.wsOrderBooks.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Stopping '${pair}' order book loop for exchange '${this._exchangeId}'`);
+    }
+    this._unregisterConnection(`orderBook-${loop_id}`);
+    this._emulatedWs.wsOrderBooks.list[loop_id].enabled = false;
+    if (null !== this._emulatedWs.wsOrderBooks.list[loop_id].timer)
+    {
+        clearTimeout(this._emulatedWs.wsOrderBooks.list[loop_id].timer);
+        this._emulatedWs.wsOrderBooks.list[loop_id].timer = null;
+    }
+    this._emulatedWs.wsOrderBooks.list[loop_id].timestamp = Date.now() / 1000.0;
+}
+
+//-- trades loops are used to emulate wsTrades when exchange does not support ws
+
+/**
+ * @param {object} changes list of changes to process
+ * @param {boolean} opt.connect whether or not changes should trigger a connection
+ *
+ *  Each property (subscribe,unsubscribe) is optional
+ *  Entity can be (trades)
+ *
+ * {
+ *    "subscribe":[{"entity":"","pair":""},...],
+ *    "unsubscribe":[{"entity":"","pair":""},...]
+ * }
+ */
+_processTradesLoops(changes, opt)
+{
+    // check if we need to unsubscribe
+    if (undefined !== changes.unsubscribe)
+    {
+        _.forEach(changes.unsubscribe, (entry) => {
+            switch (entry.entity)
+            {
+                case 'trades':
+                    this._unregisterTradesLoop(entry.pair);
+                    break;
+            }
+        });
+    }
+    // check if we need to subscribe
+    if (undefined !== changes.subscribe)
+    {
+        // only if we'be been asked to connect to exchange streams
+        if (opt.connect)
+        {
+            _.forEach(changes.subscribe, (entry) => {
+                switch (entry.entity)
+                {
+                    case 'trades':
+                        this._registerTradesLoop(entry.pair);
+                        break;
+                }
+            });
+        }
+    }
+}
+
+/**
+ * Starts a trades loop for a given pair
+ *
+ * @param {string} pair pair to retrieve trades for
+ */
+_registerTradesLoop(pair)
+{
+    let loop_id = pair;
+    // initialize loop information
+    if (undefined === this._emulatedWs.wsTrades.list[loop_id])
+    {
+        // initialize lastTrade with current timestamp, to only return trades which occur after initialization
+        this._emulatedWs.wsTrades.list[loop_id] = {enabled:false, timer:null, lastTrade:{id:null,timestamp:Date.now() / 1000.0}};
+    }
+    // we already have a loop
+    if (this._emulatedWs.wsTrades.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Starting '${pair}' trades loop for exchange '${this._exchangeId}'`);
+    }
+    let self = this;
+    let timestamp = Date.now() / 1000.0;
+    this._emulatedWs.wsTrades.list[loop_id].enabled = true;
+    this._emulatedWs.wsTrades.list[loop_id].timestamp = timestamp;
+    this._registerConnection(`orderBook-${loop_id}`);
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Retrieving '${pair}' trades for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getTrades(pair).then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsTrades.list[loop_id].enabled)
+            {
+                return;
+            }
+            // we already have a newer loop
+            if (self._emulatedWs.wsTrades.list[loop_id].timestamp > timestamp)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Got new '${pair}' trades for exchange '${self._exchangeId}'`);
+            }
+            let evt = {
+                exchange:self._exchangeId,
+                pair:pair,
+                data:[]
+            };
+            _.forEach(data, (trade) => {
+                if (null === self._emulatedWs.wsTrades.list[loop_id].lastTrade)
+                {
+                    evt.data.push(trade);
+                    return;
+                }
+                // only keep trade if id is greater than previous
+                if (null !== self._emulatedWs.wsTrades.list[loop_id].lastTrade.id && null !== trade.id)
+                {
+                    // ignore trade
+                    if (trade.id <= self._emulatedWs.wsTrades.list[loop_id].lastTrade.id)
+                    {
+                        return;
+                    }
+                }
+                // compare timestamps
+                else
+                {
+                    if (trade.timestamp <= self._emulatedWs.wsTrades.list[loop_id].lastTrade.timestamp)
+                    {
+                        return;
+                    }
+                }
+                evt.data.push(trade);
+            });
+            // update last trade with newest one
+            if (0 != evt.data.length)
+            {
+                self._emulatedWs.wsTrades.list[loop_id].lastTrade = {
+                    id:evt.data[0].id,
+                    timestamp:evt.data[0].timestamp
+                }
+            }
+            self.emit('trades', evt);
+            // schedule next loop
+            self._emulatedWs.wsTrades.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, self._emulatedWs.wsTrades.period);
+        }).catch((e) => {
+            // try again after 5s
+            let period = 5000;
+            if (period > self._emulatedWs.wsTrades.period)
+            {
+                period = self._emulatedWs.wsTrades.period;
+            }
+            logger.warn(`Could not retrieve '${pair}' trades for exchange '${self._exchangeId}' : will try again in ${period} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            self._emulatedWs.wsTrades.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        });
+    }
+    doRequest();
+}
+
+/**
+ * Stops trades loop for a given pair
+ *
+ * @param {string} pair pair to unsubscribe from
+ */
+_unregisterTradesLoop(pair)
+{
+    let loop_id = pair;
+    // loop is already disabled
+    if (undefined === this._emulatedWs.wsTrades.list[loop_id] || !this._emulatedWs.wsTrades.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Stopping '${pair}' trades loop for exchange '${this._exchangeId}'`);
+    }
+    this._unregisterConnection(`trades-${loop_id}`);
+    this._emulatedWs.wsTrades.list[loop_id].enabled = false;
+    if (null !== this._emulatedWs.wsTrades.list[loop_id].timer)
+    {
+        clearTimeout(this._emulatedWs.wsTrades.list[loop_id].timer);
+        this._emulatedWs.wsTrades.list[loop_id].timer = null;
+    }
+    this._emulatedWs.wsTrades.list[loop_id].timestamp = Date.now() / 1000.0;
 }
 
 }

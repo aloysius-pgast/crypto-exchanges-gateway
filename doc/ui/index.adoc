@@ -60,3 +60,22 @@ npm run clean && npm run build
 ```
 
 UI should then be available on http://127.0.0.1:8000/ui/ (assuming _gateway_ is running on _127.0.0.1:8000_)
+
+
+== Dependencies
+
+This project was made possible thanks to following projects :
+
+* link:https://www.npmjs.com/package/axios[axios] for http requests
+* link:https://www.npmjs.com/package/big.js[big.js]
+* link:https://www.npmjs.com/package/bootstrap[bootstrap]
+* link:https://www.npmjs.com/package/file-saver[file-saver] to export settings
+* link:https://www.npmjs.com/package/font-awesome[font-awesome]
+* link:https://www.npmjs.com/package/history[history]
+* link:https://www.npmjs.com/package/react[react]
+* link:https://www.npmjs.com/package/react-markdown[react-markdown] to display mardown help in the views
+* link:https://www.npmjs.com/package/react-d3-basic[react-d3-basic] to build simple charts
+* link:https://www.npmjs.com/package/react-router-dom[react-router-dom]
+* link:https://www.npmjs.com/package/react-stockcharts[react-stockcharts] *THE AMAZING CHARTING LIBRARY*
+* link:https://www.npmjs.com/package/reactstrap[reactstrap] React Components for Bootstrap 4
+* link:https://www.npmjs.com/package/wolfy87-eventemitter[wolfy87-eventemitter] to dispatch events

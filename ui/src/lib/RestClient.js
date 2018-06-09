@@ -19,10 +19,22 @@ initialize(endpoint)
     this._apiEndpoint = endpoint;
 }
 
+hasApiKey()
+{
+    return null !== this._apiKey;
+}
+
+getApiKey()
+{
+    return this._apiKey;
+}
+
 setApiKey(apiKey)
 {
     this._apiKey = apiKey;
 }
+
+
 /**
  * @param {string} exchange exchange identifier
  * @param {string} key to check
@@ -155,7 +167,11 @@ _sendRequest(method, url, params, cb)
             }
             resolve(response.data);
         }).catch(function(err){
-            reject(err);
+            if (undefined !== err.response)
+            {
+                return reject(err.response.data);
+            }
+            return reject(err);
         });
     });
 }
@@ -191,9 +207,10 @@ getPairs(exchange)
         });
     }
     let path = '/pairs';
+    let params = {useCache:true};
     let url = this._getExchangeUrl(exchange, path);
     let self = this;
-    return this._sendRequest('get', url, function(data){
+    return this._sendRequest('get', url, params, function(data){
         self._cacheExchangeData(exchange, 'pairs', data)
     });
 }
@@ -257,6 +274,18 @@ getClosedOrder(exchange, orderNumber)
     let self = this;
     return this._sendRequest('get', url, {}, function(data){
     });
+}
+
+getKlines(exchange, pair, interval)
+{
+    let path = '/klines/' + pair;
+    let params = {};
+    if (undefined !== interval)
+    {
+        params.interval = interval;
+    }
+    let url = this._getExchangeUrl(exchange, path);
+    return this._sendRequest('get', url, params);
 }
 
 getTickers(exchange, pairs)

@@ -43,10 +43,10 @@ const defaultKlinesInterval = '5m';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:false}, 'wsTickers':{enabled:true},
-    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true},
-    'trades':{enabled:true}, 'wsTrades':{enabled:true},
-    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
+    'tickers':{enabled:true, withoutPair:false}, 'wsTickers':{enabled:true,emulated:false},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:false},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:false},
+    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:false,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
     'orders':{enabled:true, withoutPair:false},
     'openOrders':{enabled:true, withoutPair:false},
     'closedOrders':{enabled:true, withoutPair:false, completeHistory:true},
@@ -293,17 +293,6 @@ async _getPairs()
             }
             ++activePairs;
             let baseCurrency = entry.quoteAsset;
-            switch (baseCurrency)
-            {
-                // only keep BTC, ETH, USD & BNC as base currency
-                case 'BTC':
-                case 'ETH':
-                case 'USDT':
-                case 'BNB':
-                    break;
-                default:
-                    return;
-            }
             let currency = entry.baseAsset;
             let pair = baseCurrency + '-' + currency;
             let filters = {};
@@ -829,6 +818,7 @@ async _getOpenOrdersForPair(pair)
             order.targetPrice = parseFloat(new Big(order.targetRate).times(order.quantity).toFixed(8));
             order.remainingQuantity = order.quantity - parseFloat(entry.executedQty);
             list[order.orderNumber] = order;
+            self._cacheOrder(order.orderNumber, order.orderType, order.pair, 'open');
         });
         return list;
     });
@@ -1001,7 +991,7 @@ async _getClosedOrdersForPair(pair, completeHistory)
             pair:pair,
             orderType:orderType,
             orderNumber:entry.clientOrderId,
-            actualRate:null,
+            actualRate:parseFloat(entry.price),
             actualPrice:0,
             quantity:parseFloat(entry.executedQty),
             openTimestamp:parseFloat(entry.time / 1000.0),
@@ -1014,7 +1004,6 @@ async _getClosedOrdersForPair(pair, completeHistory)
         // keep this order in the list we need to finalize (ie: retrieve fees and closedTimestamp)
         if (0 != order.quantity)
         {
-            order.actualRate = parseFloat(entry.price);
             order.actualPrice = parseFloat(new Big(order.actualRate).times(order.quantity).toFixed(8));
             ordersToFinalize[entry.orderId] = order.orderNumber;
         }
@@ -1336,7 +1325,7 @@ async _getOrder(orderNumber, pair)
         else
         {
             order.quantity = parseFloat(data.executedQty);
-            order.actualRate = null;
+            order.actualRate = parseFloat(data.price);
             order.actualPrice = 0;
             order.closedTimestamp = null;
             order.fees = null;
@@ -1346,7 +1335,6 @@ async _getOrder(orderNumber, pair)
             // only if order as been filled
             if (0 != order.quantity)
             {
-                order.actualRate = parseFloat(data.price);
                 order.actualPrice = parseFloat(new Big(order.actualRate).times(order.quantity).toFixed(8));
                 try
                 {

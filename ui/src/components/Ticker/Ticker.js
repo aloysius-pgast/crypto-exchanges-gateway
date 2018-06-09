@@ -159,11 +159,25 @@ componentWillUnmount()
 componentWillReceiveProps(nextProps)
 {
     let self = this;
+    let reload = false;
+    let newPair = undefined === nextProps.pair ? null : nextProps.pair;
+    if (nextProps.exchange !== this.props.exchange)
+    {
+        reload = true;
+    }
+    else if (this.state.pair != newPair)
+    {
+        reload = true;
+    }
     this.setState((prevState, props) => {
         return {
-            pair:undefined === nextProps.pair ? null : nextProps.pair
+            pair:newPair
         }
     }, function(){
+        if (!reload)
+        {
+            return;
+        }
         self._reloadData(function(){
             this._startAutoRefresh();
         });

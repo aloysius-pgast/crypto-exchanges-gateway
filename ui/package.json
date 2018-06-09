@@ -35,6 +35,7 @@
     "axios": "^0.16.2",
     "big.js": "^5.0.3",
     "bootstrap": "^4.0.0-beta",
+    "file-saver": "^1.3.8",
     "font-awesome": "^4.7.0",
     "history": "^4.7.2",
     "react": "^15.6.2",
@@ -44,6 +45,7 @@
     "react-dom": "^15.6.1",
     "react-markdown": "^3.1.5",
     "react-router-dom": "^4.2.2",
+    "react-stockcharts": "^0.7.6",
     "reactstrap": "^4.8.0",
     "simple-line-icons": "^2.4.1",
     "wolfy87-eventemitter": "^5.2.4"

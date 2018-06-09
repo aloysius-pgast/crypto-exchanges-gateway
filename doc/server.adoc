@@ -77,13 +77,15 @@ Example for *GET* _/server/services_
                     "requirePair":false
                 },
                 "wsTickers":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "orderBooks":{
                     "enabled":true
                 },
                 "wsOrderBooks":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "pairs":{
                     "enabled":true
@@ -92,7 +94,8 @@ Example for *GET* _/server/services_
                     "enabled":true
                 },
                 "wsTrades":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "klines":{
                     "enabled":true,
@@ -103,6 +106,7 @@ Example for *GET* _/server/services_
                 },
                 "wsKlines":{
                     "enabled":true,
+                    "emulated":false,
                     /* supported kline intervals */
                     "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","8h","12h","1d","3d","1w","1M"]
                 },
@@ -149,13 +153,15 @@ Example for *GET* _/server/services_
                     "withoutPair":true
                 },
                 "wsTickers":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "orderBooks":{
                     "enabled":true
                 },
                 "wsOrderBooks":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "pairs":{
                     "enabled":true
@@ -164,7 +170,8 @@ Example for *GET* _/server/services_
                     "enabled":true
                 },
                 "wsTrades":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "klines":{
                     "enabled":true,
@@ -213,13 +220,15 @@ Example for *GET* _/server/services_
                     "withoutPair":true
                 },
                 "wsTickers":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "orderBooks":{
                     "enabled":true
                 },
                 "wsOrderBooks":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "pairs":{
                     "enabled":true
@@ -228,7 +237,8 @@ Example for *GET* _/server/services_
                     "enabled":true
                 },
                 "wsTrades":{
-                    "enabled":true
+                    "enabled":true,
+                    "emulated":false
                 },
                 "klines":{
                     "enabled":true,
@@ -263,7 +273,89 @@ Example for *GET* _/server/services_
             },
             "demo":false,
             "dummy":false,
-            "feesPercent":0.25
+            "feesPercent":0.2
+        }
+        "kucoin":{
+            "id":"kucoin",
+            /* exchange type, it is possible to define multiple instance of one exchange */
+            "type":"kucoin",
+            "name":"Kucoin",
+            "features":{
+                "tickers":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving tickers for all pairs with a single request */
+                    "withoutPair":true
+                },
+                "wsTickers":{
+                    "enabled":true,
+                    /* it means that exchange does not support ws and that ws stream is simulated by gateway, by retrieving tickers periodically through REST API */
+                    "emulated":true,
+                    /* tickers will be retrieved through REST API every 30s */
+                    "period":30
+                },
+                "orderBooks":{
+                    "enabled":true
+                },
+                "wsOrderBooks":{
+                    "enabled":true,
+                    /* it means that exchange does not support ws and that ws stream is simulated by gateway, by retrieving order books periodically through REST API */
+                    "emulated":true,
+                    /* order books will be retrieved through REST API every 30s */
+                    "period":30
+                },
+                "pairs":{
+                    "enabled":true
+                },
+                "trades":{
+                    "enabled":true
+                },
+                "wsTrades":{
+                    "enabled":true,
+                    /* it means that exchange does not support ws and that ws stream is simulated by gateway, by retrieving trades periodically through REST API */
+                    "emulated":true,
+                    /* trades will be retrieved through REST API every 30s */
+                    "period":30
+                },
+                "klines":{
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","5m","15m","30m","1h","8h","1d","1w"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
+                },
+                "wsKlines":{
+                    "enabled":false
+                },
+                "openOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
+                },
+                "closedOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
+                },
+                "orders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving an order using only its order number */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve order using only its order number */
+                    "requirePair":false
+                },
+                "balances":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving balances for all pairs using a single request */
+                    "withoutCurrency":true
+                }
+            },
+            "demo":false,
+            "dummy":false,
+            "feesPercent":0.1
         }
     },
     "others":{

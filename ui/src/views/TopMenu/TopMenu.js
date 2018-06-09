@@ -159,6 +159,10 @@ _updateStateFromRoute(props)
                     title = 'My Portfolio';
                     helpId = 'portfolio';
                     break;
+                case 'settings':
+                    title = 'Settings';
+                    helpId = 'settings';
+                    break;
                 case 'alerts':
                     title = 'Alerts';
                     helpId = 'alerts';

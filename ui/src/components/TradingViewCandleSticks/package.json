@@ -1,0 +1,6 @@
+{
+  "name": "TradingViewCandleSticks",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./TradingViewCandleSticks.js"
+}
