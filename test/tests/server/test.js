@@ -54,19 +54,25 @@ MochaHelper.prepare(() => {
                                 requirePair:joi.boolean().when('withoutPair', {is:false, then:joi.required()})
                             }).required(),
                             wsTickers:joi.object({
-                                enabled:joi.boolean().required()
+                                enabled:joi.boolean().required(),
+                                emulated:joi.boolean().when('enabled', {is:true, then:joi.required()}),
+                                period:joi.number().integer().when('emulated', {is:true, then:joi.required()})
                             }).required(),
                             orderBooks:joi.object({
                                 enabled:joi.boolean().required()
                             }).required(),
                             wsOrderBooks:joi.object({
-                                enabled:joi.boolean().required()
+                                enabled:joi.boolean().required(),
+                                emulated:joi.boolean().when('enabled', {is:true, then:joi.required()}),
+                                period:joi.number().integer().when('emulated', {is:true, then:joi.required()})
                             }).required(),
                             trades:joi.object({
                                 enabled:joi.boolean().required()
                             }).required(),
                             wsTrades:joi.object({
-                                enabled:joi.boolean().required()
+                                enabled:joi.boolean().required(),
+                                emulated:joi.boolean().when('enabled', {is:true, then:joi.required()}),
+                                period:joi.number().integer().when('emulated', {is:true, then:joi.required()})
                             }).required(),
                             klines:joi.object({
                                 enabled:joi.boolean().required(),
@@ -75,6 +81,8 @@ MochaHelper.prepare(() => {
                             }).required(),
                             wsKlines:joi.object({
                                 enabled:joi.boolean().required(),
+                                emulated:joi.boolean().when('enabled', {is:true, then:joi.required()}),
+                                period:joi.number().integer().when('emulated', {is:true, then:joi.required()}),
                                 intervals:joi.array().items(joi.string()).when('enabled', {is:true, then:joi.required()}),
                                 defaultInterval:joi.string().when('enabled', {is:true, then:joi.required()}),
                             }).required(),

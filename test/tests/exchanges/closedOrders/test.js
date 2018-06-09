@@ -11,8 +11,8 @@ const closedOrderSchema = joi.object({
     orderType:joi.string().valid(['buy','sell']).required(),
     orderNumber:joi.string().required(),
     quantity:joi.number().required(),
-    // must be null if quantity = 0
-    actualRate:joi.required().when('quantity', {is:0, then:joi.any().valid(null), otherwise:joi.number().positive()}),
+    // can be null if quantity = 0
+    actualRate:joi.number().positive().allow(null).required(),
     // must be 0 if quantity = 0
     actualPrice:joi.required().when('quantity', {is:0, then:joi.number().valid(0), otherwise:joi.number().positive()}),
     openTimestamp:joi.number().positive().allow(null).required(),

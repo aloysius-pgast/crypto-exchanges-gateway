@@ -1,14 +1,14 @@
 # Change Log
 
-## [v1.7.0] (NOT RELEASED YET)
+## [v1.7.0]
 ### Gateway
-* Initial implementation of Kucoin exchange through _ccxt_
-* Provide default _wsTickers_ implementation for exchange which do not support tickers over ws by querying REST endpoint periodically
-* Provide default _wsOrderBooks_ implementation for exchange which do not support order books over ws by querying REST endpoint periodically
-* Provide default _wsTrades_ implementation for exchange which do not support trades over ws by querying REST endpoint periodically
+* Support for Kucoin exchange through _ccxt_
+* Provide default _wsTickers_ implementation for exchanges which do not support tickers over ws by querying REST endpoint periodically
+* Provide default _wsOrderBooks_ implementation for exchanges which do not support order books over ws by querying REST endpoint periodically
+* Provide default _wsTrades_ implementation for exchanges which do not support trades over ws by querying REST endpoint periodically
 ### UI
 * Possibility to import/export settings (ie: _starred pairs_)
-* Home-made charting when exchange is not supported by _Trading view_ (*react-stockcharts is AMAZING*)
+* Home-made charting when exchange is not supported by _Trading View_ (*react-stockcharts is AMAZING*)
 
 ## [v1.6.4]
 ### Gateway
