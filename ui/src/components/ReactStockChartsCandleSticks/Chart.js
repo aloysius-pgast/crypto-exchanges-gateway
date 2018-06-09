@@ -39,6 +39,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
             domain:scale.domain
         }
         this.handleReset = this.handleReset.bind(this);
+        this._uid = "rss_" + ((1 + Math.random()) * 1048576 | 0).toString(16).substring(1);
 	}
 
     _computePricePrecision(data)
@@ -102,7 +103,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
 
     componentDidMount() {
         this._isMounted = true;
-        this.node.subscribe("myUniqueId", { listener: this.handleEvents.bind(this) })
+        this.node.subscribe(this._uid, { listener: this.handleEvents.bind(this) })
     }
 
     componentWillMount() {
@@ -113,7 +114,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
 
     componentWillUnmount() {
         this._isMounted = false;
-        this.node.unsubscribe("myUniqueId")
+        this.node.unsubscribe(this._uid)
     }
 
     handleEvents (type, moreProps, state) {
