@@ -298,7 +298,7 @@ render() {
         if (tradingViewHelper.hasChartSupport(this.state.exchangeType))
         {
             return (
-                <div id="bubu" className="animated fadeIn" style={{width:'92%'}}>
+                <div className="animated fadeIn" style={{width:'92%'}}>
                   <br/>
                   <h6>CHART</h6>
                   <TradindViewCandleSticks exchange={this.state.exchangeType} pair={this.state.pair}/>
@@ -309,7 +309,7 @@ render() {
         else if (null !== this.state.klinesIntervals)
         {
             return (
-                <div className="dark" style={{width:'92%'}}>
+                <div className="dark animated fadeIn" style={{width:'92%', overflow:'hidden'}}>
                     <br/>
                     <h6>CHART</h6>
                     <ReactStockChartsCandleSticks heightPercent={0.8} exchangeName={this.state.exchangeName} pair={this.state.pair} klinesInterval={this.state.klinesInterval} klinesIntervals={this.state.klinesIntervals} onLoadData={this._handleLoadKlines} onSelectKlinesInterval={this._handleSelectKlinesInterval}/>
