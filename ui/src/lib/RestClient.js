@@ -207,9 +207,10 @@ getPairs(exchange)
         });
     }
     let path = '/pairs';
+    let params = {useCache:true};
     let url = this._getExchangeUrl(exchange, path);
     let self = this;
-    return this._sendRequest('get', url, function(data){
+    return this._sendRequest('get', url, params, function(data){
         self._cacheExchangeData(exchange, 'pairs', data)
     });
 }
