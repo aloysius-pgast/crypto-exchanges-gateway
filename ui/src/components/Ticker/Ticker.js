@@ -245,10 +245,12 @@ render()
        )
     }
 
-    const TickerRow = () => {
-        if (null !== this.state.err)
+    const getChange = () => {
+        if (null === this.state.data.priceChangePercent)
         {
-            return null;
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
         }
         let className_percent_change = '';
         if (this.state.data.priceChangePercent < 0)
@@ -259,6 +261,16 @@ render()
         {
             className_percent_change = 'text-success';
         }
+        return (
+            <span className={className_percent_change}>{this.state.data.priceChangePercent.toFixed(3)} %</span>
+        );
+    }
+
+    const TickerRow = () => {
+        if (null !== this.state.err)
+        {
+            return null;
+        }
         let url = this._baseUrl + this.props.pair;
         return (
             <tr key="1">
@@ -267,7 +279,7 @@ render()
               <td className="text-right"><a href={url}>{this.state.data.sell.toFixed(8)}</a></td>
               <td className="text-right">{this.state.data.high.toFixed(8)}</td>
               <td className="text-right">{this.state.data.low.toFixed(8)}</td>
-              <td className="text-right"><span className={className_percent_change}>{this.state.data.priceChangePercent.toFixed(3)} %</span></td>
+              <td className="text-right">{getChange(this.state.data)}</td>
               <td className="text-right">{this.state.data.volume.toFixed(8)}</td>
            </tr>
        )
