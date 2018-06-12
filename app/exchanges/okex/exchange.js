@@ -20,10 +20,17 @@ const CLOSED_ORDERS_LIMIT_PER_ITER = 200;
 
 
 // list of possible interval for klines
+/*
+8h & 3d have been removed since they don't seem to be supported
+
+https://www.okex.com/api/v1/kline.do?symbol=neo_btc&type=8hour => {"error_code":1025} (No chart type)
+https://www.okex.com/api/v1/kline.do?symbol=neo_btc&type=3day => {"error_code":1025} (No chart type)
+
+*/
 const supportedKlinesIntervals = [
   '1m', '3m', '5m', '15m', '30m',
-  '1h', '2h', '4h', '6h', '8h', '12h',
-  '1d', '3d',
+  '1h', '2h', '4h', '6h', '12h',
+  '1d',
   '1w'
 ]
 const defaultKlinesInterval = '5m';
