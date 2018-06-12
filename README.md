@@ -71,10 +71,11 @@ A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-
 
 Currently supports for following exchanges :
 
-* [Bittrex](https://www.bittrex.com/)
 * [Binance](https://www.binance.com/) (my favorite)
-* [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
+* [Bittrex](https://www.bittrex.com/)
 * [Kucoin](https://www.kucoin.com)
+* [OKEx](https://www.okex.com)
+* [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
 * More to come...
 
 Following API are currently supported :

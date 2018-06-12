@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.1] NOT RELEASED YET
+### Gateway
+* Support for OKEx exchange through _ccxt_
+
 ## [v1.7.0]
 ### Gateway
 * Support for Kucoin exchange through _ccxt_
