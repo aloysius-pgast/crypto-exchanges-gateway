@@ -76,107 +76,6 @@ constructor(exchangeId, exchangeName, config)
 }
 
 /**
- * Retrieves pairs
- *
- * @return {Promise}
- */
-/*
-ccxt output example for fetchCurrencies
-
-{
-    "KCS":{
-        "id":"KCS",
-        "code":"KCS",
-        "info":{
-            "withdrawMinFee":0.5,
-            "coinType":"ERC20",
-            "withdrawMinAmount":10,
-            "withdrawRemark":"",
-            "txUrl":"https://etherscan.io/tx/{txId}",
-            "withdrawFeeRate":0.001,
-            "confirmationCount":12,
-            "infoUrl":null,
-            "name":"Kucoin Shares",
-            "tradePrecision":4,
-            "depositRemark":null,
-            "enableWithdraw":true,
-            "enableDeposit":true,
-            "coin":"KCS"
-        },
-        "name":"Kucoin Shares",
-        "active":true,
-        "status":"ok",
-        "fee":0.5,
-        "precision":4,
-        "limits":{
-            "amount":{
-                "min":0.0001,
-                "max":10000
-            },
-            "price":{
-                "min":0.0001,
-                "max":10000
-            },
-            "cost":{
-
-            },
-            "withdraw":{
-                "min":10,
-                "max":10000
-            }
-        }
-    },...
-}
-
-*/
-async _getPairs()
-{
-    let pairs;
-    let currencies;
-    try
-    {
-        pairs = await super._getPairs();
-    }
-    catch (e)
-    {
-        throw e;
-    }
-    _.forEach(pairs, (pair, symbol) => {
-        // update quantity precision, step & min
-        if (undefined !== this._client.ccxt.currencies[pair.currency] && this._client.ccxt.currencies[pair.currency].precision != pair.limits.quantity.precision)
-        {
-            pair.limits.quantity.precision = this._client.ccxt.currencies[pair.currency].precision;
-            pair.limits.quantity.step = this._precisionToStep(pair.limits.quantity.precision);
-            pair.limits.quantity.min = pair.limits.quantity.step;
-        }
-    });
-    return pairs;
-}
-
-/**
- * Retrieve tickers for all pairs
- *
- * @return {Promise}
- */
-_getTickers()
-{
-    return super._getTickers();
-}
-
-/**
- * Retrieve order book for a single pair
-
- * @param {string} pair pair to retrieve order book for
- * @param {integer} opt.limit maximum number of entries (for both ask & bids) (optional)
- * @param {object} opt.custom exchange specific options (will always be defined)
- * @return {Promise}
- */
-_getOrderBook(pair, opt)
-{
-    return super._getOrderBook(pair, opt);
-}
-
-/**
  * Returns the default value for order book limit
  * @return {integer}
  */
@@ -186,39 +85,12 @@ getDefaultOrderBookLimit()
 }
 
 /**
- * Returns last trades
- *
- * @param {string} pair pair to retrieve trades for
- * @param {integer} opt.limit maximum number of entries (optional)
- * @param {object} opt.custom exchange specific options (will always be defined)
- * @return {Promise}
- */
-_getTrades(pair, opt)
-{
-    return super._getTrades(pair, opt);
-}
-
-/**
  * Returns the default value for trades limit
  * @return {integer}
  */
 getDefaultTradesLimit()
 {
     return TRADES_DEFAULT_LIMIT;
-}
-
-/**
- * Returns charts data
- *
- * @param {string} pair pair to retrieve chart data for
- * @param {string} interval charts interval
- * @param {integer} fromTimestamp unix timestamp in seconds (not supported by Bittrex)
- * @param {integer} toTimestamp unix timestamp in seconds (not supported by Bittrex)
- * @return {Promise}
- */
-_getKlines(pair, interval, fromTimestamp, toTimestamp)
-{
-    return super._getKlines(pair, interval, fromTimestamp, toTimestamp);
 }
 
 /**
@@ -434,16 +306,6 @@ async _cancelOrder(orderNumber, pair)
         throw e;
     }
     return true;
-}
-
-/**
- * Return balances for all currencies (currencies with balance = 0 should be filtered out)
- *
- * @return {Promise}
- */
-_getBalances()
-{
-    return super._getBalances();
 }
 
 }
