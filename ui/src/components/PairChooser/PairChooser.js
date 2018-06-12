@@ -100,7 +100,7 @@ _handleSetCurrencyFilter(event)
     {
         _.forEach(this.state.pairs, (e) => {
             // found matching pair
-            if (-1 != e.currency.indexOf(filter))
+            if (-1 != e.currency.toUpperCase().indexOf(filter))
             {
                 list.push(e.pair);
             }
