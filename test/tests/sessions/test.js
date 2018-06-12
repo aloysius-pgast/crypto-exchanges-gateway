@@ -21,7 +21,7 @@ const getExchangeSubscriptionSchema = (type) => {
     {
         obj = {
             timestamp:joi.number().positive().required(),
-            pairs:joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, joi.object().pattern(/^.+$/, joi.object({
+            pairs:joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, joi.object().pattern(/^.+$/, joi.object({
                 timestamp:joi.number().positive().required()
             }))).required()
         }
@@ -30,7 +30,7 @@ const getExchangeSubscriptionSchema = (type) => {
     {
         obj = {
             timestamp:joi.number().positive().required(),
-            pairs:joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, joi.object({
+            pairs:joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, joi.object({
                 timestamp:joi.number().positive().required()
             })).required()
         }

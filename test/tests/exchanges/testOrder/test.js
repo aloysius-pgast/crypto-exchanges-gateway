@@ -28,13 +28,13 @@ const defineForExchange = (exchangeId) => {
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/testOrder`, function(method, path, params){
                 it(`it should return a result with valid (updated) rate, quantity & targetPrice when using invalid rate = ${params.targetRate} & invalid quantity = ${params.quantity}`, (done) => {
                     const schema = joi.object({
-                        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+                        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
                         orderType:joi.string().valid(['buy','sell']).required(),
                         targetRate:joi.number().positive().required().min(minRate),
                         quantity:joi.number().positive().required().min(minQuantity),
-                        targetPrice:joi.number().positive().required().min(minPrice),
+                        targetPrice:joi.number().required().min(minPrice),
                         fees:joi.number().required(),
-                        finalPrice:joi.number().positive().required()
+                        finalPrice:joi.number().required()
                     });
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema);
@@ -43,11 +43,11 @@ const defineForExchange = (exchangeId) => {
                         let finalPrice = new Big(result.body.finalPrice);
                         let targetPrice = new Big(result.body.targetPrice);
                         let fees = new Big(result.body.fees);
-                        if (!quantity.times(targetRate).eq(targetPrice))
+                        if (quantity.times(targetRate).toFixed(8) != targetPrice.toFixed(8))
                         {
                             Assert.fail("'targetPrice' should be (quantity * targetRate)", result.body);
                         }
-                        if (!targetPrice.plus(fees).eq(finalPrice))
+                        if (targetPrice.plus(fees).toFixed(8) != finalPrice.toFixed(8))
                         {
                             Assert.fail("'finalPrice' should be (targetPrice + fees)", result.body);
                         }
@@ -62,13 +62,13 @@ const defineForExchange = (exchangeId) => {
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/testOrder`, function(method, path, params){
                 it(`it should return a result with valid (updated) rate, quantity & targetPrice when using invalid rate = ${params.targetRate} & invalid targetPrice = ${params.targetPrice}`, (done) => {
                     const schema = joi.object({
-                        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+                        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
                         orderType:joi.string().valid(['buy','sell']).required(),
                         targetRate:joi.number().positive().required().min(minRate),
                         quantity:joi.number().positive().required().min(minQuantity),
-                        targetPrice:joi.number().positive().required().min(minPrice),
+                        targetPrice:joi.number().required().min(minPrice),
                         fees:joi.number().required(),
-                        finalPrice:joi.number().positive().required()
+                        finalPrice:joi.number().required()
                     });
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema);
@@ -96,13 +96,13 @@ const defineForExchange = (exchangeId) => {
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/testOrder`, function(method, path, params){
                 it(`it should return a result with valid (updated) rate, quantity & targetPrice when using invalid rate = ${params.targetRate} & invalid finalPrice = ${params.finalPrice}`, (done) => {
                     const schema = joi.object({
-                        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+                        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
                         orderType:joi.string().valid(['buy','sell']).required(),
                         targetRate:joi.number().positive().required().min(minRate),
                         quantity:joi.number().positive().required().min(minQuantity),
-                        targetPrice:joi.number().positive().required().min(minPrice),
+                        targetPrice:joi.number().required().min(minPrice),
                         fees:joi.number().required(),
-                        finalPrice:joi.number().positive().required()
+                        finalPrice:joi.number().required()
                     });
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema);
@@ -132,13 +132,13 @@ const defineForExchange = (exchangeId) => {
             MochaHelper.describe('GET' ,{path:`/exchanges/${exchangeId}/testOrder`,params:`{"pair":${pair},"orderType":"buy","targetRate":xxxx,"quantity":yyyy}`}, function(method, path, params){
                 it(`it should return a result with same rate = xxxx & quantity = yyyy when using valid rate = xxxx & valid quantity = yyyy`, (done) => {
                     const schema = joi.object({
-                        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+                        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
                         orderType:joi.string().valid(['buy','sell']).required(),
                         targetRate:joi.number().positive().required().min(minRate),
                         quantity:joi.number().positive().required().min(minQuantity),
-                        targetPrice:joi.number().positive().required().min(minPrice),
+                        targetPrice:joi.number().required().min(minPrice),
                         fees:joi.number().required(),
-                        finalPrice:joi.number().positive().required()
+                        finalPrice:joi.number().required()
                     });
                     restClient.makeRequest(method, path, {pair:pair,orderType:'buy',targetRate:invalidRate,quantity:invalidQuantity}).then((result) => {
                         Assert.validateResult(result, schema);
@@ -181,13 +181,13 @@ const defineForExchange = (exchangeId) => {
             MochaHelper.describe('GET' ,{path:`/exchanges/${exchangeId}/testOrder`,params:`{"pair":${pair},"orderType":"buy","targetRate":xxxx,"targetPrice":zzzz}`}, function(method, path, params){
                 it(`it should return a result with same rate = xxxx & targetPrice = zzzz when using valid rate = xxxx & valid targetPrice = zzzz`, (done) => {
                     const schema = joi.object({
-                        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+                        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
                         orderType:joi.string().valid(['buy','sell']).required(),
                         targetRate:joi.number().positive().required().min(minRate),
                         quantity:joi.number().positive().required().min(minQuantity),
-                        targetPrice:joi.number().positive().required().min(minPrice),
+                        targetPrice:joi.number().required().min(minPrice),
                         fees:joi.number().required(),
-                        finalPrice:joi.number().positive().required()
+                        finalPrice:joi.number().required()
                     });
                     restClient.makeRequest(method, path, {pair:pair,orderType:'buy',targetRate:invalidRate,finalPrice:invalidPrice}).then((result) => {
                         Assert.validateResult(result, schema);

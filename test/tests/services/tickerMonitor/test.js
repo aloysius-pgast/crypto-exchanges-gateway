@@ -50,7 +50,7 @@ const tickerMonitorConditionSchema = joi.object({
         field:joi.string().required().valid(allSupportedFields),
         operator:joi.string().required().valid(Object.keys(OPERATORS)),
         value:joi.alternatives([joi.number().required(), joi.array().items(joi.number()).length(2)]),
-        pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/),
+        pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/),
         symbol:joi.string()
     }).required(),
     status:joi.object({

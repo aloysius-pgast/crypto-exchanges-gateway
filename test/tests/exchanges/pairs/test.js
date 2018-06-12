@@ -7,9 +7,9 @@ const restClient = require('../../../lib/rest-client').getInstance();
 
 //-- schema for a single pair
 const pairSchema = joi.object({
-    pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
-    baseCurrency:joi.string().regex(/^[A-Z0-9]+$/).required(),
-    currency:joi.string().regex(/^[A-Z0-9]+$/).required(),
+    pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
+    baseCurrency:joi.string().regex(/^[A-Za-z0-9]+$/).required(),
+    currency:joi.string().regex(/^[A-Za-z0-9]+$/).required(),
     limits:joi.object({
         rate:joi.object({
             min:joi.number().positive().required(),
@@ -39,7 +39,7 @@ const defineForExchange = (exchangeId) => {
         // all pairs
         MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/pairs`, function(method, path, params){
             it(`it should retrieve all active pairs`, (done) => {
-                const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, pairSchema);
+                const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, pairSchema);
                 restClient.makeRequest(method, path, params).then((result) => {
                     Assert.validateResult(result, schema, {isList:true});
                     done();
@@ -57,7 +57,7 @@ const defineForExchange = (exchangeId) => {
             //-- single pair
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/pairs`, function(method, path, params){
                 it(`it should retrieve a single pair '${params.pair}'`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, pairSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, pairSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         if (undefined === result.body[staticSymbols[0]] || 1 != Object.keys(result.body).length)
@@ -74,7 +74,7 @@ const defineForExchange = (exchangeId) => {
             //-- baseCurrency
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/pairs`, function(method, path, params){
                 it(`it should retrieve all pairs with '${splittedPair[1]}' as base currency`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, pairSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, pairSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         if (undefined === result.body[staticSymbols[0]])
@@ -91,7 +91,7 @@ const defineForExchange = (exchangeId) => {
             //-- currency
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/pairs`, function(method, path, params){
                 it(`it should retrieve all pairs with '${splittedPair[1]}' as currency`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, pairSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, pairSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         if (undefined === result.body[staticSymbols[0]])
@@ -109,7 +109,7 @@ const defineForExchange = (exchangeId) => {
             let unknownPair = 'UNKNOWN-PAIR';
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/pairs`, function(method, path, params){
                 it(`it should return an empty result when requesting an unknown pair`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, pairSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, pairSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         if (!_.isEmpty(result.body))

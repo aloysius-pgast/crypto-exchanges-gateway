@@ -7,7 +7,7 @@ const restClient = require('../../../lib/rest-client').getInstance();
 
 //-- schema for a single open order entry
 const openOrderSchema = joi.object({
-    pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+    pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
     orderType:joi.string().valid(['buy','sell']).required(),
     orderNumber:joi.string().required(),
     targetRate:joi.number().positive().required(),

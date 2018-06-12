@@ -13,7 +13,7 @@ const tickerSchema = joi.object({
     symbol:joi.string().required(),
     rank:joi.number().positive().required(),
     last_updated:joi.number().positive().allow(null).required(),
-    converted:joi.object().pattern(/^[A-Z0-9]+$/, joi.object({
+    converted:joi.object().pattern(/^[A-Za-z0-9]+$/, joi.object({
         price:joi.number().positive().allow(null).required(),
         market_cap:joi.number().positive().allow(null).required(),
         volume_24h:joi.number().positive().allow(null).required()
