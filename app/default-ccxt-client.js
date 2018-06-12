@@ -385,7 +385,12 @@ formatPair(pair, ccxtData)
         {
             if (undefined !== ccxtData.limits.cost.min)
             {
-                limits.price.min = ccxtData.limits.cost.min;
+                // convert to fixed to avoid pb such as 0.001 * 0.0001 => 1.0000000000000001e-7
+                limits.price.min = parseFloat(ccxtData.limits.cost.min.toFixed(8));
+                if (limits.price.min < 0.00000001)
+                {
+                    limits.price.min = 0.00000001;
+                }
             }
             if (undefined !== ccxtData.limits.cost.max)
             {
