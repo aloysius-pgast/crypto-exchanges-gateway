@@ -132,8 +132,9 @@ _defineMenuEntries()
                 class: ""             // optional class names space delimited list for title item ex: "text-center"
             }
         );
-        _.forEach(exchangesRoutes, function(obj, id){
-            self._defineExchangeEntry(obj, id);
+        let exchanges = Object.keys(exchangesRoutes).sort();
+        _.forEach(exchanges, function(id){
+            self._defineExchangeEntry(exchangesRoutes[id], id);
         });
     }
     let servicesRoutes = routeRegistry.getServicesRoutes();
