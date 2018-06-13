@@ -1,47 +1,37 @@
 "use strict";
 const path = require('path');
 const _ = require('lodash');
-const AbstractCcxtConfigCheckerClass = require('../../abstract-ccxt-config-checker');
+const AbstractConfigCheckerClass = require('./abstract-config-checker');
 
 // maximum number of requests per seconds for api
 const GLOBAL_API_MAX_REQUESTS_PER_SECOND = 1;
 
-class ConfigChecker extends AbstractCcxtConfigCheckerClass
+class AbstractCcxtConfigChecker extends AbstractConfigCheckerClass
 {
 
-constructor(exchangeId)
+// whether or not multiple instances can be supported for this exchange
+static get MULTIPLE_INSTANCES() { return true };
+
+constructor(exchangeId, cfg)
 {
     // default config
-    let cfg = {
-        enabled:true,
-        type:"kucoin",
-        name:"Kucoin",
-        requirePair:false,
+    let defaultCfg = {
+        enabled:false,
+        type:exchangeId,
+        name:exchangeId.toUpperCase(),
         key:"",
         secret:"",
-        feesPercent:0.1,
+        feesPercent:0,
         verbose:false,
-        emulatedWs:{
-            wsTickers:{
-                enabled:true,
-                period:30
-            },
-            wsOrderBooks:{
-                enabled:true,
-                period:30
-            },
-            wsTrades:{
-                enabled:true,
-                period:30
-            }
-        },
+        // timeout in ms
+        timeout:10000,
+        emulatedWs:{},
         throttle:{
-            global:{
-                maxRequestsPerSecond:GLOBAL_API_MAX_REQUESTS_PER_SECOND
-            }
+            global:{maxRequestsPerSecond:GLOBAL_API_MAX_REQUESTS_PER_SECOND}
         }
     }
-    super(exchangeId, cfg);
+    let _cfg = _.merge(defaultCfg, cfg);
+    super(_cfg, `exchanges[${exchangeId}]`);
 }
 
 _check()
@@ -82,11 +72,14 @@ _check()
     }
 
     //-- check wether or not pair should be required
-    if (undefined !== this._config.requirePair)
+    if (this._finalConfig.hasOwnProperty('requirePair'))
     {
-        if (true === this._config.requirePair)
+        if (undefined !== this._config.requirePair)
         {
-            this._finalConfig.requirePair = true;
+            if (true === this._config.requirePair)
+            {
+                this._finalConfig.requirePair = true;
+            }
         }
     }
 
@@ -94,6 +87,21 @@ _check()
     if (true === this._config.verbose)
     {
         this._finalConfig.verbose = true;
+    }
+
+    //-- check whether or not we have a custom timeout
+    if (undefined !== this._config.timeout)
+    {
+        let value = parseInt(this._config.timeout);
+        if (isNaN(value) || value <= 0)
+        {
+            this._invalid({name:`timeout`,value:this._config.timeout});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.timeout = value;
+        }
     }
 
     //-- check emulated websocket
@@ -173,4 +181,4 @@ _check()
 
 }
 
-module.exports = ConfigChecker;
+module.exports = AbstractCcxtConfigChecker;

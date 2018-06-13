@@ -53,22 +53,9 @@ class Exchange extends AbstractCcxtExchangeClass
  */
 constructor(exchangeId, exchangeName, config)
 {
-    let delay = Math.floor(1000 / config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
-    let opt = {
-        enableRateLimit:true,
-        rateLimit:delay,
-        fetchOrderBookWarning:false,
-        verbose:false
-    };
-    if (true === config.exchanges[exchangeId].verbose)
-    {
-        opt.verbose = true;
-    }
-    if ('' != config.exchanges[exchangeId].key && '' != config.exchanges[exchangeId].secret)
-    {
-        opt.apiKey = config.exchanges[exchangeId].key;
-        opt.secret = config.exchanges[exchangeId].secret;
-    }
+    let opt = AbstractCcxtExchangeClass.getCcxtOpt(exchangeId, config, {
+        fetchOrderBookWarning:false
+    });
     let client = new CcxtClient('kucoin', opt);
     super(exchangeId, exchangeType, exchangeName, supportedFeatures, config, client);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
