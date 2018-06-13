@@ -880,7 +880,7 @@ _processTickersLoops(changes, opt)
             switch (entry.entity)
             {
                 case 'ticker':
-                    this._unregisterTickersLoop(entry.pair);
+                    this._unregisterTickersLoopForPair(entry.pair);
                     break;
                 case 'tickers':
                     this._unregisterGlobalTickersLoop();
@@ -898,7 +898,7 @@ _processTickersLoops(changes, opt)
                 switch (entry.entity)
                 {
                     case 'ticker':
-                        this._registerTickersLoop(entry.pair);
+                        this._registerTickersLoopForPair(entry.pair);
                         break;
                     case 'tickers':
                         this._registerGlobalTickersLoop();
@@ -1052,7 +1052,7 @@ _registerTickersLoopForPair(pair)
         {
             debug(`Retrieving '${pair}' tickers for exchange '${self._exchangeId}'`);
         }
-        self._exchangeInstance.getTickers().then((data) => {
+        self._exchangeInstance.getTickers([pair]).then((data) => {
             // loop has been disabled
             if (!self._emulatedWs.wsTickers.list[loop_id].enabled)
             {
