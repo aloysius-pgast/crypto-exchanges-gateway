@@ -150,10 +150,9 @@ _checkCoinMarketCap()
     {
         // mark config as invalid
         valid = false;
-        let self = this;
         // copy errors
-        _.forEach(checker.getErrors(), function(err){
-            self._err(err);
+        _.forEach(checker.getErrors(), (err) => {
+            this._err(err);
         });
     }
     else
@@ -177,10 +176,9 @@ _checkTickerMonitor()
     {
         // mark config as invalid
         valid = false;
-        let self = this;
         // copy errors
-        _.forEach(checker.getErrors(), function(err){
-            self._err(err);
+        _.forEach(checker.getErrors(), (err) => {
+            this._err(err);
         });
     }
     else
@@ -204,10 +202,9 @@ _checkPushOver()
     {
         // mark config as invalid
         valid = false;
-        let self = this;
         // copy errors
-        _.forEach(checker.getErrors(), function(err){
-            self._err(err);
+        _.forEach(checker.getErrors(), (err) => {
+            this._err(err);
         });
     }
     else
@@ -267,13 +264,13 @@ _checkExchanges()
                 return;
             }
         }
-        let checker = new checkerClass();
+        let checker = new checkerClass(exchangeId);
         if (!checker.check(exchangeConfig))
         {
             // mark config as invalid
             valid = false;
             // copy errors
-            _.forEach(checker.getErrors(), function(err){
+            _.forEach(checker.getErrors(), (err) => {
                 this._err(err);
             });
         }
