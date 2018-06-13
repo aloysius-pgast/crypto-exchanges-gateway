@@ -3,18 +3,19 @@ const path = require('path');
 const _ = require('lodash');
 const AbstractConfigCheckerClass = require('../../abstract-config-checker');
 
+// maximum number of requests per seconds for public api
+const PUBLIC_API_MAX_REQUESTS_PER_SECOND = 6;
+
+// maximum number of requests per seconds for trading api
+const TRADING_API_MAX_REQUESTS_PER_SECOND = 6;
+
 class ConfigChecker extends AbstractConfigCheckerClass
 {
-
-// maximum number of requests per seconds for public api
-static get PUBLIC_API_MAX_REQUESTS_PER_SECOND() { return  6 };
-// maximum number of requests per seconds for trading api
-static get TRADING_API_MAX_REQUESTS_PER_SECOND() { return 6 };
 
 // whether or not multiple instances can be supported for this exchange
 static get MULTIPLE_INSTANCES() { return  true };
 
-constructor()
+constructor(exchangeId)
 {
     // default config
     let cfg = {
@@ -27,14 +28,14 @@ constructor()
         feesPercent:0.20,
         throttle:{
             publicApi:{
-                maxRequestsPerSecond:ConfigChecker.PUBLIC_API_MAX_REQUESTS_PER_SECOND
+                maxRequestsPerSecond:PUBLIC_API_MAX_REQUESTS_PER_SECOND
             },
             tradingApi:{
-                maxRequestsPerSecond:ConfigChecker.TRADING_API_MAX_REQUESTS_PER_SECOND
+                maxRequestsPerSecond:TRADING_API_MAX_REQUESTS_PER_SECOND
             }
         }
     }
-    super(cfg, 'exchanges[poloniex]');
+    super(cfg, `exchanges[${exchangeId}]`);
 }
 
 _check()

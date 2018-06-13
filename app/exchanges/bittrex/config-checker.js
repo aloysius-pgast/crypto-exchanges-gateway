@@ -3,16 +3,16 @@ const path = require('path');
 const _ = require('lodash');
 const AbstractConfigCheckerClass = require('../../abstract-config-checker');
 
+// maximum number of requests per seconds for api
+const GLOBAL_API_MAX_REQUESTS_PER_SECOND = 1;
+
 class ConfigChecker extends AbstractConfigCheckerClass
 {
-
-// maximum number of requests per seconds for api
-static get GLOBAL_API_MAX_REQUESTS_PER_SECOND() { return 1 };
 
 // whether or not multiple instances can be supported for this exchange
 static get MULTIPLE_INSTANCES() { return true };
 
-constructor()
+constructor(exchangeId)
 {
     // default config
     let cfg = {
@@ -24,11 +24,11 @@ constructor()
         feesPercent:0.25,
         throttle:{
             global:{
-                maxRequestsPerSecond:ConfigChecker.GLOBAL_API_MAX_REQUESTS_PER_SECOND
+                maxRequestsPerSecond:GLOBAL_API_MAX_REQUESTS_PER_SECOND
             }
         }
     }
-    super(cfg, 'exchanges[bittrex]');
+    super(cfg, `exchanges[${exchangeId}]`);
 }
 
 _check()
