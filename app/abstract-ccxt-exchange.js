@@ -35,6 +35,30 @@ isCcxt()
 }
 
 /**
+ * Returns ccxt options
+ *
+ * @param {object} config, global config
+ * @param {object} opt custom options
+ */
+static getCcxtOpt(exchangeId, config, opt)
+{
+    let delay = Math.floor(1000 / config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
+    let defaultOpt = {
+        enableRateLimit:true,
+        rateLimit:delay,
+        verbose:config.exchanges[exchangeId].verbose,
+        timeout:config.exchanges[exchangeId].timeout
+    }
+    if ('' != config.exchanges[exchangeId].key && '' != config.exchanges[exchangeId].secret)
+    {
+        defaultOpt.apiKey = config.exchanges[exchangeId].key;
+        defaultOpt.secret = config.exchanges[exchangeId].secret;
+    }
+    let _opt = _.merge(defaultOpt, opt);
+    return _opt;
+}
+
+/**
  * Whether or not an error is a network error
  *
  * @param {object} e CcxtErrors.BaseError
