@@ -112,6 +112,19 @@ _loadData(cb)
             return;
         }
         let timestamp = new Date().getTime();
+        if (undefined === data[self.state.pair])
+        {
+            let message = `No ticker for ${self.state.pair}`;
+            console.warn(message);
+            self.setState((prevState, props) => {
+                return {loaded:true, data:null, err:message, loadedTimestamp:timestamp};
+            });
+            if (undefined !== cb)
+            {
+                cb.call(self);
+            }
+            return;
+        }
         // update window title
         try
         {

@@ -262,7 +262,6 @@ componentWillReceiveProps(nextProps)
             pair:undefined === nextProps.match.params.pair ? null : nextProps.match.params.pair
         };
     }, function(){
-        console.log(this.state);
         this._loadData();
     });
 }
