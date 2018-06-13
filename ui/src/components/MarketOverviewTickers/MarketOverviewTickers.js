@@ -138,6 +138,28 @@ render()
             <ComponentLoadingSpinner/>
         )
     }
+
+    const getChange = (item) => {
+        if (null === item.priceChangePercent)
+        {
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
+        }
+        let className_percent_change = '';
+        if (item.priceChangePercent < 0)
+        {
+            className_percent_change = 'text-danger';
+        }
+        else if (item.priceChangePercent > 0)
+        {
+            className_percent_change = 'text-success';
+        }
+        return (
+            <span className={className_percent_change}>{item.priceChangePercent.toFixed(3)} %</span>
+        );
+    }
+
     return (
       <div className="animated fadeIn col-lg-6 p-0">
         <ComponentLoadedTimestamp timestamp={this.state.loadedTimestamp} err={this.state.err} onManualRefresh={this._handleManualRefresh}/>
@@ -158,20 +180,10 @@ render()
             <tbody>
             {
               _.map(this.state.data, (item, index) => {
-                let percent_change = item.priceChangePercent;
-                let className_percent_change = '';
-                if (percent_change < 0)
-                {
-                    className_percent_change = 'text-danger';
-                }
-                else if (percent_change > 0)
-                {
-                    className_percent_change = 'text-success';
-                }
                 return <tr key={index}>
                     <td>{item.exchangeName}</td>
                     <td><a href={item.pricesUrl}>{item.pair}</a></td>
-                    <td className="text-right"><span className={className_percent_change}>{percent_change.toFixed(3)} %</span></td>
+                    <td className="text-right">{getChange(item)}</td>
                     <td className="text-right"><a href={item.orderBookUrl}>{item.last.toFixed(8)}</a></td>
                     <td className="text-right"><a href={item.orderBookUrl}>{item.buy.toFixed(8)}</a></td>
                     <td className="text-right"><a href={item.orderBookUrl}>{item.sell.toFixed(8)}</a></td>
