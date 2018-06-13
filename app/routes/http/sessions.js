@@ -105,7 +105,8 @@ const checkExchangeAndPair = (req, res, features) => {
  */
 (function(){
     const schema = Joi.object({
-        rpc: Joi.boolean().truthy('1').falsy('0').insensitive(true)
+        rpc: Joi.boolean().truthy('1').falsy('0').insensitive(true),
+        prefix: Joi.string().empty('').default('')
     });
 
     /**
@@ -123,6 +124,10 @@ const checkExchangeAndPair = (req, res, features) => {
         if (undefined !== params.value.rpc)
         {
             opt.rpc = params.value.rpc;
+        }
+        if ('' !== params.value.prefix)
+        {
+            opt.prefix = params.value.prefix;
         }
         let sessions = sessionRegistry.getSessions(opt);
         let list = {};

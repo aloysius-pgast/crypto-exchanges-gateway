@@ -146,6 +146,7 @@ registerNonRpcSession(ws, path)
  * Retrieves existing sessions
  *
  * @param {boolean} opt.rpc if true, only RPC sessions will be retrieved. If false only non-rpc sessions will be retrieved. If not set all sessions will be retrieved
+ * @param {string} opt.prefix if defined, only sessions starting with this prefix will be retrieved
  */
 getSessions(opt)
 {
@@ -153,7 +154,13 @@ getSessions(opt)
     {
         opt = {};
     }
-    if (undefined === opt.type)
+    let prefix = undefined;
+    if (undefined !== opt.prefix && '' !== opt.prefix)
+    {
+        prefix = opt.prefix;
+    }
+    // return all sessions
+    if (undefined === opt.rpc && undefined === prefix)
     {
         return this._sessions;
     }
@@ -167,6 +174,14 @@ getSessions(opt)
                 return;
             }
             if (false === opt.rpc && session.isRpc())
+            {
+                return;
+            }
+        }
+        // filter by prefix
+        if (undefined !== prefix)
+        {
+            if (!session.getSid().startsWith(prefix))
             {
                 return;
             }
