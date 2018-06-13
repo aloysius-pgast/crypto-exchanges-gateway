@@ -83,6 +83,20 @@ constructor(exchangeId, exchangeName, config)
     this._setSubscriptionManager(subscriptionManager);
 }
 
+async _getPairs()
+{
+    let list = {};
+    // ignore futures (ie: baseCurrency == USD)
+    _.forEach(await super._getPairs(), (e, pair) => {
+        if ('USD' == e.baseCurrency)
+        {
+            return;
+        }
+        list[pair] = e;
+    });
+    return list;
+}
+
 /**
  * Returns the default value for order book limit
  * @return {integer}
