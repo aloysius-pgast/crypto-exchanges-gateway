@@ -41,7 +41,7 @@ const getUpdatedFeatures = (supportedFeatures, config) => {
     _.forEach(['wsTickers','wsOrderBooks','wsTrades'], (type) => {
         if (features[type].enabled && features[type].emulated)
         {
-            if (!config.emulatedWs[type].enabled)
+            if (undefined === config.emulatedWs[type] || !config.emulatedWs[type].enabled)
             {
                 features[type] = {enabled:false};
             }
