@@ -64,7 +64,7 @@ const getSessionSchema = (exchanges) => {
         isRpc:joi.boolean(),
         creationTimestamp:joi.number().positive().required(),
         expires:joi.boolean().required(),
-        timeout:joi.required().when('expires', {is:false, then:joi.number().valid(0), otherwise:joi.number().positive()}),
+        timeout:joi.required().when('expires', {is:false, then:joi.number().valid(0), otherwise:joi.number().positive().allow(0)}),
         expiryTimestamp:joi.number().positive().allow(null).required(),
         subscriptions:joi.object().length(0).required(),
         connections:joi.array().items(connectionSchema).required()
