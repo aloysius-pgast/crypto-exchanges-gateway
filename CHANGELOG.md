@@ -6,6 +6,7 @@
 * Support for limiting the number of subscriptions allowed for a session
 * Support for limiting the duration of a second
 ### UI
+* Make _Market Overview_ the default view in case user has some starred pairs
 * New view _My Streams_ (can be used to define custom ws streams which multiplex data from various exchanges)
 
 ## [v1.7.0]
