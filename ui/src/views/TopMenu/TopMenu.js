@@ -163,6 +163,10 @@ _updateStateFromRoute(props)
                     title = 'Settings';
                     helpId = 'settings';
                     break;
+                case 'myStreams':
+                    title = 'My Streams';
+                    helpId = 'myStreams';
+                    break;
                 case 'alerts':
                     title = 'Alerts';
                     helpId = 'alerts';

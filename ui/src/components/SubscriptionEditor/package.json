@@ -1,0 +1,6 @@
+{
+  "name": "SubscriptionEditor",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./SubscriptionEditor.js"
+}

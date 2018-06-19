@@ -14,7 +14,7 @@ constructor()
     }
     else
     {
-        wsEndpoint = 'wss://' + window.location.hostname + ':8001/';        
+        wsEndpoint = 'wss://' + window.location.hostname + ':8001/';
     }
     this.config = {
         restEndpoint:restEndpoint,

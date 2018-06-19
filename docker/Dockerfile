@@ -22,6 +22,8 @@ VOLUME ["/root/crypto-exchanges-gateway/ssl","/root/crypto-exchanges-gateway/sto
 ENV cfg.auth.apikey ""
 ENV cfg.listen.externalEndpoint ""
 ENV cfg.listenWs.externalEndpoint ""
+ENV cfg.sessions.maxSubscriptions "0"
+ENV cfg.sessions.maxDuration "0"
 ENV cfg.pushover.user ""
 ENV cfg.pushover.token ""
 ENV cfg.tickerMonitor.enabled "1"

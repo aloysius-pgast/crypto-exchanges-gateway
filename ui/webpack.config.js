@@ -105,6 +105,7 @@ module.exports = {
     new CopyWebpackPlugin([
         {from: './public/img', to: 'img'},
         {from: './public/help', to: 'help'},
+        {from: './public/wsInspector', to: 'wsInspector'},
         {from: './public/dashboard.md', to: 'dashboard.md'},
       ],
       {copyUnmodified: false}

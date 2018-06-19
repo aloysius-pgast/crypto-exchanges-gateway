@@ -105,11 +105,12 @@ checkSessions(opt)
                 let timestamp = session.getTimestamp();
                 if (timestamp < minTimestamp)
                 {
+                    let duration = Math.floor(now - timestamp);
                     if (debug.enabled)
                     {
-                        let duration = Math.floor(now - timestamp);
                         debug(`Session '${session.getSid()}' will be destroyed because it was created ${duration}s ago`);
                     }
+                    logger.info(`Session '${session.getSid()}' will be destroyed because it was created ${duration}s ago`);
                     session.destroy();
                 }
                 else

@@ -3,6 +3,10 @@
 ## [v1.7.1] NOT RELEASED YET
 ### Gateway
 * Support for OKEx exchange through _ccxt_
+* Support for limiting the number of subscriptions allowed for a session
+* Support for limiting the duration of a second
+### UI
+* New view _My Streams_ (can be used to define custom ws streams which multiplex data from various exchanges)
 
 ## [v1.7.0]
 ### Gateway

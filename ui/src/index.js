@@ -20,6 +20,7 @@ import restClient from './lib/RestClient';
 import wsClient from './lib/WsClient';
 import serviceRegistry from './lib/ServiceRegistry';
 import starredPairs from './lib/StarredPairs';
+import dataStore from './lib/DataStore'
 
 window.ctx = {hasLocalStorage:true};
 let apiKey = null;
@@ -87,24 +88,31 @@ config.load().then(function(result){
     restClient.setApiKey(apiKey);
 
     // check apiKey
-    restClient.getServerStatus().then(function(result){
+    restClient.getServerStatus().then((result) => {
         // initialize ws client
         wsClient.initialize(config.config.wsEndpoint);
         wsClient.setApiKey(apiKey);
 
-        // load available services
-        serviceRegistry.load().then(function(result){
-            // we're all setup now
-            const history = createBrowserHistory();
+        // load server config
+        restClient.getServerConfig().then((result) => {
+            dataStore.setData('serverConfig', result);
 
-            ReactDOM.render((
-                <HashRouter history={history}>
-                    <Switch>
-                        <Route path="/" component={App}/>
-                    </Switch>
-                </HashRouter>
-            ), document.getElementById('root'));
+            // load available services
+            serviceRegistry.load().then((result) => {
+                // we're all setup now
+                const history = createBrowserHistory();
+
+                ReactDOM.render((
+                    <HashRouter history={history}>
+                        <Switch>
+                            <Route path="/" component={App}/>
+                        </Switch>
+                    </HashRouter>
+                ), document.getElementById('root'));
+            });
+
         });
+
     }).catch (function(err){
         // invalid api key
         if (undefined !== err.response && (401 == err.response.status || 403 == err.response.status))

@@ -1,0 +1,343 @@
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="assets/vendor/clusterize.css" rel="stylesheet">
+    <link href="assets/vendor/pure-min.css" rel="stylesheet">
+    <link href="assets/vendor/pure-grids-responsive.css" rel="stylesheet">
+    <link href="assets/vendor/jsonFormatter.css" rel="stylesheet">
+    <link href="assets/style.css" rel="stylesheet">
+    <script src="lib/vendor/zepto.min.js"></script>
+    <script src="lib/vendor/sprintf.min.js"></script>
+    <script src="lib/vendor/clusterize.js"></script>
+    <script src="lib/vendor/jsonFormatter.js"></script>
+    <script language="javascript">
+Zepto(function($){
+
+    var streamName = window.location.hash.substr(1);
+    if ('' == streamName)
+    {
+        $('#no-stream').show();
+        return;
+    }
+    var sid = sprintf('mystream.%s', streamName);
+
+    var init = function(uri){
+        $('#container').show();
+
+        //-- update stream info
+        $('#stream-uri').html(uri);
+
+        //-- json formatter
+        var jf = new JsonFormatter({
+            dom:$('#json-viewer').get(0),
+            imgExpanded:'assets/vendor/img/expanded.gif',
+            imgCollapsed:'assets/vendor/img/collapsed.gif',
+        });
+
+        //-- subscriptions
+        var inspectAll = false;
+        var subscriptions = {
+            list:[],
+            byId:{}
+        }
+        var subscriptionTypes = {
+            'ticker':{type:'ticker','name':'Ticker','inspect':false},
+            'orderBook':{type:'orderBook','name':'Order Book','inspect':false},
+            'orderBookUpdate':{type:'orderBook','name':'Order Book','inspect':false},
+            'trades':{type:'trades','name':'Trades','inspect':false},
+        }
+        var subscriptionsTable = $('#subscriptions-table');
+        $('#inspect-all').on('click', function(){
+            if (this.checked)
+            {
+                inspectAll = true;
+            }
+            else
+            {
+                inspectAll = false;
+            }
+            $.each($('input', subscriptionsTable), function(index, item) {
+                item.checked = inspectAll;
+            });
+            for (var i = 0; i < subscriptions.list.length; ++i)
+            {
+                var subscription = subscriptions.byId[subscriptions.list[i]];
+                subscription.inspect = inspectAll;
+            }
+        });
+
+        //-- inspector
+        var inspectorTable = null;
+        var currentRow = null;
+        var resizeInspector = function(){
+            var height = Math.round(window.innerHeight * 0.40);
+            $('.clusterize-scroll').css('max-height', height + 'px');
+            if (null !== inspectorTable)
+            {
+                inspectorTable.refresh(true);
+            }
+        }
+        window.addEventListener('resize', function(){
+            resizeInspector();
+        });
+        resizeInspector();
+        inspectorTable = new Clusterize({
+            scrollId: 'scrollArea',
+            contentId: 'contentArea',
+            tag:'tr',
+            keep_parity:true,
+            show_no_data_row: false
+        });
+        document.getElementById('contentArea').onclick = function(e) {
+            e = e || event;
+            var target = e.target || e.srcElement;
+            var trNode;
+            if ('TD' == target.nodeName)
+            {
+                trNode = target.parentNode;
+            }
+            else if ('TR' == target.nodeName)
+            {
+                trNode = target;
+            }
+            else
+            {
+                return;
+            }
+            $('#styleTag').html(sprintf('#%s {background-color: #989c98;}', trNode.id));
+            var data = trNode.getAttribute('data').replace(/'/g, '"');
+            var obj = JSON.parse(data);
+            jf.doFormat(obj);
+        }
+
+        var timer = null;
+        var updateData = function(){
+            // update counters
+            subscriptionsTable.empty();
+            for (var i = 0; i < subscriptions.list.length; ++i)
+            {
+                var subscription = subscriptions.byId[subscriptions.list[i]];
+                var checked = '';
+                if (subscription.inspect)
+                {
+                    checked = ' checked';
+                }
+                var tr = $(document.createElement('tr'));
+                tr.append(sprintf('<td>%s</td>', subscription.exchange));
+                tr.append(sprintf('<td>%s</td>', subscription.type));
+                tr.append(sprintf('<td>%s</td>', subscription.pair));
+                tr.append(sprintf('<td>%s</td>', subscription.count));
+                tr.append(sprintf('<td><input subscription="%s" type="checkbox"%s/></td>', subscriptions.list[i], checked));
+                subscriptionsTable.append(tr);
+            }
+            document.getElementById('subscriptions-table').onclick = function(e) {
+                e = e || event;
+                var target = e.target || e.srcElement;
+                var cbNode;
+                if ('TD' == target.nodeName)
+                {
+                    cbNode = $('input', target.parentNode).get(0);
+                    cbNode.checked = !cbNode.checked;
+                }
+                else if ('TR' == target.nodeName)
+                {
+                    cbNode = $('input', target).get(0);
+                    cbNode.checked = !cbNode.checked;
+                }
+                else if ('INPUT' == target.nodeName)
+                {
+                    cbNode = target;
+                }
+                else
+                {
+                    return;
+                }
+                var subscription = cbNode.getAttribute('subscription');
+                subscriptions.byId[subscription].inspect = cbNode.checked;
+            }
+
+            // update inspector
+            inspectorTable.append(data);
+            data = [];
+
+            timer = setTimeout(function(){
+                updateData();
+            }, 1000);
+        };
+        $('#reset-inspector').on('click', function(){
+            $('#styleTag').empty();
+            $('#json-viewer').empty();
+            inspectorTable.update([]);
+        });
+
+        //-- websocket
+        var autoConnect = true;
+        var ws = null;
+        var data = [];
+        var counter = 0;
+
+        var disconnectWs = function()
+        {
+            if (null === ws)
+            {
+                return;
+            }
+            ws.close(3000);
+            ws = null;
+        }
+
+        var connectWs = function(){
+            $('#stream-status').html('connecting').removeClass().addClass('connecting');
+            $('#stream-connect').html('Disconnect').attr('status', 'connecting');
+            ws = new WebSocket(uri);
+
+            ws.onopen = function(){
+                // nothing to do
+            };
+
+            ws.onmessage = function(e){
+                var obj = JSON.parse(e.data);
+                if (undefined !== obj.hello)
+                {
+                    $('#stream-status').html('connected').removeClass().addClass('connected');
+                    $('#stream-connect').attr('status', 'connected');
+                    setTimeout(function(){
+                        updateData();
+                    }, 500);
+                    return;
+                }
+                // Unsupported subscription type
+                if (undefined === subscriptionTypes[obj.n])
+                {
+                    return;
+                }
+                ++counter;
+                let type = subscriptionTypes[obj.n].type;
+                let subscriptionId = sprintf('%s.%s.%s', obj.d.exchange, type, obj.d.pair);
+                if (undefined === subscriptions.byId[subscriptionId])
+                {
+                    subscriptions.byId[subscriptionId] = {
+                        exchange:obj.d.exchange,
+                        type:subscriptionTypes[obj.n].name,
+                        pair:obj.d.pair,
+                        inspect:inspectAll,
+                        count:0
+                    };
+                    subscriptions.list.push(subscriptionId);
+                }
+                ++subscriptions.byId[subscriptionId].count;
+                if (subscriptions.byId[subscriptionId].inspect)
+                {
+                    var s = e.data.replace(/"/g, "'");
+                    var row = sprintf('<tr id="row%s" data="%s"><td style="width:25%%;">%s</td><td style="width:25%%;">%s</td><td style="width:25%%;">%s</td><td style="width:25%%;">%s</td></tr>', counter, s, counter, obj.d.exchange, type, obj.d.pair);
+                    data.push(row);
+                }
+            };
+
+            ws.onclose = function(code)
+            {
+                ws = null;
+                $('#stream-status').html('disconnected').removeClass().addClass('disconnected');
+                $('#stream-connect').html('Connect').attr('status', 'disconnected');
+            }
+        }
+
+        $('#stream-connect').on('click', function(){
+            var n = $(this);
+            if ('disconnected' != n.attr('status'))
+            {
+                disconnectWs();
+                return;
+            }
+            connectWs();
+        });
+
+        if (autoConnect)
+        {
+            connectWs();
+        }
+    }
+
+    // retrieve config
+    $.ajax({
+        type: 'GET',
+        url: '../config/config.json',
+        dataType: 'json',
+        success: function(data){
+            console.log(data);
+            uri = sprintf('%s/?sid=%s', data.wsEndpoint, sid);
+            init(uri);
+        },
+        error: function(xhr, type){
+            $('#gateway-unreachable').show();
+        }
+    });
+});
+</script>
+</head>
+<body>
+    <style id="styleTag"></style>
+    <div id="no-stream" style="display:none;">
+        No stream
+    </div>
+    <div id="gateway-unreachable" style="display:none;">
+        Gateway is not reachable
+    </div>
+    <div id="container" style="display:none;">
+        <div id="stream">
+            <div>Stream is reachable on <span id="stream-uri"></span></div>
+            <div id="stream-action">
+                <div class="valign" style="float:left;margin-right:10px;">Stream is <span id="stream-status" class="disconnected"/>disconnected</div>
+                <button id="stream-connect" class="pure-button valign" status="disconnected" style="float:left;">Connect</button>
+            </div>
+        </div>
+        <div class="pure-g" style="width:95%;">
+            <div class="pure-u-1">
+                <h3>Subscriptions</h3>
+            </div>
+            <div class="pure-u-1">
+                <table class="pure-table pure-table-horizontal">
+                    <thead>
+                        <tr>
+                            <th>Exchange</th>
+                            <th>Type</th>
+                            <th>Pair</th>
+                            <th>Count</th>
+                            <th>Inspect<input id="inspect-all" style="display:inline;margin-left:8px;margin-bottom:0px;" type="checkbox"/></th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscriptions-table"/>
+                </table>
+            </div>
+            <div class="pure-u-1">
+                <h3>Inspector</h3>
+                <button id="reset-inspector" class="pure-button" style="margin-bottom:10px;">Clear</button>
+            </div>
+            <div id="container" class="pure-u-1 pure-u-md-1-2 pure-u-lg-1-3" style="margin-bottom:20px;">
+                <div class="clusterize" style="width:95%;">
+                  <table class="pure-table pure-table-horizontal" style="width:100%;">
+                    <thead>
+                      <tr>
+                          <tr>
+                              <th style="width:25%;">#</th>
+                              <th style="width:25%;">Exchange</th>
+                              <th style="width:25%;">Type</th>
+                              <th style="width:25%;">Pair</th>
+                          </tr>
+                      </tr>
+                    </thead>
+                  </table>
+                  <div id="scrollArea" class="clusterize-scroll" style="width:100%;">
+                      <table class="pure-table pure-table-horizontal" style="width:100%;">
+                      <tbody id="contentArea" class="clusterize-content">
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+            </div>
+            <div id="json-viewer" class="pure-u-1 pure-u-md-1-2 pure-u-lg-2-3">
+            </div>
+        </div>
+    </div>
+</body>
+</html>

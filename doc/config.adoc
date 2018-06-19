@@ -131,6 +131,12 @@ Access will be restricted using the following :
         /* in case you want to enable wss */
         "ssl":true
     },
+    "sessions":{
+        /* maximum number of subscriptions per session (0 means no maximum) */
+        "maxSubscriptions":0,
+        /* maximum session duration in second (0 means no maximum) */
+        "maxDuration":0
+    },
     "ui":{
         /* enable ui : ui should be built first */
         "enabled":true

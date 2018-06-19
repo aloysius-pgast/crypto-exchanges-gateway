@@ -282,6 +282,8 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.logLevel : log level
 * cfg.listen.externalEndpoint : used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy
 * cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
+* cfg.sessions.maxSubscriptions : maximum number of subscriptions allowed for a given session (optional, default = _0_, no maximum)
+* cfg.sessions.maxDuration : maximum duration in second for a given session (optional, default = _0_, no maximum)
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor) (default = _1_)

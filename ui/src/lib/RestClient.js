@@ -185,6 +185,15 @@ getServerStatus()
     return this._sendRequest('get', url);
 }
 
+//-- Server config
+getServerConfig()
+{
+    let path = '/server/cfg';
+    let url = this._getUrl(path);
+    let self = this;
+    return this._sendRequest('get', url);
+}
+
 //-- Services
 getServices()
 {
@@ -431,6 +440,57 @@ getCoinMarketCapCurrencies()
             return resolve(list.sort());
         });
     });
+}
+
+//-- sessions management
+listSessions()
+{
+    let path = '/sessions';
+    let params = {rpc:true,prefix:'mystream.'};
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url, params);
+}
+
+getSession(sid)
+{
+    let path = `/sessions/${sid}`;
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url);
+}
+
+createSession(sid)
+{
+    let path = `/sessions/${sid}`;
+    let url = this._getUrl(path);
+    return this._sendRequest('post', url);
+}
+
+deleteSession(sid)
+{
+    let path = `/sessions/${sid}`;
+    let url = this._getUrl(path);
+    return this._sendRequest('delete', url);
+}
+
+getSessionSubscriptions(sid)
+{
+    let path = `/sessions/${sid}/subscriptions`;
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url);
+}
+
+addSessionSubscription(sid, exchange, type, pair)
+{
+    let path = `/sessions/${sid}/subscriptions/${exchange}/${type}/${pair}`;
+    let url = this._getUrl(path);
+    return this._sendRequest('post', url);
+}
+
+deleteSessionSubscription(sid, exchange, type, pair)
+{
+    let path = `/sessions/${sid}/subscriptions/${exchange}/${type}/${pair}`;
+    let url = this._getUrl(path);
+    return this._sendRequest('delete', url);
 }
 
 //-- Portfolio
