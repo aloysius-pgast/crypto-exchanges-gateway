@@ -160,7 +160,7 @@ render()
     return (
         <div className="col-lg-4 p-0">
             <div>{getTitle()}</div>
-            <div style={{marginBottom:'10px'}}>Stream will be reachable on <a target="_blank" href={wsInspectorUri}>{streamUri}</a></div>
+            <div style={{marginBottom:'10px'}}>Stream is reachable on <a target="_blank" href={wsInspectorUri}>{streamUri}</a></div>
             <table className="table table-responsive table-sm" style={{fontSize:'0.80rem'}}>
               <thead className="thead-inverse">
                 <tr>

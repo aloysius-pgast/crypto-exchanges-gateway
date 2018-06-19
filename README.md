@@ -12,7 +12,7 @@ Use it at your own risks and be careful with your money ;)
 
 * Does it support real-time data ?
 
-Yes, gateway provides a WS endpoint
+Yes, gateway provides a WS endpoint. See [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams
 
 * What about _ccxt_ ?
 
@@ -39,7 +39,7 @@ Besides the privilege to go to bed, knowing that you did the right thing ? Not m
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
-* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc))
+* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc) and [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams)
 * Access to a portfolio portfolio overview across all exchanges with estimated value in USD
 * Advanced alerting system
 
