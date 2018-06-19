@@ -4,6 +4,7 @@ const _ = require('lodash');
 const logger = require('winston');
 const Joi = require('../../custom-joi');
 const JoiHelper = require('../../joi-helper');
+const RequestHelper = require('../../request-helper');
 const Errors = require('../../errors');
 const serviceRegistry = require('../../service-registry');
 const statistics = require('../../statistics');
@@ -90,10 +91,17 @@ const formatErrorList = (list) => {
 })();
 
 /**
- * Display log level
+ * Return log level
  */
 app.get('/server/logLevel', (req, res) => {
     return res.send({value:config.logLevel});
+});
+
+/**
+ * Return endpoints
+ */
+app.get('/server/endpoints', (req, res) => {
+    return res.send(RequestHelper.getEndpoints(req, config));
 });
 
 /**
