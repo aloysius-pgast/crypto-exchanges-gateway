@@ -65,7 +65,7 @@ constructor(sid, isRpc, isNew)
 
     //-- session expiry
     // creation timestamp
-    this._timestamp = (new Date().getTime()) / 1000.0;
+    this._timestamp = Math.floor(Date.now() / 1000.0);
 
     // whether or not session can expires
     this._expires = true;
@@ -88,6 +88,31 @@ constructor(sid, isRpc, isNew)
         },
         listener:null
     }
+}
+
+size()
+{
+    let size = 0;
+    _.forEach(this._exchanges, (exchange, exchangeId) => {
+        _.forEach(SUPPORTED_SUBSCRIPTIONS, (entity) => {
+            if (undefined !== exchange.subscriptions[entity] && null !== exchange.subscriptions[entity].timestamp)
+            {
+                _.forEach(exchange.subscriptions[entity].pairs, (entry, pair) => {
+                    if ('klines' == entity)
+                    {
+                        _.forEach(entry, (obj, interval) => {
+                            size += 1;
+                        });
+                    }
+                    else
+                    {
+                        size += 1;
+                    }
+                });
+            }
+        });
+    });
+    return size;
 }
 
 /**
@@ -200,7 +225,7 @@ getExpiryTimestamp()
 /**
  * List existing subscriptions
  *
- * @return {object} {tickers:{},orderBooks:{},trades:{}}
+ * @return {object} {tickers:{},orderBooks:{},trades:{},klines:{}}
  */
 getSubscriptions()
 {
