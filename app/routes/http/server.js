@@ -98,6 +98,17 @@ app.get('/server/logLevel', (req, res) => {
 });
 
 /**
+ * Return configuration
+ */
+app.get('/server/cfg', (req, res) => {
+    let cfg = {
+        logLevel:config.logLevel,
+        sessions:config.sessions
+    }
+    return res.send(cfg);
+});
+
+/**
  * Return endpoints
  */
 app.get('/server/endpoints', (req, res) => {
