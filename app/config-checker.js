@@ -50,6 +50,12 @@ constructor(defaultConfig)
         tickerMonitor:{
             enabled:false
         },
+        sessions:{
+            // maximum number of subscriptions in a session
+            maxSubscriptions:0,
+            // maximum duration of a session in seconds (it will be automatically removed after)
+            maxDuration:0
+        },
         exchanges:{}
     }
     if (undefined !== defaultConfig)
@@ -104,6 +110,10 @@ _check()
         valid = false;
     }
     if (!this._checkPushOver())
+    {
+        valid = false;
+    }
+    if (!this._checkSessions())
     {
         valid = false;
     }
@@ -210,6 +220,42 @@ _checkPushOver()
     else
     {
         this._finalConfig.pushover = checker.getCfg();
+    }
+    return valid;
+}
+
+_checkSessions()
+{
+    let valid = true;
+    if (undefined === this._config.sessions)
+    {
+        return true;
+    }
+    if (undefined !== this._config.sessions.maxSubscriptions)
+    {
+        let value = parseInt(this._config.sessions.maxSubscriptions);
+        if (isNaN(value) || value < 0)
+        {
+            this._invalid({name:'sessions.maxSubscriptions',value:this._config.sessions.maxSubscriptions});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.sessions.maxSubscriptions = value;
+        }
+    }
+    if (undefined !== this._config.sessions.maxDuration)
+    {
+        let value = parseInt(this._config.sessions.maxDuration);
+        if (isNaN(value) || value < 0)
+        {
+            this._invalid({name:'sessions.maxDuration',value:this._config.sessions.maxDuration});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.sessions.maxDuration = value;
+        }
     }
     return valid;
 }
