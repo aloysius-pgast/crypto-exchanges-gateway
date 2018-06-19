@@ -534,7 +534,3 @@ storage.checkDatabase().then(() => {
 }).catch (() => {
     process.exit(1);
 });
-
-// TODO : allow to remove stream automatically if they are older than a date or too large
-// add max subscription size
-// allow to indicate in UI that it's demo mode
