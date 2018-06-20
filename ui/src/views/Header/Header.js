@@ -38,7 +38,7 @@ render()
     return (
       <header className="app-header navbar">
         <NavbarToggler className="d-lg-none" onClick={this.mobileSidebarToggle}>&#9776;</NavbarToggler>
-        <NavbarBrand href="#"></NavbarBrand>
+        <NavbarBrand href="#/home"></NavbarBrand>
         <NavbarToggler className="d-md-down-none mr-auto" onClick={this.sidebarToggle}>&#9776;</NavbarToggler>
       </header>
     )
