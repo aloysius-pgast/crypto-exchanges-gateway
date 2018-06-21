@@ -1422,15 +1422,15 @@ _registerTradesLoop(pair)
                 }
                 evt.data.push(trade);
             });
-            // update last trade with newest one
+            // update last trade with newest one & emit
             if (0 != evt.data.length)
             {
                 self._emulatedWs.wsTrades.list[loop_id].lastTrade = {
                     id:evt.data[0].id,
                     timestamp:evt.data[0].timestamp
                 }
+                self.emit('trades', evt);
             }
-            self.emit('trades', evt);
             // schedule next loop
             self._emulatedWs.wsTrades.list[loop_id].timer = setTimeout(function(){
                 doRequest();
