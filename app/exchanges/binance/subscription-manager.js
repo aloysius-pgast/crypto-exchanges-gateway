@@ -44,27 +44,26 @@ _waitForFullOrderBook(pair)
     }
     let requestId = ++this._waitingForFullOrderBooks[pair].requestId;
     this._waitingForFullOrderBooks[pair].waiting = true;
-    let self = this;
-    this._exchangeInstance.getOrderBook(pair, {custom:{includeLastUpdateId:true}}).then(function(data){
+    this._exchangeInstance.getOrderBook(pair, {custom:{includeLastUpdateId:true}}).then((data) => {
         // we have another pending request
-        if (requestId != self._waitingForFullOrderBooks[pair].requestId)
+        if (requestId != this._waitingForFullOrderBooks[pair].requestId)
         {
             return;
         }
         // if we already emitted an orderBook event for same cseq, ignore event
-        if (self._waitingForFullOrderBooks[pair].fullOrderBookCseq == data.lastUpdateId)
+        if (this._waitingForFullOrderBooks[pair].fullOrderBookCseq == data.lastUpdateId)
         {
-            self._waitingForFullOrderBooks[pair].waiting = false;
+            this._waitingForFullOrderBooks[pair].waiting = false;
             return;
         }
         // if we already emitted an orderBookUpdate event with an higher cseq, retrieve full order book again
-        if (undefined !== self._orderBooksUpdates[pair] && data.lastUpdateId <= self._orderBooksUpdates[pair])
+        if (undefined !== this._orderBooksUpdates[pair] && data.lastUpdateId <= this._orderBooksUpdates[pair])
         {
-            self._waitForFullOrderBook.call(self, pair);
+            this._waitForFullOrderBook(pair);
             return;
         }
         let evt = {
-            exchange:self._exchangeId,
+            exchange:this._exchangeId,
             pair:pair,
             cseq:data.lastUpdateId,
             data:{
@@ -72,17 +71,17 @@ _waitForFullOrderBook(pair)
                 sell:data.sell
             }
         }
-        self._waitingForFullOrderBooks[pair].fullOrderBookCseq = data.lastUpdateId;
-        self._waitingForFullOrderBooks[pair].waiting = false;
-        self.emit('orderBook', evt);
-    }).catch (function(err){
+        this._waitingForFullOrderBooks[pair].fullOrderBookCseq = data.lastUpdateId;
+        this._waitingForFullOrderBooks[pair].waiting = false;
+        this.emit('orderBook', evt);
+    }).catch ((err) => {
         logger.warn("Could not retrieve Binance order book for pair '%s' : err = '%s'", pair, err);
         // we have another pending request
-        if (requestId != self._waitingForFullOrderBooks[pair].requestId)
+        if (requestId != this._waitingForFullOrderBooks[pair].requestId)
         {
             return;
         }
-        self._waitingForFullOrderBooks[pair].waiting = false;
+        this._waitingForFullOrderBooks[pair].waiting = false;
     });
 }
 
@@ -94,7 +93,7 @@ _waitForFullOrderBook(pair)
  *
  *  @return {boolean} true if we're waiting for full order book, false otherwise
  */
-_waitingForFullOrderBook(pair, updateCseq)
+_shouldIgnoreOrderBookUpdate(pair, updateCseq)
 {
     // not waiting for full order book
     if (undefined === this._waitingForFullOrderBooks[pair])
@@ -131,39 +130,38 @@ _registerOrderBookClient(pair)
     }
     let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
     let uri = BASE_WS_URI + `/${p}@depth`;
-    let self = this;
     client = new StreamClientClass(this._exchangeId, uri);
     let descriptor = {entity:'orderBook',pair:pair,client:client}
-    client.on('connected', function(){
-        self._registerConnection(`orderBook-${pair}`, {uri:uri});
+    client.on('connected', () => {
+        this._registerConnection(`orderBook-${pair}`, {uri:uri});
         // everytime client is reconnected, we need to wait for full order book
-        self._waitForFullOrderBook.call(self, pair);
-        self._processSubscriptions.call(self, descriptor);
+        this._waitForFullOrderBook(pair);
+        this._processSubscriptions(descriptor);
     });
-    client.on('disconnected', function(){
-        self._unregisterConnection(`orderBook-${pair}`);
+    client.on('disconnected', () => {
+        this._unregisterConnection(`orderBook-${pair}`);
         // nothing to do, reconnection will be automatic
     });
     // no more retry left, we need to reconnect
-    client.on('terminated', function(){
-        self._unregisterConnection(`orderBook-${pair}`);
+    client.on('terminated', () => {
+        this._unregisterConnection(`orderBook-${pair}`);
         client.reconnect(false);
     });
-    client.on('orderBookUpdate', function(evt){
+    client.on('orderBookUpdate', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.orderBooks.pairs[evt.pair])
+        if (undefined === this._subscriptions.orderBooks.pairs[evt.pair])
         {
             return;
         }
         // ignore if we're waiting for full order book
-        if (self._waitingForFullOrderBook.call(self, evt.pair, evt.cseq))
+        if (this._shouldIgnoreOrderBookUpdate(evt.pair, evt.cseq))
         {
             return;
         }
         // save last cseq
-        self._orderBooksUpdates[evt.pair] = evt.cseq;
-        evt.exchange = self._exchangeId;
-        self.emit('orderBookUpdate', evt);
+        this._orderBooksUpdates[evt.pair] = evt.cseq;
+        evt.exchange = this._exchangeId;
+        this.emit('orderBookUpdate', evt);
     });
     this._clients.orderBooks[pair] = client;
     client.connect();
@@ -197,30 +195,29 @@ _registerTickerClient(pair)
     }
     let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
     let uri = BASE_WS_URI + `/${p}@ticker`;
-    let self = this;
     client = new StreamClientClass(this._exchangeId, uri);
     let descriptor = {entity:'ticker',pair:pair,client:client}
-    client.on('connected', function(){
-        self._registerConnection(`ticker-${pair}`, {uri:uri});
-        self._processSubscriptions.call(self, descriptor);
+    client.on('connected', () => {
+        this._registerConnection(`ticker-${pair}`, {uri:uri});
+        this._processSubscriptions(descriptor);
     });
-    client.on('disconnected', function(){
-        self._unregisterConnection(`ticker-${pair}`);
+    client.on('disconnected', () => {
+        this._unregisterConnection(`ticker-${pair}`);
         // nothing to do, reconnection will be automatic
     });
     // no more retry left, we need to reconnect
-    client.on('terminated', function(){
-        self._unregisterConnection(`ticker-${pair}`);
+    client.on('terminated', () => {
+        this._unregisterConnection(`ticker-${pair}`);
         client.reconnect(false);
     });
-    client.on('ticker', function(evt){
+    client.on('ticker', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.tickers.pairs[evt.pair])
+        if (undefined === this._subscriptions.tickers.pairs[evt.pair])
         {
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('ticker', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('ticker', evt);
     });
     this._clients.tickers[pair] = client;
     client.connect();
@@ -250,30 +247,29 @@ _registerTradesClient(pair)
     }
     let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
     let uri = BASE_WS_URI + `/${p}@aggTrade`;
-    let self = this;
     client = new StreamClientClass(this._exchangeId, uri);
     let descriptor = {entity:'trades',pair:pair,client:client}
-    client.on('connected', function(){
-        self._registerConnection(`trades-${pair}`, {uri:uri});
-        self._processSubscriptions.call(self, descriptor);
+    client.on('connected', () => {
+        this._registerConnection(`trades-${pair}`, {uri:uri});
+        this._processSubscriptions(descriptor);
     });
-    client.on('disconnected', function(){
-        self._unregisterConnection(`trades-${pair}`);
+    client.on('disconnected', () => {
+        this._unregisterConnection(`trades-${pair}`);
         // nothing to do, reconnection will be automatic
     });
     // no more retry left, we need to reconnect
-    client.on('terminated', function(){
-        self._unregisterConnection(`trades-${pair}`);
+    client.on('terminated', () => {
+        this._unregisterConnection(`trades-${pair}`);
         client.reconnect(false);
     });
-    client.on('trades', function(evt){
+    client.on('trades', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.trades.pairs[evt.pair])
+        if (undefined === this._subscriptions.trades.pairs[evt.pair])
         {
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('trades', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('trades', evt);
     });
     this._clients.trades[pair] = client;
     client.connect();
@@ -306,30 +302,29 @@ _registerKlinesClient(pair, interval)
     }
     let p = this._exchangeInstance._toExchangePair(pair).toLowerCase();
     let uri = BASE_WS_URI + `/${p}@kline_${interval}`;
-    let self = this;
     client = new StreamClientClass(this._exchangeId, uri);
     let descriptor = {entity:'klines',pair:pair,interval:interval,client:client}
-    client.on('connected', function(){
-        self._registerConnection(`klines-${pair}-${interval}`, {uri:uri});
-        self._processSubscriptions.call(self, descriptor);
+    client.on('connected', () => {
+        this._registerConnection(`klines-${pair}-${interval}`, {uri:uri});
+        this._processSubscriptions(descriptor);
     });
-    client.on('disconnected', function(){
-        self._unregisterConnection(`klines-${pair}-${interval}`);
+    client.on('disconnected', () => {
+        this._unregisterConnection(`klines-${pair}-${interval}`);
         // nothing to do, reconnection will be automatic
     });
     // no more retry left, we need to reconnect
-    client.on('terminated', function(){
-        self._unregisterConnection(`klines-${pair}-${interval}`);
+    client.on('terminated', () => {
+        this._unregisterConnection(`klines-${pair}-${interval}`);
         client.reconnect(false);
     });
-    client.on('kline', function(evt){
+    client.on('kline', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.klines.pairs[evt.pair] || undefined === self._subscriptions.klines.pairs[evt.pair][evt.interval])
+        if (undefined === this._subscriptions.klines.pairs[evt.pair] || undefined === this._subscriptions.klines.pairs[evt.pair][evt.interval])
         {
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('kline', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('kline', evt);
     });
     this._clients.klines[pair][interval] = client;
     client.connect();
