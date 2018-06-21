@@ -129,7 +129,27 @@ class MochaHelper
                 process.exit(1);
             }
             cachedServices = services;
+
             let exchanges = Object.keys(cachedServices.exchanges);
+            if (undefined !== process.env['EXCHANGES'])
+            {
+                exchanges = [];
+                if ('NONE' != process.env['EXCHANGES'])
+                {
+                    _.forEach(process.env['EXCHANGES'].split(','), (e) => {
+                        e = e.trim();
+                        if ('' == e)
+                        {
+                            return;
+                        }
+                        if (undefined !== cachedServices.exchanges[e])
+                        {
+                            exchanges.push(e);
+                        }
+                    });
+                }
+            }
+
             let arr = [];
             _.forEach(exchanges, (id) => {
                 arr.push(restClient.getPairs(id));
@@ -465,7 +485,32 @@ class MochaHelper
         {
             return exchangeId;
         }
-        _.forEach(_.shuffle(Object.keys(cachedServices.exchanges)), (id) => {
+        let exchanges = Object.keys(cachedServices.exchanges);
+        if (undefined !== process.env['EXCHANGES'])
+        {
+            if ('NONE' == process.env['EXCHANGES'])
+            {
+                return null;
+            }
+            exchanges = [];
+            _.forEach(process.env['EXCHANGES'].split(','), (e) => {
+                e = e.trim();
+                if ('' == e)
+                {
+                    return;
+                }
+                if (undefined !== cachedServices.exchanges[e])
+                {
+                    exchanges.push(e);
+                }
+            });
+            if (0 == exchanges.length)
+            {
+                return null;
+            }
+        }
+
+        _.forEach(_.shuffle(exchanges), (id) => {
             exchangeId = id;
             let e = cachedServices.exchanges[id];
             _.forEach(features, (f) => {
