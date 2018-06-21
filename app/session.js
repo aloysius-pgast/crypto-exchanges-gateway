@@ -70,7 +70,7 @@ constructor(sid, isRpc, isNew)
     // whether or not session can expires
     this._expires = true;
     // how many seconds to wait after last WS has disconnected, before destroying the session
-    this._timeout = SESSION_TIMEOUT;
+    this._timeout = this._isRpc ? SESSION_TIMEOUT : 0;
     // expiry timestamp
     this._expiresAt = null;
     this._expiryTimer = null;
