@@ -86,6 +86,14 @@ Below config will only give access to public API (since no key/secret combinatio
             },
             "key":"",
             "secret":""
+        },
+        "okex":{
+            "type":"okex",
+            "enabled":true,
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            "key":"",
+            "secret":""
         }
     }
 }
@@ -308,6 +316,25 @@ Access will be restricted using the following :
             "throttle":{
                 "global":{
                     "maxRequestsPerSecond":1
+                }
+            }
+        },
+        "okex":{
+            "enabled":true,
+            "type":"okex",
+            "name":"OKEx",
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            /* API key provided by OKEx */
+            "key":"ABCD",
+            /* Secret provided by OKEx */
+            "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.20,
+            /* rate limiting to comply with OKEx */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":3
                 }
             }
         }

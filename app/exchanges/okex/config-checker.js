@@ -21,20 +21,6 @@ constructor(exchangeId)
         secret:"",
         feesPercent:0.2,
         verbose:false,
-        emulatedWs:{
-            wsTickers:{
-                enabled:true,
-                period:30
-            },
-            wsOrderBooks:{
-                enabled:true,
-                period:30
-            },
-            wsTrades:{
-                enabled:true,
-                period:30
-            }
-        },
         throttle:{
             global:{
                 maxRequestsPerSecond:GLOBAL_API_MAX_REQUESTS_PER_SECOND
