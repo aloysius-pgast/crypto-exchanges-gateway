@@ -335,9 +335,14 @@ _processTrades(pair, trades)
     _.forEach(trades, (trade) => {
         let obj = {
             id: trade[1],
+            orderType:'sell',
             quantity:parseFloat(trade[4]),
             rate:parseFloat(trade[3]),
             timestamp:trade[5]
+        }
+        if (0 !== trade[2])
+        {
+            obj.orderType = 'buy';
         }
         obj.price = parseFloat(new Big(obj.quantity).times(obj.rate));
         evt.data.push(obj);
