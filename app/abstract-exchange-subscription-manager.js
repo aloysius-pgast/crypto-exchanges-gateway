@@ -117,6 +117,11 @@ constructor(exchange, options)
     this._connections = {}
 }
 
+getExchangeId()
+{
+    return this._exchangeId;
+}
+
 toHash()
 {
     let obj = this._toHash();
