@@ -42,6 +42,8 @@ class DefaultCcxtClient
 constructor(ccxtExchangeId, ccxtExchangeOpt)
 {
     this.ccxt = new ccxt[ccxtExchangeId](ccxtExchangeOpt);
+    // disable pair substitution
+    this.ccxt.substituteCommonCurrencyCodes = false;
     this._redefineCcxtErrorHandlers();
 }
 
