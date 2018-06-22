@@ -74,20 +74,6 @@
             "name":"OKEx",
             "enabled":true,
             "requirePair":false,
-            "emulatedWs":{
-                "wsTickers":{
-                    "enabled":true,
-                    "period":30
-                },
-                "wsOrderBooks":{
-                    "enabled":true,
-                    "period":30
-                },
-                "wsTrades":{
-                    "enabled":true,
-                    "period":30
-                }
-            },
             "key":"",
             "secret":""
         }
