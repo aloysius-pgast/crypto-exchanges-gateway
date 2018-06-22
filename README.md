@@ -39,7 +39,7 @@ Besides the privilege to go to bed, knowing that you did the right thing ? Not m
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
-* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc) and [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams)
+* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc) and [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams to multiplex data from multiple exchanges)
 * Access to a portfolio portfolio overview across all exchanges with estimated value in USD
 * Advanced alerting system
 
@@ -274,7 +274,7 @@ WS endpoint will be available on _ws://127.0.0.1:8001_
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
 
 ```javascript
-["binance","bittrex","poloniex","kucoin"]
+["binance","bittrex","kucoin","okex","poloniex"]
 ```
 
 By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
@@ -305,6 +305,10 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.exchanges.kucoin.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.kucoin.key : Kucoin user key
 * cfg.exchanges.kucoin.secret : Kucoin secret
+* cfg.exchanges.okex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
+* cfg.exchanges.okex.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
+* cfg.exchanges.okex.key : OKEx user key
+* cfg.exchanges.okex.secret : OKEx secret
 
 If you don't want to use environment variables or want to customize config for a running container, you can create and edit *custom_config/config.json*
 

@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.1] NOT RELEASED YET
+## [v1.7.1]
 ### Gateway
 * Support for _OKEx_ exchange (REST) through _ccxt_
 * Support for _OKEx_ exchange (WS)
