@@ -283,6 +283,10 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"kucoin",
             "name":"Kucoin",
+            /* can be set to 'true' to debug REST requests & responses */
+            "verbose":false,
+            /* timeout in ms for REST requests */
+            "timeout":10000,
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
@@ -323,6 +327,10 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"okex",
             "name":"OKEx",
+            /* can be set to 'true' to debug REST requests & responses */
+            "verbose":false,
+            /* timeout in ms for REST requests */
+            "timeout":10000,
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
             /* API key provided by OKEx */
