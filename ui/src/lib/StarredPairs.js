@@ -161,6 +161,15 @@ toggle(exchangeId, pair)
 }
 
 /**
+ * Return how many pairs are starred
+ * @return {boolean}
+ */
+size()
+{
+    return Object.keys(this._list).length;
+}
+
+/**
  * @param {string} opt.exchange exchange to retrieve starred pairs for (optional, if not set starred pairs will be returned for all exchanges)
  * @param {boolean} opt.sorted whether or not pairs should be sorted (newer first) (optional, default = true)
  * @return {array} {exchangeId:string,pair:string,timestamp:float,version:integer}

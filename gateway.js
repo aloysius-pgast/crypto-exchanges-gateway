@@ -8,6 +8,7 @@ const https = require('https');
 const bodyParser = require('body-parser');
 const ConfigChecker = require('./app/config-checker');
 const storage = require('./app/storage');
+const sessionRegistry = require('./app/session-registry');
 const internalConfig = require('./app/internal-config');
 const _ = require('lodash');
 const logger = require('winston');
@@ -323,7 +324,7 @@ if (!hasCustomConfig)
 // update log level
 logger.level = config.logLevel;
 
-//check env for external endpoints (only if custom config does not exist)
+// check env for external endpoints (only if custom config does not exist)
 if (!hasCustomConfig)
 {
     if (undefined !== process.env['cfg.listen.externalEndpoint'] && '' != process.env['cfg.listen.externalEndpoint'])
@@ -333,6 +334,27 @@ if (!hasCustomConfig)
     if (undefined !== process.env['cfg.listenWs.externalEndpoint'] && '' != process.env['cfg.listenWs.externalEndpoint'])
     {
         config.listenWs.externalEndpoint = process.env['cfg.listenWs.externalEndpoint'];
+    }
+}
+
+// check env for sessions configuration (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    if (undefined !== process.env['cfg.sessions.maxSubscriptions'] && '' != process.env['cfg.sessions.maxSubscriptions'])
+    {
+        let value = parseInt(process.env['cfg.sessions.maxSubscriptions']);
+        if (!isNaN(value) && value >= 0)
+        {
+            config.sessions.maxSubscriptions = process.env['cfg.sessions.maxSubscriptions'];
+        }
+    }
+    if (undefined !== process.env['cfg.sessions.maxDuration'] && '' != process.env['cfg.sessions.maxDuration'])
+    {
+        let value = parseInt(process.env['cfg.sessions.maxDuration']);
+        if (!isNaN(value) && value >= 0)
+        {
+            config.sessions.maxDuration = process.env['cfg.sessions.maxDuration'];
+        }
     }
 }
 
@@ -502,6 +524,7 @@ storage.checkDatabase().then(() => {
     // load data from storage
     storage.loadData(config).then(() => {
         logger.info("Data loaded successfully");
+        sessionRegistry.startCheckSessionsLoop({maxDuration:config.sessions.maxDuration});
         //-- start both servers
         startHttp();
         startWs();

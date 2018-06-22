@@ -1,0 +1,6 @@
+{
+  "name": "MyStreams",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./MyStreams.js"
+}

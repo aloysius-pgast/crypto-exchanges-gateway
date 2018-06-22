@@ -5,6 +5,8 @@ const _ = require('lodash');
 const Big = require('big.js');
 const CcxtErrors = require('./ccxt-errors');
 
+const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
+
 /*
 
 Default client for CCXT exchanges. Handles custom formatting
@@ -40,6 +42,8 @@ class DefaultCcxtClient
 constructor(ccxtExchangeId, ccxtExchangeOpt)
 {
     this.ccxt = new ccxt[ccxtExchangeId](ccxtExchangeOpt);
+    // disable pair substitution
+    this.ccxt.substituteCommonCurrencyCodes = false;
     this._redefineCcxtErrorHandlers();
 }
 
@@ -137,6 +141,28 @@ _getDefaultLimits()
             max:null
         }
     }
+}
+
+_precisionToStep(value)
+{
+    let step = 0.00000001;
+    if ('string' == typeof(value))
+    {
+        step = value.toFixed(8);
+    }
+    else
+    {
+        if (value >= 0 && value <= 8)
+        {
+            step = precisionToStep[value];
+        }
+        else
+        {
+            logger.warn(`Could not convert 'precision' to 'step' : value = '${value}'`)
+            // default will be used
+        }
+    }
+    return step;
 }
 
 /**
@@ -313,26 +339,20 @@ formatPairs(ccxtData)
 formatPair(pair, ccxtData)
 {
     let limits = this._getDefaultLimits();
-    //-- update step
-    if (undefined !== ccxtData.lot)
-    {
-        // rate
-        limits.rate.step = ccxtData.lot;
-        // quantity
-        limits.quantity.step = ccxtData.lot;
-    }
-    //-- update precision
+    //-- update precision & step
     if (undefined !== ccxtData.precision)
     {
         // rate
         if (undefined !== ccxtData.precision.price)
         {
             limits.rate.precision = ccxtData.precision.price;
+            limits.rate.step = this._precisionToStep(limits.rate.precision);
         }
         // quantity
         if (undefined !== ccxtData.precision.amount)
         {
             limits.quantity.precision = ccxtData.precision.amount;
+            limits.quantity.step = this._precisionToStep(limits.quantity.precision);
         }
     }
     //-- update min/max
@@ -367,7 +387,12 @@ formatPair(pair, ccxtData)
         {
             if (undefined !== ccxtData.limits.cost.min)
             {
-                limits.price.min = ccxtData.limits.cost.min;
+                // convert to fixed to avoid pb such as 0.001 * 0.0001 => 1.0000000000000001e-7
+                limits.price.min = parseFloat(ccxtData.limits.cost.min.toFixed(8));
+                if (limits.price.min < 0.00000001)
+                {
+                    limits.price.min = 0.00000001;
+                }
             }
             if (undefined !== ccxtData.limits.cost.max)
             {
@@ -480,6 +505,58 @@ async getTickers(ccxtParams)
         throw e;
     }
     return {ccxt:data,custom:this.formatTickers(data)};
+}
+
+/**
+ * Retrieve ticker for a single pair
+ *
+ * @param {string} pair pair to retrieve ticker for
+ * @param {object} ccxtParams custom parameters (optional, might not be defined)
+ * @return {ccxt:object[],custom:object}
+ */
+/*
+ccxt output example for fetchTicker
+
+{
+    "symbol":"NEO/BTC",
+    "timestamp":1528736548000,
+    "datetime":"2018-06-11T17:02:28.000Z",
+    "high":0.00686581,
+    "low":0.00644451,
+    "bid":0.00650061,
+    "ask":0.00651218,
+    "close":0.0065033,
+    "last":0.0065033,
+    "baseVolume":123005.01657,
+    "info":{
+        "high":"0.00686581",
+        "vol":"123005.01657000",
+        "last":"0.00650330",
+        "low":"0.00644451",
+        "buy":"0.00650061",
+        "sell":"0.00651218",
+        "timestamp":1528736548000
+    }
+}
+
+*/
+async getTicker(pair, ccxtParams)
+{
+    let ccxtPair = this._toCcxtPair(pair);
+    let data;
+    try
+    {
+        data = await this.ccxt.fetchTicker(ccxtPair, ccxtParams);
+    }
+    catch (e)
+    {
+        if (e instanceof ccxt.BaseError)
+        {
+            throw new CcxtErrors.BaseError(e, undefined, undefined, undefined);
+        }
+        throw e;
+    }
+    return {ccxt:data,custom:this.formatTicker(pair, data)};
 }
 
 /**
@@ -831,11 +908,11 @@ formatKlines(ccxtData)
     _.forEach(ccxtData, (e) => {
         result.push({
             timestamp:e[0] / 1000.0,
-            open:e[1],
-            high:e[2],
-            low:e[3],
-            close:e[4],
-            volume:e[5]
+            open:parseFloat(e[1]),
+            high:parseFloat(e[2]),
+            low:parseFloat(e[3]),
+            close:parseFloat(e[4]),
+            volume:parseFloat(e[5])
         });
     });
     return result;
@@ -1011,44 +1088,76 @@ formatClosedOrder(ccxtData)
         orderNumber:ccxtData.id,
         closedTimestamp:ccxtData.timestamp / 1000.0,
         orderType:ccxtData.side,
-        quantity:ccxtData.amount,
-        actualRate:null,
+        quantity:ccxtData.filled,
+        actualRate:this.getActualRate(ccxtData),
         actualPrice:0,
         finalRate:null,
         finalPrice:null,
         fees:null
     };
+    if (undefined !== ccxtData.lastTradeTimestamp)
+    {
+        order.closedTimestamp = ccxtData.lastTradeTimestamp / 1000.0;
+    }
     // compute fees, rate & price
     if (0 != order.quantity)
     {
-        order.actualRate = ccxtData.price;
-        order.actualPrice = ccxtData.cost;
-        order.fees = {
-            amount:ccxtData.fee.cost,
-            currency:ccxtData.fee.currency
-        }
-        // only compute order.finalPrice & order.finalRate if fees.currency != from baseCurrency (otherwise use order.actualPrice & order.actualRate)
-        if (splittedPair[1] != order.fees.currency)
+        order.actualPrice = this.getActualPrice(ccxtData);
+        if (undefined !== ccxtData.fee)
         {
-            order.finalPrice = order.actualPrice;
-            order.finalRate = order.actualRate;
-        }
-        else
-        {
-            let finalPrice;
-            if ('buy' == order.orderType)
+            order.fees = {
+                amount:ccxtData.fee.cost,
+                currency:ccxtData.fee.currency
+            }
+            // only compute order.finalPrice & order.finalRate if fees.currency != from baseCurrency (otherwise use order.actualPrice & order.actualRate)
+            if (splittedPair[1] != order.fees.currency)
             {
-                finalPrice =  new Big(order.actualPrice).plus(order.fees.amount);
+                order.finalPrice = order.actualPrice;
+                order.finalRate = order.actualRate;
             }
             else
             {
-                finalPrice =  new Big(order.actualPrice).minus(order.fees.amount);
+                let finalPrice;
+                if ('buy' == order.orderType)
+                {
+                    finalPrice =  new Big(order.actualPrice).plus(order.fees.amount);
+                }
+                else
+                {
+                    finalPrice =  new Big(order.actualPrice).minus(order.fees.amount);
+                }
+                order.finalPrice = parseFloat(finalPrice.toFixed(8));
+                order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
             }
-            order.finalPrice = parseFloat(finalPrice.toFixed(8));
-            order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
         }
     }
     return order;
+}
+
+/**
+ * Extract actual rate from ccxt data
+ *
+ * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @return {float}
+ */
+getActualRate(ccxtData)
+{
+    if (undefined !== ccxtData.price)
+    {
+        return ccxtData.price;
+    }
+    return null;
+}
+
+/**
+ * Extract actual price from ccxt data
+ *
+ * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @return {float}
+ */
+getActualPrice(ccxtData)
+{
+    return ccxtData.cost;
 }
 
 

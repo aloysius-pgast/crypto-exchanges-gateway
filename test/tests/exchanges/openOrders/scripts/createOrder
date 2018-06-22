@@ -29,7 +29,7 @@ const argv = yargs
             describe:'pair (X-Y)',
             coerce:function(val){
                 let valid = true;
-                if (!(/^[A-Z0-9]+-[A-Z0-9]+$/.test(val)))
+                if (!(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/.test(val)))
                 {
                     throw new Error("argument '--pair, -p' should be a pair (X-Y)");
                 }

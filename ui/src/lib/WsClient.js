@@ -63,6 +63,16 @@ _getUri()
     return uri;
 }
 
+getStreamUri(sid)
+{
+    let uri = `${this._wsEndpoint}?sid=${sid}`;
+    if (null !== this._apiKey)
+    {
+        uri += `&apiKey=${this._apiKey}`;
+    }
+    return uri;
+}
+
 _createConnection()
 {
     let self = this;

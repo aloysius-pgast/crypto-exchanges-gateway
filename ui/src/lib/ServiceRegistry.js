@@ -249,6 +249,7 @@ getExchangeName(id)
     {
         return this._services.exchanges[id].name;
     }
+    return undefined;
 }
 
 }

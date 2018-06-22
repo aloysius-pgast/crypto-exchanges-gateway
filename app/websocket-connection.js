@@ -218,6 +218,10 @@ connect()
                             return;
                         }
                         _ws.isAlive = false;
+                        if (debug.enabled)
+                        {
+                            debug("Sending WS PING (%s)", self._uri);
+                        }
                         _ws.ping('', true, true);
                     }, self._pingTimeout);
                 }

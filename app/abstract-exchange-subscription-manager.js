@@ -117,6 +117,11 @@ constructor(exchange, options)
     this._connections = {}
 }
 
+getExchangeId()
+{
+    return this._exchangeId;
+}
+
 toHash()
 {
     let obj = this._toHash();
@@ -145,7 +150,7 @@ _registerConnection(name, data)
     {
         data = {};
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     this._connections[name] = {timestamp:timestamp,data:data};
 }
 
@@ -219,7 +224,7 @@ updateTickersSubscriptions(sessionId, subscribe, unsubscribe, connect)
     {
         connect = true;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let changes = {
         subscribe:[],
         unsubscribe:[]
@@ -346,7 +351,7 @@ updateOrderBooksSubscriptions(sessionId, subscribe, unsubscribe, resync, connect
     {
         connect = true;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let changes = {
         subscribe:[],
         unsubscribe:[],
@@ -487,7 +492,7 @@ updateTradesSubscriptions(sessionId, subscribe, unsubscribe, connect)
     {
         connect = true;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let changes = {
         subscribe:[],
         unsubscribe:[]
@@ -609,7 +614,7 @@ updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, connect)
     {
         connect = true;
     }
-    let timestamp = (new Date().getTime()) / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     let changes = {
         subscribe:[],
         unsubscribe:[]
@@ -880,7 +885,7 @@ _processTickersLoops(changes, opt)
             switch (entry.entity)
             {
                 case 'ticker':
-                    this._unregisterTickersLoop(entry.pair);
+                    this._unregisterTickersLoopForPair(entry.pair);
                     break;
                 case 'tickers':
                     this._unregisterGlobalTickersLoop();
@@ -898,7 +903,7 @@ _processTickersLoops(changes, opt)
                 switch (entry.entity)
                 {
                     case 'ticker':
-                        this._registerTickersLoop(entry.pair);
+                        this._registerTickersLoopForPair(entry.pair);
                         break;
                     case 'tickers':
                         this._registerGlobalTickersLoop();
@@ -1052,7 +1057,7 @@ _registerTickersLoopForPair(pair)
         {
             debug(`Retrieving '${pair}' tickers for exchange '${self._exchangeId}'`);
         }
-        self._exchangeInstance.getTickers().then((data) => {
+        self._exchangeInstance.getTickers([pair]).then((data) => {
             // loop has been disabled
             if (!self._emulatedWs.wsTickers.list[loop_id].enabled)
             {
@@ -1188,7 +1193,7 @@ _registerOrderBookLoop(pair)
     // initialize loop information
     if (undefined === this._emulatedWs.wsOrderBooks.list[loop_id])
     {
-        this._emulatedWs.wsOrderBooks.list[loop_id] = {enabled:false, timer:null};
+        this._emulatedWs.wsOrderBooks.list[loop_id] = {enabled:false, timer:null, cseq:0};
     }
     // we already have a loop
     if (this._emulatedWs.wsOrderBooks.list[loop_id].enabled)
@@ -1200,9 +1205,11 @@ _registerOrderBookLoop(pair)
         debug(`Starting '${pair}' order book loop for exchange '${this._exchangeId}'`);
     }
     let self = this;
-    let timestamp = Date.now() / 1000.0;
+    let now = Date.now();
+    let timestamp = now / 1000.0;
     this._emulatedWs.wsOrderBooks.list[loop_id].enabled = true;
     this._emulatedWs.wsOrderBooks.list[loop_id].timestamp = timestamp;
+    this._emulatedWs.wsOrderBooks.list[loop_id].cseq = now;
     this._registerConnection(`orderBook-${loop_id}`);
     const doRequest = function(){
         if (debug.enabled)
@@ -1224,10 +1231,11 @@ _registerOrderBookLoop(pair)
             {
                 debug(`Got new '${pair}' order book for exchange '${self._exchangeId}'`);
             }
+            let cseq = self._emulatedWs.wsOrderBooks.list[loop_id].cseq++;
             let evt = {
                 exchange:self._exchangeId,
                 pair:pair,
-                cseq:Date.now(),
+                cseq:cseq,
                 data:{
                     buy:data.buy,
                     sell:data.sell
@@ -1286,6 +1294,7 @@ _unregisterOrderBookLoop(pair)
         clearTimeout(this._emulatedWs.wsOrderBooks.list[loop_id].timer);
         this._emulatedWs.wsOrderBooks.list[loop_id].timer = null;
     }
+    this._emulatedWs.wsOrderBooks.list[loop_id].cseq = 0;
     this._emulatedWs.wsOrderBooks.list[loop_id].timestamp = Date.now() / 1000.0;
 }
 
@@ -1413,15 +1422,15 @@ _registerTradesLoop(pair)
                 }
                 evt.data.push(trade);
             });
-            // update last trade with newest one
+            // update last trade with newest one & emit
             if (0 != evt.data.length)
             {
                 self._emulatedWs.wsTrades.list[loop_id].lastTrade = {
                     id:evt.data[0].id,
                     timestamp:evt.data[0].timestamp
                 }
+                self.emit('trades', evt);
             }
-            self.emit('trades', evt);
             // schedule next loop
             self._emulatedWs.wsTrades.list[loop_id].timer = setTimeout(function(){
                 doRequest();

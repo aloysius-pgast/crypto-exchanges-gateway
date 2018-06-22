@@ -12,7 +12,7 @@ Use it at your own risks and be careful with your money ;)
 
 * Does it support real-time data ?
 
-Yes, gateway provides a WS endpoint
+Yes, gateway provides a WS endpoint. See [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams
 
 * What about _ccxt_ ?
 
@@ -39,7 +39,7 @@ Besides the privilege to go to bed, knowing that you did the right thing ? Not m
 * Implements rate limiting when forwarding requests to remote exchanges
 * Provides a REST API to send push notifications using [PushOver](https://pushover.net/api)
 * Provides a basic UI which implements most API calls (see [documentation in _doc_ directory](doc/ui/index.adoc))
-* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc))
+* Provides WS access for real-time data (tickers, order books & trades, see [documentation in _doc_ directory](doc/ws/index.adoc) and [video](https://youtu.be/_LfLLT693AM) explaining how to create custom WS streams to multiplex data from multiple exchanges)
 * Access to a portfolio portfolio overview across all exchanges with estimated value in USD
 * Advanced alerting system
 
@@ -71,10 +71,11 @@ A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-
 
 Currently supports for following exchanges :
 
-* [Bittrex](https://www.bittrex.com/)
 * [Binance](https://www.binance.com/) (my favorite)
-* [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
+* [Bittrex](https://www.bittrex.com/)
 * [Kucoin](https://www.kucoin.com)
+* [OKEx](https://www.okex.com)
+* [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
 * More to come...
 
 Following API are currently supported :
@@ -282,7 +283,7 @@ WS endpoint will be available on _ws://127.0.0.1:8001_
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
 
 ```javascript
-["binance","bittrex","poloniex","kucoin"]
+["binance","bittrex","kucoin","okex","poloniex"]
 ```
 
 By default, only public API will be enabled. In order to access trading/private API, you need to pass environment when creating container. Following environment variables are available :
@@ -290,6 +291,8 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.logLevel : log level
 * cfg.listen.externalEndpoint : used to indicates the external endpoint used to reach http socket, in case gateway is running behing a proxy
 * cfg.listenWs.externalEndpoint : used to indicates the external endpoint used to reach ws socket, in case gateway is running behing a proxy
+* cfg.sessions.maxSubscriptions : maximum number of subscriptions allowed for a given session (optional, default = _0_, no maximum)
+* cfg.sessions.maxDuration : maximum duration in second for a given session (optional, default = _0_, no maximum)
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor) (default = _1_)
@@ -311,6 +314,10 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.exchanges.kucoin.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.kucoin.key : Kucoin user key
 * cfg.exchanges.kucoin.secret : Kucoin secret
+* cfg.exchanges.okex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
+* cfg.exchanges.okex.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
+* cfg.exchanges.okex.key : OKEx user key
+* cfg.exchanges.okex.secret : OKEx secret
 
 If you don't want to use environment variables or want to customize config for a running container, you can create and edit *custom_config/config.json*
 

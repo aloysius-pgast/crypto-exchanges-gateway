@@ -4,6 +4,10 @@ const uuidGenerator = require('uuid/v4');
 const logger = require('winston');
 const Session = require('./session');
 const RpcHelper = require('./rpc-helper');
+const Errors = require('./errors');
+const debug = require('debug')('CEG:SessionRegistry');
+
+const CHECK_SESSIONS_INTERVAL = 60000;
 
 class SessionRegistry
 {
@@ -28,6 +32,99 @@ restoreSession(sid, obj)
         delete self._sessions[sid];
     });
     this._sessions[sid] =  session;
+}
+
+/**
+ * Starts the loop which will check sessions
+ *
+ * @param {integer} opt.interval loop interval in ms (optional, default = 60000)
+ * @param {integer} opt.maxDuration maximum session duration (optional, default = 0)
+ */
+startCheckSessionsLoop(opt)
+{
+    if (undefined === opt)
+    {
+        opt = {};
+    }
+    let interval = CHECK_SESSIONS_INTERVAL;
+    let o = {
+        maxDuration:0
+    };
+    if (undefined !== opt.interval)
+    {
+        interval = opt.interval;
+    }
+    if (undefined !== opt.maxDuration)
+    {
+        o.maxDuration = opt.maxDuration;
+    }
+    const check = () => {
+        try
+        {
+            this.checkSessions(o);
+        }
+        catch (e)
+        {
+            Errors.logError(e, 'session-registry');
+        }
+        setTimeout(() => {
+            check();
+        }, interval);
+    }
+    check();
+}
+
+/**
+ * Check all sessions
+ *
+ * @param {integer} opt.maxDuration
+ */
+checkSessions(opt)
+{
+    if (debug.enabled)
+    {
+        debug('Checking sessions...');
+    }
+    if (undefined === opt)
+    {
+        opt = {};
+    }
+    let maxDuration = 0;
+    if (undefined !== opt.maxDuration)
+    {
+        maxDuration = opt.maxDuration;
+    }
+    let now = Date.now() / 1000.0;
+    let minTimestamp = now - maxDuration;
+    _.forEach(this._sessions, (session, sid) => {
+        if (0 != maxDuration)
+        {
+            // only check rpc session
+            if (session.isRpc())
+            {
+                let timestamp = session.getTimestamp();
+                if (timestamp < minTimestamp)
+                {
+                    let duration = Math.floor(now - timestamp);
+                    if (debug.enabled)
+                    {
+                        debug(`Session '${session.getSid()}' will be destroyed because it was created ${duration}s ago`);
+                    }
+                    logger.info(`Session '${session.getSid()}' will be destroyed because it was created ${duration}s ago`);
+                    session.destroy();
+                }
+                else
+                {
+                    if (debug.enabled)
+                    {
+                        let remaining = Math.floor(timestamp - minTimestamp);
+                        debug(`Session '${session.getSid()}' has ${remaining}s remaining`);
+                    }
+                }
+            }
+        }
+    });
+    return true;
 }
 
 /**
@@ -146,6 +243,7 @@ registerNonRpcSession(ws, path)
  * Retrieves existing sessions
  *
  * @param {boolean} opt.rpc if true, only RPC sessions will be retrieved. If false only non-rpc sessions will be retrieved. If not set all sessions will be retrieved
+ * @param {string} opt.prefix if defined, only sessions starting with this prefix will be retrieved
  */
 getSessions(opt)
 {
@@ -153,7 +251,13 @@ getSessions(opt)
     {
         opt = {};
     }
-    if (undefined === opt.type)
+    let prefix = undefined;
+    if (undefined !== opt.prefix && '' !== opt.prefix)
+    {
+        prefix = opt.prefix;
+    }
+    // return all sessions
+    if (undefined === opt.rpc && undefined === prefix)
     {
         return this._sessions;
     }
@@ -167,6 +271,14 @@ getSessions(opt)
                 return;
             }
             if (false === opt.rpc && session.isRpc())
+            {
+                return;
+            }
+        }
+        // filter by prefix
+        if (undefined !== prefix)
+        {
+            if (!session.getSid().startsWith(prefix))
             {
                 return;
             }

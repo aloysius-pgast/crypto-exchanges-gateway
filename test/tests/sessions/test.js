@@ -21,7 +21,7 @@ const getExchangeSubscriptionSchema = (type) => {
     {
         obj = {
             timestamp:joi.number().positive().required(),
-            pairs:joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, joi.object().pattern(/^.+$/, joi.object({
+            pairs:joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, joi.object().pattern(/^.+$/, joi.object({
                 timestamp:joi.number().positive().required()
             }))).required()
         }
@@ -30,7 +30,7 @@ const getExchangeSubscriptionSchema = (type) => {
     {
         obj = {
             timestamp:joi.number().positive().required(),
-            pairs:joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, joi.object({
+            pairs:joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, joi.object({
                 timestamp:joi.number().positive().required()
             })).required()
         }
@@ -64,7 +64,7 @@ const getSessionSchema = (exchanges) => {
         isRpc:joi.boolean(),
         creationTimestamp:joi.number().positive().required(),
         expires:joi.boolean().required(),
-        timeout:joi.required().when('expires', {is:false, then:joi.number().valid(0), otherwise:joi.number().positive()}),
+        timeout:joi.required().when('expires', {is:false, then:joi.number().valid(0), otherwise:joi.number().positive().allow(0)}),
         expiryTimestamp:joi.number().positive().allow(null).required(),
         subscriptions:joi.object().length(0).required(),
         connections:joi.array().items(connectionSchema).required()

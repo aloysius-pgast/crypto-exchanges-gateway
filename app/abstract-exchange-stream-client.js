@@ -1,8 +1,9 @@
 "use strict";
 const debug = require('debug')('CEG:ExchangeStreamClient');
 const EventEmitter = require('events');
-const WebSocketConnection = require('./websocket-connection');
 const logger = require('winston');
+const WebSocketConnection = require('./websocket-connection');
+const Errors = require('./errors');
 
 // how long should we wait before trying to reconnect upon disconnection
 const RETRY_DELAY = 10 * 1000;
@@ -126,6 +127,11 @@ constructor(exchangeId, uri, options)
     this._queue = [];
 }
 
+getExchangeId()
+{
+    return this._exchangeId;
+}
+
 getUri()
 {
     return this._uri;
@@ -162,6 +168,11 @@ isConnecting()
         return false;
     }
     return this._connection.isConnecting()
+}
+
+_logError(e)
+{
+    Errors.logError(e, `${this._exchangeId}|streamClient`);
 }
 
 /**

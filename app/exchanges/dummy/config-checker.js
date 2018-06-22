@@ -13,7 +13,7 @@ class ConfigChecker extends AbstractConfigCheckerClass
 // whether or not multiple instances can be supported for this exchange
 static get MULTIPLE_INSTANCES() { return  true };
 
-constructor(id)
+constructor(exchangeId)
 {
     // default config
     let cfg = {
@@ -21,7 +21,7 @@ constructor(id)
         name:"Paper Exchange",
         feesPercent:0
     }
-    super(cfg, `exchanges[${id}]`);
+    super(cfg, `exchanges[${exchangeId}]`);
 }
 
 _check()

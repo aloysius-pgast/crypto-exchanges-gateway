@@ -63,14 +63,14 @@ _doneWaitingForFullOrderBook(pair, cseq)
 }
 
 /**
- * Indicates whether or not we're waiting for full order book for a given pair
+ * Indicates whether or not an update should be ignore (if we're waiting for full order book or cseq is too old)
  *
  *  @param {string} pair pair to check
  *  @param {integer} updateCseq the cseq received in order book update
  *
  *  @return {boolean} true if we're waiting for full order book, false otherwise
  */
-_waitingForFullOrderBook(pair, updateCseq)
+_shouldIgnoreOrderBookUpdate(pair, updateCseq)
 {
     // not waiting for full order book
     if (undefined === this._waitingForFullOrderBooks[pair])
@@ -108,68 +108,67 @@ _registerClient(connect)
         this._client.connect();
         return;
     }
-    let self = this;
     let client = new StreamClientClass(this._exchangeId);
     client.updateMarkets(this._marketsById);
-    client.on('connected', function(){
-        self._registerConnection('default', {uri:client.getUri()});
-        self._processSubscriptions();
+    client.on('connected', () => {
+        this._registerConnection('default', {uri:client.getUri()});
+        this._processSubscriptions();
     });
-    client.on('disconnected', function(){
-        self._unregisterConnection('default');
+    client.on('disconnected', () => {
+        this._unregisterConnection('default');
         // nothing to do, reconnection will be automatic
     });
     // no more retry, we need to reconnect
-    client.on('terminated', function(){
-        self._unregisterConnection('default');
+    client.on('terminated', () => {
+        this._unregisterConnection('default');
         client.reconnect(false);
     });
-    client.on('ticker', function(evt){
+    client.on('ticker', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.tickers.pairs[evt.pair])
+        if (undefined === this._subscriptions.tickers.pairs[evt.pair])
         {
             // update markets entry to indicate we're not interested in this pair anymore
-            if (undefined !== self._subscriptions.tickers.pairs[evt.pair].id)
+            if (undefined !== this._subscriptions.tickers.pairs[evt.pair].id)
             {
-                self._marketsById[self._subscriptions.tickers.pairs[evt.pair].id].ignore = true;
+                this._marketsById[this._subscriptions.tickers.pairs[evt.pair].id].ignore = true;
             }
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('ticker', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('ticker', evt);
     });
-    client.on('orderBook', function(evt){
+    client.on('orderBook', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.orderBooks.pairs[evt.pair])
+        if (undefined === this._subscriptions.orderBooks.pairs[evt.pair])
         {
             return;
         }
-        self._doneWaitingForFullOrderBook.call(self, evt.pair, evt.cseq);
-        evt.exchange = self._exchangeId;
-        self.emit('orderBook', evt);
+        this._doneWaitingForFullOrderBook(evt.pair, evt.cseq);
+        evt.exchange = this._exchangeId;
+        this.emit('orderBook', evt);
     });
-    client.on('orderBookUpdate', function(evt){
+    client.on('orderBookUpdate', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.orderBooks.pairs[evt.pair])
+        if (undefined === this._subscriptions.orderBooks.pairs[evt.pair])
         {
             return;
         }
-        // ignore if we're waiting for full order book
-        if (self._waitingForFullOrderBook.call(self, evt.pair, evt.cseq))
+        // check if update should to be ignored (ie: if we're waiting for full order book or cseq is too old)
+        if (this._shouldIgnoreOrderBookUpdate(evt.pair, evt.cseq))
         {
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('orderBookUpdate', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('orderBookUpdate', evt);
     });
-    client.on('trades', function(evt){
+    client.on('trades', (evt) => {
         // ignore if we don't support this pair
-        if (undefined === self._subscriptions.trades.pairs[evt.pair])
+        if (undefined === this._subscriptions.trades.pairs[evt.pair])
         {
             return;
         }
-        evt.exchange = self._exchangeId;
-        self.emit('trades', evt);
+        evt.exchange = this._exchangeId;
+        this.emit('trades', evt);
     });
     if (connect)
     {
@@ -311,35 +310,34 @@ _retrieveMarkets(initial, connect)
         this._marketsState = MARKETS_STATE_RETRIEVING;
     }
     let timeout = 0;
-    let self = this;
-    this._exchangeInstance.getPairsById().then(function(data){
+    this._exchangeInstance.getPairsById().then((data) => {
         let marketsById = {};
         _.forEach(data, (entry) => {
             marketsById[entry.id] = {pair:entry.pair, ignore:true};
-            if (undefined !== self._subscriptions.tickers.pairs[entry.pair])
+            if (undefined !== this._subscriptions.tickers.pairs[entry.pair])
             {
                 marketsById[entry.id].ignore = false;
             }
         });
-        self._marketsById = marketsById;
-        if (null !== self._client)
+        this._marketsById = marketsById;
+        if (null !== this._client)
         {
-            self._client.updateMarkets(marketsById);
+            this._client.updateMarkets(marketsById);
         }
         if (initial)
         {
-            self._marketsState = MARKETS_STATE_RETRIEVED;
+            this._marketsState = MARKETS_STATE_RETRIEVED;
             initial = false;
-            self._registerClient(connect);
+            this._registerClient(connect);
         }
         timeout = MARKETS_FETCH_PERIOD;
-        setTimeout(function(){
-            self._retrieveMarkets(initial);
+        setTimeout(() => {
+            this._retrieveMarkets(initial);
         }, timeout);
-    }).catch(function(err){
+    }).catch((err) => {
         timeout = MARKETS_FETCH_FAILURE_PERIOD;
-        setTimeout(function(){
-            self._retrieveMarkets(initial);
+        setTimeout(() => {
+            this._retrieveMarkets(initial);
         }, timeout);
     });
 }

@@ -22,6 +22,8 @@ VOLUME ["/root/crypto-exchanges-gateway/ssl","/root/crypto-exchanges-gateway/sto
 ENV cfg.auth.apikey ""
 ENV cfg.listen.externalEndpoint ""
 ENV cfg.listenWs.externalEndpoint ""
+ENV cfg.sessions.maxSubscriptions "0"
+ENV cfg.sessions.maxDuration "0"
 ENV cfg.pushover.user ""
 ENV cfg.pushover.token ""
 ENV cfg.tickerMonitor.enabled "1"
@@ -41,6 +43,10 @@ ENV cfg.exchanges.kucoin.enabled "1"
 ENV cfg.exchanges.kucoin.requirePair "0"
 ENV cfg.exchanges.kucoin.key ""
 ENV cfg.exchanges.kucoin.secret ""
+ENV cfg.exchanges.okex.enabled "1"
+ENV cfg.exchanges.okex.requirePair "0"
+ENV cfg.exchanges.okex.key ""
+ENV cfg.exchanges.okex.secret ""
 
 EXPOSE 8000
 EXPOSE 8001

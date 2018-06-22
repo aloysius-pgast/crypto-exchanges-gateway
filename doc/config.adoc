@@ -86,6 +86,14 @@ Below config will only give access to public API (since no key/secret combinatio
             },
             "key":"",
             "secret":""
+        },
+        "okex":{
+            "type":"okex",
+            "enabled":true,
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            "key":"",
+            "secret":""
         }
     }
 }
@@ -130,6 +138,12 @@ Access will be restricted using the following :
         "externalEndpoint":"",
         /* in case you want to enable wss */
         "ssl":true
+    },
+    "sessions":{
+        /* maximum number of subscriptions per session (0 means no maximum) */
+        "maxSubscriptions":0,
+        /* maximum session duration in second (0 means no maximum) */
+        "maxDuration":0
     },
     "ui":{
         /* enable ui : ui should be built first */
@@ -269,6 +283,10 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"kucoin",
             "name":"Kucoin",
+            /* can be set to 'true' to debug REST requests & responses */
+            "verbose":false,
+            /* timeout in ms for REST requests */
+            "timeout":10000,
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
@@ -302,6 +320,29 @@ Access will be restricted using the following :
             "throttle":{
                 "global":{
                     "maxRequestsPerSecond":1
+                }
+            }
+        },
+        "okex":{
+            "enabled":true,
+            "type":"okex",
+            "name":"OKEx",
+            /* can be set to 'true' to debug REST requests & responses */
+            "verbose":false,
+            /* timeout in ms for REST requests */
+            "timeout":10000,
+            /* if true client will need to provide the pair when dealing with orders */
+            "requirePair":false,
+            /* API key provided by OKEx */
+            "key":"ABCD",
+            /* Secret provided by OKEx */
+            "secret":"EFGH",
+            /* % fees [0,100] */
+            "feesPercent":0.20,
+            /* rate limiting to comply with OKEx */
+            "throttle":{
+                "global":{
+                    "maxRequestsPerSecond":3
                 }
             }
         }

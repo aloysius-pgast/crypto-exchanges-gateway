@@ -7,6 +7,8 @@ const RequestHelper = require('../../request-helper');
 const serviceRegistry = require('../../service-registry');
 const sessionRegistry = require('../../session-registry');
 
+module.exports = function(app, bodyParsers, config) {
+
 /**
  * Sends an http error to client
  *
@@ -17,7 +19,20 @@ const sendError = (res, err) => {
     return Errors.sendHttpError(res, err, 'sessions');
 }
 
-module.exports = function(app, bodyParsers, config) {
+const checkMaxSubscriptions = (session, res) => {
+    if (0 == config.sessions.maxSubscriptions)
+    {
+        return true;
+    }
+    let size = session.size();
+    if (size < config.sessions.maxSubscriptions)
+    {
+        return true;
+    }
+    let err = new Errors.GatewayError.InvalidRequest.UnknownError(`Maximum number of subscriptions reached for session '${session.getSid()}'`);
+    return sendError(res, err);
+}
+
 
 /**
  * Ensures exchange and requested pair exist
@@ -105,7 +120,8 @@ const checkExchangeAndPair = (req, res, features) => {
  */
 (function(){
     const schema = Joi.object({
-        rpc: Joi.boolean().truthy('1').falsy('0').insensitive(true)
+        rpc: Joi.boolean().truthy('1').falsy('0').insensitive(true),
+        prefix: Joi.string().empty('').default('')
     });
 
     /**
@@ -123,6 +139,10 @@ const checkExchangeAndPair = (req, res, features) => {
         if (undefined !== params.value.rpc)
         {
             opt.rpc = params.value.rpc;
+        }
+        if ('' !== params.value.prefix)
+        {
+            opt.prefix = params.value.prefix;
         }
         let sessions = sessionRegistry.getSessions(opt);
         let list = {};
@@ -369,6 +389,10 @@ app.post('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) => {
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
             session.disableExpiry();
         }
+        if (!checkMaxSubscriptions(session, res))
+        {
+            return;
+        }
         // create subscription
         session.subscribeToTickers(req.params.exchange, [req.params.pair], false, false);
         return res.send({});
@@ -434,6 +458,10 @@ app.post('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) =
             // creates session
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
             session.disableExpiry();
+        }
+        if (!checkMaxSubscriptions(session, res))
+        {
+            return;
         }
         // create subscription
         session.subscribeToOrderBooks(req.params.exchange, [req.params.pair], false, false);
@@ -520,6 +548,10 @@ app.post('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => {
             // creates session
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
             session.disableExpiry();
+        }
+        if (!checkMaxSubscriptions(session, res))
+        {
+            return;
         }
         // create subscription
         session.subscribeToTrades(req.params.exchange, [req.params.pair], false, false);
@@ -612,6 +644,10 @@ app.delete('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => 
                 // creates session
                 session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
                 session.disableExpiry();
+            }
+            if (!checkMaxSubscriptions(session, res))
+            {
+                return;
             }
             // create subscription
             session.subscribeToKlines(req.params.exchange, [req.params.pair], params.value.interval, false, false);

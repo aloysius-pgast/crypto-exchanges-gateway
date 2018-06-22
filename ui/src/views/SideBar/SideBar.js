@@ -93,6 +93,17 @@ _defineSettingsEntry(obj)
     );
 }
 
+_defineMyStreamsEntry(obj)
+{
+    this._menu.push(
+        {
+            name: 'My Streams',
+            url: obj.path,
+            icon: 'fa fa-plug'
+        }
+    );
+}
+
 _defineAlertsEntry(obj)
 {
     this._menu.push(
@@ -132,8 +143,9 @@ _defineMenuEntries()
                 class: ""             // optional class names space delimited list for title item ex: "text-center"
             }
         );
-        _.forEach(exchangesRoutes, function(obj, id){
-            self._defineExchangeEntry(obj, id);
+        let exchanges = Object.keys(exchangesRoutes).sort();
+        _.forEach(exchanges, function(id){
+            self._defineExchangeEntry(exchangesRoutes[id], id);
         });
     }
     let servicesRoutes = routeRegistry.getServicesRoutes();
@@ -141,6 +153,7 @@ _defineMenuEntries()
     let portfolioRoute = routeRegistry.getRoute('/services/portfolio');
     let settingsRoute = routeRegistry.getRoute('/services/settings');
     let alertsRoute = routeRegistry.getRoute('/services/alerts');
+    let myStreamsRoute = routeRegistry.getRoute('/services/myStreams');
     // do we have services ?
     if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== settingsRoute || undefined !== alertsRoute || 0 != Object.keys(servicesRoutes))
     {
@@ -170,6 +183,10 @@ _defineMenuEntries()
         _.forEach(servicesRoutes, function(obj, id){
             self._defineServiceEntry(obj, id);
         });
+        if (undefined !== myStreamsRoute)
+        {
+            self._defineMyStreamsEntry(myStreamsRoute);
+        }
         if (undefined !== settingsRoute)
         {
             self._defineSettingsEntry(settingsRoute);

@@ -24,6 +24,11 @@ Updating session definition using REST API will automatically change what type o
 |_undefined_
 |Use to only retrieve _RPC_ or _non-RPC_ sessions
 
+|prefix
+|string
+|_undefined_
+|Use to only retrieve sessions which have an _sid_ starting with a given prefix
+
 |===
 
 === Result

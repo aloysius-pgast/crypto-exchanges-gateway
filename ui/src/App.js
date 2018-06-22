@@ -8,6 +8,7 @@ import _ from 'lodash';
 //-- registries
 import serviceRegistry from './lib/ServiceRegistry';
 import routeRegistry from './lib/RouteRegistry';
+import starredPairs from './lib/StarredPairs';
 
 //-- general views
 import Header from './views/Header/';
@@ -29,6 +30,7 @@ import MarketOverview from './views/MarketOverview';
 import Portfolio from './views/Portfolio';
 import CoinMarketCap from './views/CoinMarketCap/';
 import Settings from './views/Settings';
+import MyStreams from './views/MyStreams';
 import Alerts from './views/Alerts/';
 
 class App extends Component {
@@ -37,7 +39,6 @@ constructor(props)
 {
    super(props);
    this._routes = [];
-   this._loadRoutes();
 }
 
 _addExchangeRoutes(obj)
@@ -131,12 +132,17 @@ _loadRoutes()
     //-- exchanges
     let exchanges = serviceRegistry.getExchanges();
     let exchangesWithBalancesSupport = [];
+    let exchangesWithStreamsSupport = [];
     if (0 != Object.keys(exchanges))
     {
         _.forEach(exchanges, function(obj){
             if (obj.features.balances.enabled)
             {
                 exchangesWithBalancesSupport.push(obj.id);
+            }
+            if (obj.features.wsTickers.enabled || obj.features.wsOrderBooks.enabled || obj.features.wsTrades.enabled)
+            {
+                exchangesWithStreamsSupport.push(obj.id);
             }
             self._addExchangeRoutes(obj);
         });
@@ -191,6 +197,18 @@ _loadRoutes()
         });
     }
 
+    // myStreams route
+    if (0 !== exchangesWithStreamsSupport.length)
+    {
+        path = '/services/myStreams';
+        routeRegistry.registerRoute(path, 'myStreams', true);
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:MyStreams
+        });
+    }
+
     // alerts route
     if (undefined !== services['tickerMonitor'])
     {
@@ -203,14 +221,41 @@ _loadRoutes()
         });
     }
 
-    //-- home route is default route
-    path = '/';
+    //-- home route
+    path = '/home';
     routeRegistry.registerRoute(path, 'home');
     this._routes.push({
         path:path,
-        exact:false,
+        exact:true,
         component:DashBoard
     });
+
+    //-- default route (use marketOverview if user has starred pairs, otherwise home)
+    if (0 != starredPairs.size())
+    {
+        path = '/';
+        routeRegistry.registerRoute(path, 'marketoverview', true);
+        this._routes.push({
+            path:path,
+            exact:false,
+            component:MarketOverview
+        });
+    }
+    else
+    {
+        path = '/';
+        routeRegistry.registerRoute(path, 'home');
+        this._routes.push({
+            path:path,
+            exact:false,
+            component:DashBoard
+        });
+    }
+}
+
+componentWillMount()
+{
+    this._loadRoutes();
 }
 
 componentDidMount()

@@ -96,11 +96,18 @@ _handleSetCurrencyFilter(event)
 {
     let filter = event.target.value.trim().toUpperCase();
     let list = [];
-    if ('' != filter)
+    // extract currency if needed
+    let currency = filter;
+    let index = filter.indexOf('-');
+    if (-1 !== index)
+    {
+        currency = currency.substr(index + 1);
+    }
+    if ('' != currency)
     {
         _.forEach(this.state.pairs, (e) => {
             // found matching pair
-            if (-1 != e.currency.indexOf(filter))
+            if (-1 != e.currency.toUpperCase().indexOf(currency))
             {
                 list.push(e.pair);
             }
@@ -319,7 +326,7 @@ render()
 
     return (
         <div>
-            <InputGroup style={{maxWidth:"250px",marginBottom:'5px'}}>
+            <InputGroup style={{maxWidth:'250px',marginBottom:'5px'}}>
               <Input type="text" placeholder="Enter currency or use menu" value={this.state.currencyFilter} onChange={this._handleSetCurrencyFilter.bind(this)}/>
               <button type="button" className="input-group-addon btn btn-link" onClick={this._handleClearCurrencyFilter.bind(this)}>
                   <i className="fa fa-remove" style={{fontSize:'1rem'}}></i>

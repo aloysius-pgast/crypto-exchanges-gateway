@@ -1,5 +1,16 @@
 # Change Log
 
+## [v1.7.1]
+### Gateway
+* Support for _OKEx_ exchange (REST) through _ccxt_
+* Support for _OKEx_ exchange (WS)
+* Support for limiting the number of subscriptions allowed for a session
+* Support for limiting the duration of a session
+* Add _orderType_ when emitting _trades_ event for _Poloniex_ exchange
+### UI
+* Make _Market Overview_ the default view in case user has some starred pairs
+* New view _My Streams_ (can be used to define custom ws streams which multiplex data from various exchanges)
+
 ## [v1.7.0]
 ### Gateway
 * Support for Kucoin exchange through _ccxt_

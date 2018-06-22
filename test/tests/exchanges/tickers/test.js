@@ -7,7 +7,7 @@ const restClient = require('../../../lib/rest-client').getInstance();
 
 //-- schema for a single ticker entry
 const tickerSchema = joi.object({
-    pair:joi.string().regex(/^[A-Z0-9]+-[A-Z0-9]+$/).required(),
+    pair:joi.string().regex(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/).required(),
     last:joi.number().allow(null).required(),
     priceChangePercent:joi.number().allow(null).required(),
     sell:joi.number().allow(null).required(),
@@ -28,7 +28,7 @@ const defineForExchange = (exchangeId) => {
             // multiple pairs
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/tickers`, function(method, path, params){
                 it(`it should retrieve tickers for pairs [${params.pairs.join(',')}]`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, tickerSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, tickerSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         _.forEach(staticSymbols, (pair) => {
@@ -57,7 +57,7 @@ const defineForExchange = (exchangeId) => {
         {
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/tickers/${randomSymbols[0]}`, function(method, path, params){
                 it(`it should retrieve tickers for pair '${randomSymbols[0]}`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, tickerSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, tickerSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         let size = Object.keys(result.body).length;
@@ -78,7 +78,7 @@ const defineForExchange = (exchangeId) => {
         {
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/tickers`, function(method, path, params){
                 it(`it should retrieve tickers for all pairs`, (done) => {
-                    const schema = joi.object().pattern(/^[A-Z0-9]+-[A-Z0-9]+$/, tickerSchema);
+                    const schema = joi.object().pattern(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/, tickerSchema);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema, {isList:true});
                         done();

@@ -35,6 +35,30 @@ isCcxt()
 }
 
 /**
+ * Returns ccxt options
+ *
+ * @param {object} config, global config
+ * @param {object} opt custom options
+ */
+static getCcxtOpt(exchangeId, config, opt)
+{
+    let delay = Math.floor(1000 / config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
+    let defaultOpt = {
+        enableRateLimit:true,
+        rateLimit:delay,
+        verbose:config.exchanges[exchangeId].verbose,
+        timeout:config.exchanges[exchangeId].timeout
+    }
+    if ('' != config.exchanges[exchangeId].key && '' != config.exchanges[exchangeId].secret)
+    {
+        defaultOpt.apiKey = config.exchanges[exchangeId].key;
+        defaultOpt.secret = config.exchanges[exchangeId].secret;
+    }
+    let _opt = _.merge(defaultOpt, opt);
+    return _opt;
+}
+
+/**
  * Whether or not an error is a network error
  *
  * @param {object} e CcxtErrors.BaseError
@@ -99,7 +123,69 @@ __logNetworkError(e, method)
 async _getPairs()
 {
     let data = await this._client.getPairs();
-    return data.custom;
+    let pairs = data.custom;
+    // update limits
+    if (this._client.ccxt.has.fetchCurrencies)
+    {
+        let baseCurrencies = {};
+        let precision;
+        _.forEach(pairs, (pair, symbol) => {
+            // update quantity limits
+            precision = this._getCurrencyPrecision(pair.currency);
+            if (null !== precision && precision.precision < pair.limits.quantity.precision)
+            {
+                pair.limits.quantity.precision = precision.precision;
+                pair.limits.quantity.step = precision.step;
+                if (pair.limits.quantity.step > pair.limits.quantity.min)
+                {
+                    pair.limits.quantity.min = pair.limits.quantity.step;
+                }
+            }
+            // initialize base currency information
+            if (undefined === baseCurrencies[pair.baseCurrency])
+            {
+                baseCurrencies[pair.baseCurrency] = this._getCurrencyPrecision(pair.baseCurrency);
+            }
+            // update price & rate limits
+            if (null !== baseCurrencies[pair.baseCurrency])
+            {
+                // update rate limits
+                if (baseCurrencies[pair.baseCurrency].precision < pair.limits.rate.precision)
+                {
+                    pair.limits.rate.precision = baseCurrencies[pair.baseCurrency].precision;
+                    pair.limits.rate.step = baseCurrencies[pair.baseCurrency].step;
+                    if (pair.limits.rate.step > pair.limits.rate.min)
+                    {
+                        pair.limits.rate.min = pair.limits.rate.step;
+                    }
+                }
+                // update price limits
+                if (baseCurrencies[pair.baseCurrency].step > pair.limits.price.min)
+                {
+                    pair.limits.price.min = baseCurrencies[pair.baseCurrency].step;
+                }
+            }
+        });
+    }
+    return pairs;
+}
+
+/**
+ * Returns precision & step for a given currency
+ *
+ * @param {string} currency to retrieve information for
+ * @return {object} {precision:integer,step:float} or null if no information was found
+ */
+_getCurrencyPrecision(currency)
+{
+    if (undefined === this._client.ccxt.currencies[currency])
+    {
+        return null;
+    }
+    return {
+        precision:this._client.ccxt.currencies[currency].precision,
+        step:this._precisionToStep(this._client.ccxt.currencies[currency].precision)
+    }
 }
 
 /**
@@ -110,6 +196,18 @@ async _getPairs()
 async _getTickers()
 {
     let data = await this._client.getTickers();
+    return data.custom;
+}
+
+/**
+ * Returns ticker for a single pair
+ *
+ * @param {string} pair pair to retrieve ticker for
+ * @return {Promise}
+ */
+async _getTicker(pair)
+{
+    let data = await this._client.getTicker(pair);
     return data.custom;
 }
 
