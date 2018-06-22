@@ -51,6 +51,8 @@
             "type":"kucoin",
             "name":"Kucoin",
             "enabled":true,
+            "verbose":false,
+            "timeout":10000,
             "requirePair":false,
             "emulatedWs":{
                 "wsTickers":{
@@ -73,6 +75,8 @@
             "type":"okex",
             "name":"OKEx",
             "enabled":true,
+            "verbose":false,
+            "timeout":10000,
             "requirePair":false,
             "key":"",
             "secret":""
