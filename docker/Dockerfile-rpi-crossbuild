@@ -46,6 +46,10 @@ ENV cfg.exchanges.kucoin.enabled "1"
 ENV cfg.exchanges.kucoin.requirePair "0"
 ENV cfg.exchanges.kucoin.key ""
 ENV cfg.exchanges.kucoin.secret ""
+ENV cfg.exchanges.okex.enabled "1"
+ENV cfg.exchanges.okex.requirePair "0"
+ENV cfg.exchanges.okex.key ""
+ENV cfg.exchanges.okex.secret ""
 
 EXPOSE 8000
 EXPOSE 8001
