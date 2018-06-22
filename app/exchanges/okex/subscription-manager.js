@@ -14,7 +14,21 @@ constructor(exchange)
 {
     super(exchange, {globalTickersSubscription:false, marketsSubscription:false});
     this._orderBooksCseq = {};
+    this._lastTrades = {};
     this._client = null;
+}
+
+_initializeLastTrade(pair)
+{
+    if (undefined === this._lastTrades[pair])
+    {
+        this._lastTrades[pair] = {id:0};
+    }
+}
+
+_resetLastTrade(pair)
+{
+    delete this._lastTrades[pair];
 }
 
 _initializeOrderBookCseq(pair)
@@ -161,17 +175,23 @@ _registerClient(connect)
         {
             return;
         }
-        let minTimestamp = this._subscriptions.trades.pairs[evt.pair].timestamp;
+        let minTimestamp = 0;
+        let minTradeId = this._lastTrades[evt.pair].id;
+        // if we don't have previous trade id, use subscription timestamp
+        if (0 == minTradeId)
+        {
+            minTimestamp = this._subscriptions.trades.pairs[evt.pair].timestamp;
+        }
         if (0 != evt.data.length)
         {
-            // if oldest entry is < timestamp(subscription), we need to do some filtering
-            if (evt.data[evt.data.length - 1].timestamp < minTimestamp)
+            // if oldest entry is <= last(trade).id or is < timestamp(subscription), we need to do some filtering
+            if (evt.data[evt.data.length - 1].id <= minTradeId || evt.data[evt.data.length - 1].timestamp < minTimestamp)
             {
                 let data = [];
                 _.forEach(evt.data, (e) => {
-                    if (e.timestamp < minTimestamp)
+                    if (e.id <= minTradeId || e.timestamp < minTimestamp)
                     {
-                        return;
+                        return false;
                     }
                     data.push(e);
                 });
@@ -181,6 +201,8 @@ _registerClient(connect)
         evt.exchange = this._exchangeId;
         if (0 !== evt.data.length)
         {
+            // update last trade id
+            this._lastTrades[evt.pair].id = evt.data[0].id;
             this.emit('trades', evt);
         }
     });
@@ -218,7 +240,15 @@ _processChanges(changes, opt)
     if (undefined !== changes.unsubscribe)
     {
         _.forEach(changes.unsubscribe, (entry) => {
-            this._resetOrderBookCseq(entry.pair);
+            switch (entry.entity)
+            {
+                case 'orderBook':
+                    this._resetOrderBookCseq(entry.pair);
+                    break;
+                case 'trades':
+                    this._resetLastTrade(entry.pair);
+                    break;
+            }
             let message = this._client.getUnsubscribeMessage({type:entry.entity, pair:entry.pair});
             if (null === message)
             {
@@ -251,7 +281,15 @@ _processChanges(changes, opt)
     if (undefined !== changes.subscribe)
     {
         _.forEach(changes.subscribe, (entry) => {
-            this._initializeOrderBookCseq(entry.pair);
+            switch (entry.entity)
+            {
+                case 'orderBook':
+                    this._initializeOrderBookCseq(entry.pair);
+                    break;
+                case 'trades':
+                    this._initializeLastTrade(entry.pair);
+                    break;
+            }
             let message = this._client.getSubscribeMessage({type:entry.entity, pair:entry.pair});
             if (null === message)
             {
