@@ -31,6 +31,11 @@ restoreSession(sid, obj)
     session.on('destroyed', function(){
         delete self._sessions[sid];
     });
+    // do nothing if session is supposed to be destroyed
+    if (session.isDestroyed())
+    {
+        return;
+    }
     this._sessions[sid] =  session;
 }
 
