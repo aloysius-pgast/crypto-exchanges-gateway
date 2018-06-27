@@ -208,15 +208,14 @@ _getPairs()
                         }
                     }
                 });
-                // something must be wrong on exchange
-                if (0 == response.result)
+                // no active pair something must be wrong on exchange
+                if (0 == activePairs)
                 {
-                    logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
-                }
-                else
-                {
-                    // no active pair
-                    if (0 == activePairs)
+                    if (0 == response.result.length)
+                    {
+                        logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
+                    }
+                    else
                     {
                         logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", response.result.length, self.getId());
                     }
