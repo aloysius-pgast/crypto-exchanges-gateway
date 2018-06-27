@@ -2191,7 +2191,7 @@ _handleSubscribeToKlines(obj, ws)
         {
             if (!exchange.instance.isKlinesIntervalSupported(obj.p.interval))
             {
-                RpcHelper.replyErrorInvalidParams(ws, obj, "Unsupported value for 'interval' parameter", {interval:interval});
+                RpcHelper.replyErrorInvalidParams(ws, obj, "Unsupported value for 'interval' parameter", {interval:obj.p.interval});
                 return;
             }
             interval = obj.p.interval;
