@@ -33,6 +33,9 @@ constructor(exchangeId)
             wsTrades:{
                 enabled:true,
                 period:30
+            },
+            wsKlines:{
+                enabled:true
             }
         },
         throttle:{

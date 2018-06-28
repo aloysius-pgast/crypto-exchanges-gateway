@@ -4,6 +4,7 @@
 ### Gateway
 * Add _closed_ & _remainingTime_ attributes to _klines_ entries
 * Provide default _wsKlines_ implementation for exchanges which do not support klines over ws by querying REST endpoint periodically
+* Enable _wsKlines_ emulation by default for _Kucoin_, _Bittrex_ & _Poloniex_
 
 
 ## [v1.7.1]

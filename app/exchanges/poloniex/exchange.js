@@ -38,7 +38,7 @@ const supportedFeatures = {
     'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true, emulated:false},
     'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true, emulated:false},
     'trades':{enabled:true}, 'wsTrades':{enabled:true, emulated:false},
-    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:false},
+    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
     'orders':{enabled:true, withoutPair:true},
     'openOrders':{enabled:true, withoutPair:true},
     'closedOrders':{enabled:true, withoutPair:true, completeHistory:true},
