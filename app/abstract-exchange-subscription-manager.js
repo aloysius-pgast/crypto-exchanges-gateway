@@ -1678,12 +1678,6 @@ _resyncKlines(pair, interval)
                 }
                 if (kline.timestamp == self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
                 {
-                    // do nothing if volume is still the same & new kline is not closed
-                    if (self._emulatedWs.wsKlines.list[loop_id].lastKline.volume == kline.volume && !kline.closed)
-                    {
-                        return;
-                    }
-
                     // do nothing if last kline has no remaining time & new kline is not closed
                     if (0 == self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime && !kline.closed)
                     {
