@@ -1543,10 +1543,14 @@ async getKlines(pair, opt)
             {
                 /*
                   Change 'closed' for last entry since some exchanges will only update volume for kline K1 after the
-                  first trade in kline K2 (yeah, looking at you Poloniex...)
+                  first trade in kline K2 (yeah, looking at you Poloniex & Bittrex...)
                 */
                 list[list.length - 1].closed = false;
             }
+            break;
+        }
+        if (0 == list.length)
+        {
             break;
         }
         // update timestamps for next iteration (start from the timestamp in last entry)
