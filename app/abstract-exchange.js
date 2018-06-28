@@ -1354,6 +1354,8 @@ Output example
 [
     {
         "timestamp":1513256400,
+        "remainingTime":0,
+        "closed":true,
         "open":47.928,
         "high":48.7,
         "low":45.801,
@@ -1362,21 +1364,24 @@ Output example
     },
     {
         "timestamp":1513260000,
+        "remainingTime":0,
+        "closed":true,
         "open":47.11,
         "high":47.11,
         "low":44.744,
         "close":45.357,
-        "volume":5352.611
+        "volume":5352.611,
     },
     {
         "timestamp":1513263600,
+        "remainingTime":17,
+        "closed":false,
         "open":45.271,
         "high":46.8,
         "low":43,
         "close":46.018,
         "volume":8146.15
-    },
-    ...
+    }
 ]
 */
 async getKlines(pair, opt)
@@ -1384,7 +1389,7 @@ async getKlines(pair, opt)
     let interval = this.__features.klines.defaultInterval;
     let fromTimestamp;
     let toTimestamp;
-    let now = parseInt(Date.now() / 1000.0);
+    let now = Math.floor(Date.now() / 1000.0);
     let limit;
     if (undefined === opt)
     {
@@ -1445,6 +1450,9 @@ async getKlines(pair, opt)
     let iter = 0;
     while (true)
     {
+        // all klines with a timestamp <= should be considered as closed
+        let _now = Math.floor(Date.now() / 1000.0);
+        let closedTimestamp = _now - klinesIntervalsMapping[interval];
         ++iter;
         let data;
         try
@@ -1482,11 +1490,16 @@ async getKlines(pair, opt)
         {
             data.shift();
         }
+        if (data.length < MAX_KLINES_ENTRIES_PER_ITER)
+        {
+            stop = true;
+        }
         // no more data
         if (0 == data.length)
         {
             break;
         }
+
         _.forEach(data, (e) => {
             // entry is newer than max timestamp (stop processing)
             if (e.timestamp > toTimestamp)
@@ -1504,9 +1517,15 @@ async getKlines(pair, opt)
                 }
                 return;
             }
+            e.remainingTime = (e.timestamp <= closedTimestamp) ? 0 : e.timestamp + klinesIntervalsMapping[interval] - _now;
+            if (e.remainingTime < 0)
+            {
+                e.remainingTime = 0;
+            }
+            e.closed = 0 == e.remainingTime;
             list.push(e);
             // we reached requested limit
-            if (undefined !== limit && limit == list.length)
+            if (undefined !== limit && list.length == limit)
             {
                 stop = true;
                 return false;
@@ -1520,6 +1539,14 @@ async getKlines(pair, opt)
         });
         if (stop)
         {
+            if (0 !== list.length)
+            {
+                /*
+                  Change 'closed' for last entry since some exchanges will only update volume for kline K1 after the
+                  first trade in kline K2 (yeah, looking at you Poloniex...)
+                */
+                list[list.length - 1].closed = false;
+            }
             break;
         }
         // update timestamps for next iteration (start from the timestamp in last entry)

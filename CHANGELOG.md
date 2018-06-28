@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.2] NOT RELEASED YET
+### Gateway
+* Add _closed_ & _remainingTime_ attributes to _klines_ entries
+
 ## [v1.7.1]
 ### Gateway
 * Support for _OKEx_ exchange (REST) through _ccxt_

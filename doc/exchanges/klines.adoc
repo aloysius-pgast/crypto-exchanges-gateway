@@ -52,12 +52,12 @@ Those routes require the feature _klines_ to be enabled for the requested exchan
 |Klines interval (supported interval depends on exchange)
 
 |fromTimestamp
-|float
+|integer
 |
 |Used to only retrieve klines with a timestamp >= _fromTimestamp_
 
 |toTimestamp
-|float
+|integer
 |
 |Used to only retrieve klines with a timestamp <= _toTimestamp_
 
@@ -86,29 +86,44 @@ Result will be an array of klines object (*the first one being the oldest*)
 
 |open
 |float
-|Open price (will be _null_ if there was no trade during the period)
+|Open price (can be _null_ if there was no trade during the period)
 
 |close
 |float
-|Close price (will be _null_ if there was no trade during the period)
+|Close price (can be _null_ if there was no trade during the period)
 
 |high
 |float
-|Highest price (will be _null_ if there was no trade during the period)
+|Highest price (can be _null_ if there was no trade during the period)
 
 |low
 |float
-|Lowest price (will be _null_ if there was no trade during the period)
+|Lowest price (can be _null_ if there was no trade during the period)
 
 |volume
 |float
 |Volume (will be _0_ if there was no trade during the period)
 
 |timestamp
-|float (unix timestamp sec.msec)
+|integer (unix timestamp sec)
 |Unix timestamp
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}remainingTime
+|integer
+|Indicates how many seconds are remaining before the end of the kline interval
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closed
+|boolean
+|Indicates whether or not kline can be considered as _closed_
+
 |===
+
+[NOTE]
+====
+_remainingTimestamp_ is just an indication and _volume_ can change even after _remainingTimestamp_ has reached _0_.
+This is because some exchanges will only update kline _K1_ once the first trade for kline _K2_ has occurred.
+_closed_ will be _true_ only once the kline has been finalized.
+====
 
 .Examples
 
@@ -119,6 +134,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
 [
     {
         "timestamp":1515267600,
+        "remainingTime":0,
         "open":98.103,
         "high":98.5,
         "low":98.103,
@@ -127,6 +143,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
     },
     {
         "timestamp":1515267900,
+        "remainingTime":0,
         "open":98.399,
         "high":98.782,
         "low":98.399,
@@ -135,6 +152,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
     },
     {
         "timestamp":1515268200,
+        "remainingTime":0,
         "open":98.399,
         "high":98.782,
         "low":98.104,
@@ -143,6 +161,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
     },
     {
         "timestamp":1515268500,
+        "remainingTime":0,
         "open":98.276,
         "high":98.98,
         "low":97.773,
@@ -151,6 +170,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
     },
     {
         "timestamp":1515268800,
+        "remainingTime":0,
         "open":98.907,
         "high":99,
         "low":98.759,
@@ -159,6 +179,7 @@ Example for *GET* _/exchanges/binance/klines/USDT-NEO_
     },
     {
         "timestamp":1515269100,
+        "remainingTime":23,
         "open":99,
         "high":99,
         "low":98.759,

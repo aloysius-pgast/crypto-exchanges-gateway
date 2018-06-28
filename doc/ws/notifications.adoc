@@ -454,10 +454,25 @@ Following notifications can be sent
 |Volume
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}timestamp
-|float (unix timestamp sec.msec)
+|integer (unix timestamp sec)
 |Unix timestamp
 
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}remainingTime
+|integer
+|Indicates how many seconds are remaining before the end of the kline interval
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closed
+|boolean
+|Indicates whether or not kline can be considered as _closed_
+
 |===
+
+[NOTE]
+====
+_remainingTimestamp_ is just an indication and _volume_ can change even after _remainingTimestamp_ has reached _0_.
+This is because some exchanges will only update kline _K1_ once the first trade for kline _K2_ has occurred.
+_closed_ will be _true_ only once the kline has been finalized.
+====
 
 .Examples
 
@@ -471,6 +486,8 @@ Following notifications can be sent
         "interval":"5m",
         "data":{
             "timestamp":1515410100,
+            "remainingTime":0,
+            "closed":true,
             "open":1135.5,
             "close":1131.76,
             "high":1136.3,
