@@ -22,7 +22,10 @@ import serviceRegistry from './lib/ServiceRegistry';
 import starredPairs from './lib/StarredPairs';
 import dataStore from './lib/DataStore'
 
-window.ctx = {hasLocalStorage:true};
+window.ctx = {
+    hasLocalStorage:true,
+    isMobile:/Mobile|Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)
+};
 let apiKey = null;
 
 // check if localStorage is supported

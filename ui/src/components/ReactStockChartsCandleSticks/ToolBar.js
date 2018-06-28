@@ -48,6 +48,10 @@ render() {
         )
     }
     const SaveImage = () => {
+        if (window.ctx.isMobile)
+        {
+            return null;
+        }
         return (
             <a className="btn" href="#"><i onClick={this.handleSaveImage} style={{fontSize:'2.0rem',color:'#536c79'}} className="fa fa-cloud-download"/></a>
         )
