@@ -248,14 +248,18 @@ app.ws('/exchanges/:exchange/klines/:pair', function(ws, req) {
         }
         let exchange = serviceRegistry.getExchange(req.params.exchange);
         let interval = exchange.instance.getDefaultKlinesInterval();
-        if (undefined !== req.params.interval)
+        if (undefined !== req.query)
         {
-            if (!exchange.instance.isKlinesIntervalSupported(req.params.interval))
+            if (undefined !== req.query.interval)
             {
-                logger.warn("Kline interval '%s' is not supported on exchange '%s'", req.params.interval, req.params.exchange);
-                ws.close(4400, 'INVALID_PARAMETER');
+                if (!exchange.instance.isKlinesIntervalSupported(req.query.interval))
+                {
+                    logger.warn("Kline interval '%s' is not supported on exchange '%s'", req.query.interval, req.params.exchange);
+                    ws.close(4400, 'INVALID_PARAMETER');
+                    return;
+                }
+                interval = req.query.interval;
             }
-            interval = req.params.interval;
         }
         let session = sessionRegistry.registerNonRpcSession(ws, pathname);
         if (null === session)
