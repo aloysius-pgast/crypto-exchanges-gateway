@@ -82,7 +82,6 @@ MochaHelper.prepare(() => {
                             wsKlines:joi.object({
                                 enabled:joi.boolean().required(),
                                 emulated:joi.boolean().when('enabled', {is:true, then:joi.required()}),
-                                period:joi.number().integer().when('emulated', {is:true, then:joi.required()}),
                                 intervals:joi.array().items(joi.string()).when('enabled', {is:true, then:joi.required()}),
                                 defaultInterval:joi.string().when('enabled', {is:true, then:joi.required()}),
                             }).required(),
