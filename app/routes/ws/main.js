@@ -264,7 +264,7 @@ app.ws('/exchanges/:exchange/klines/:pair', function(ws, req) {
         }
         try
         {
-            session.subscribeToKlines(req.params.exchange, [req.params.pair], interval);
+            session.subscribeToKlines(req.params.exchange, [{pair:req.params.pair,resync:true}], interval);
         }
         catch (e)
         {
