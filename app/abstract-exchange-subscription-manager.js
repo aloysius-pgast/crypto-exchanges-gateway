@@ -1773,10 +1773,12 @@ _registerKlinesLoop(pair, interval)
             }
             if (0 != data.length)
             {
+                let forceEmit = false;
                 // initialize lastKline
                 if (null === self._emulatedWs.wsKlines.list[loop_id].lastKline)
                 {
                     self._emulatedWs.wsKlines.list[loop_id].lastKline = data[data.length - 1];
+                    forceEmit = true;
                 }
                 _.forEach(data, (kline) => {
                     // do nothing if last kline is newer
@@ -1787,7 +1789,7 @@ _registerKlinesLoop(pair, interval)
                     if (kline.timestamp == self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
                     {
                         // do nothing if volume is still the same & new kline is not closed
-                        if (self._emulatedWs.wsKlines.list[loop_id].lastKline.volume == kline.volume && !kline.closed)
+                        if (self._emulatedWs.wsKlines.list[loop_id].lastKline.volume == kline.volume && !forceEmit && !kline.closed)
                         {
                             return;
                         }
