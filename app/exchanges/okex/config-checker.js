@@ -20,6 +20,11 @@ constructor(exchangeId)
         key:"",
         secret:"",
         feesPercent:0.2,
+        emulatedWs:{
+            wsKlines:{
+                enabled:true
+            }
+        },
         verbose:false,
         throttle:{
             global:{

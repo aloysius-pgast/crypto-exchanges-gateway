@@ -52,7 +52,6 @@ Result will be a dictionary with two entries :
 * Only enabled exchanges will be present
 * Value for a feature will always be an object _{"enabled":boolean}_
 * When property _demo_ is _true_ for an entry, it means that this exchange or service is running in demo mode and will return *fake/random* data for API calls which require authentication (such as trading API on exchanges)
-* When property _dummy_ is _true_ for an entry, it means that this exchange is a _dummy_ exchange (ie: _paper_ exchange used for testing purpose, it's unlikely you'll ever see this on your gateway instance)
 ====
 
 .Examples
@@ -122,7 +121,9 @@ Example for *GET* _/server/services_
                     /* whether or not exchange supports retrieving open orders for all pairs using a single request */
                     "withoutPair":false,
                     /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
-                    "requirePair":false
+                    "requirePair":false,
+                    /* whether or not it is possible to retrieve all trades using API */
+                    "completeHistory":true
                 },
                 "orders":{
                     "enabled":true,
@@ -138,7 +139,6 @@ Example for *GET* _/server/services_
                 }
             },
             "demo":false,
-            "dummy":false,
             "feesPercent":0.1
         },
         "bittrex":{
@@ -197,7 +197,9 @@ Example for *GET* _/server/services_
                 "closedOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
-                    "withoutPair":true
+                    "withoutPair":true,
+                    /* whether or not it is possible to retrieve all trades using API */
+                    "completeHistory":false
                 },
                 "orders":{
                     "enabled":true,
@@ -211,7 +213,6 @@ Example for *GET* _/server/services_
                 }
             },
             "demo":false,
-            "dummy":false,
             "feesPercent":0.25
         },
         "poloniex":{
@@ -270,7 +271,9 @@ Example for *GET* _/server/services_
                 "closedOrders":{
                     "enabled":true,
                     /* whether or not exchange supports retrieving closed orders for all pairs using a single request */
-                    "withoutPair":true
+                    "withoutPair":true,
+                    /* whether or not it is possible to retrieve all trades using API */
+                    "completeHistory":true
                 },
                 "orders":{
                     "enabled":true,
@@ -284,7 +287,6 @@ Example for *GET* _/server/services_
                 }
             },
             "demo":false,
-            "dummy":false,
             "feesPercent":0.2
         }
         "kucoin":{
@@ -356,7 +358,9 @@ Example for *GET* _/server/services_
                     /* whether or not exchange supports retrieving open orders for all pairs using a single request */
                     "withoutPair":false,
                     /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
-                    "requirePair":false
+                    "requirePair":false,
+                    /* whether or not it is possible to retrieve all trades using API */
+                    "completeHistory":false
                 },
                 "orders":{
                     "enabled":true,
@@ -372,8 +376,89 @@ Example for *GET* _/server/services_
                 }
             },
             "demo":false,
-            "dummy":false,
             "feesPercent":0.1
+        },
+        "okex":{
+            "id":"okex",
+            /* exchange type, it is possible to define multiple instance of one exchange */
+            "type":"okex",
+            "name":"OKEx",
+            "features":{
+                "tickers":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving tickers for all pairs with a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
+                },
+                "wsTickers":{
+                    "enabled":true,
+                    "emulated":false,
+                },
+                "orderBooks":{
+                    "enabled":true
+                },
+                "wsOrderBooks":{
+                    "enabled":true,
+                    "emulated":false
+                },
+                "pairs":{
+                    "enabled":true
+                },
+                "trades":{
+                    "enabled":true
+                },
+                "wsTrades":{
+                    "enabled":true,
+                    "emulated":false
+                },
+                "klines":{
+                    "enabled":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","12h","1d","1w"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
+                },
+                "wsKlines":{
+                    "enabled":true,
+                    /* it means that exchange does not support ws and that ws stream is simulated by gateway, by retrieving klines periodically through REST API */
+                    "emulated":true,
+                    /* supported kline intervals */
+                    "intervals":["1m","3m","5m","15m","30m","1h","2h","4h","6h","12h","1d","1w"],
+                    /* default kline interval */
+                    "defaultInterval":"5m"
+                },
+                "openOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false
+                },
+                "closedOrders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving open orders for all pairs using a single request */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve tickers for all pairs with a single request */
+                    "requirePair":false,
+                    /* whether or not it is possible to retrieve all trades using API */
+                    "completeHistory":true
+                },
+                "orders":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving an order using only its order number */
+                    "withoutPair":false,
+                    /* if false, gateway will provide a fallback to retrieve order using only its order number */
+                    "requirePair":false
+                },
+                "balances":{
+                    "enabled":true,
+                    /* whether or not exchange supports retrieving balances for all pairs using a single request */
+                    "withoutCurrency":true
+                }
+            },
+            "demo":false,
+            "feesPercent":0.2
         }
     },
     "others":{

@@ -90,6 +90,11 @@
             "type":"okex",
             "name":"OKEx",
             "enabled":true,
+            "emulatedWs":{
+                "wsKlines":{
+                    "enabled":true
+                }
+            },
             "verbose":false,
             "timeout":10000,
             "requirePair":false,
