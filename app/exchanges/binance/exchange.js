@@ -326,6 +326,18 @@ async _getPairs()
             }
             list[pair] = obj;
         });
+        // no active pair something must be wrong on exchange
+        if (0 == activePairs)
+        {
+            if (0 == data.symbols.length)
+            {
+                logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
+            }
+            else
+            {
+                logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", data.symbols.length, self.getId());
+            }
+        }
         return list;
     });
 }

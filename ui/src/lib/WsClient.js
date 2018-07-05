@@ -236,7 +236,7 @@ unsubscribe()
     // indicate unsubscribe is needed
     this._subscriptions.unsubscribe = true;
     // remove all listeners
-    console.log('remove listeners');
+    //console.log('remove listeners');
     this.removeAllListeners();
     let messageList = [{m:"unsubscribe"}]
     if (this._send(messageList))

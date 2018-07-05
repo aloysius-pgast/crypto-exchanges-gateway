@@ -26,6 +26,25 @@ const ORDER_BOOK_LOOP_DEFAULT_PERIOD = 30 * 1000;
 // how often in ms should we retrieve trades
 const TRADES_LOOP_DEFAULT_PERIOD = 30 * 1000;
 
+// how often in ms should we retrieve klines when doing ws emulation (depends on the klines interval)
+const KLINES_LOOP_PERIODS = {
+    '1m':20 * 1000,
+    '3m':30 * 1000,
+    '5m':30 * 1000,
+    '15m':60 * 1000,
+    '30m':60 * 1000,
+    '1h':300 * 1000,
+    '2h':300 * 1000,
+    '4h':300 * 1000,
+    '6h':600 * 1000,
+    '8h':600 * 1000,
+    '12h':600 * 1000,
+    '1d':1800 * 1000,
+    '3d':1800 * 1000,
+    '1w':1800 * 1000,
+    '1M':3600 * 1000
+}
+
 class AbstractExchangeSubscriptionManager extends EventEmitter
 {
 
@@ -61,15 +80,22 @@ constructor(exchange, options)
             enabled:false,
             list:{},
             period:TRADES_LOOP_DEFAULT_PERIOD
+        },
+        wsKlines:{
+            enabled:false,
+            list:{}
         }
     }
     // check if we need ws emulation
     let features = exchange.getFeatures();
-    _.forEach(['wsTickers','wsOrderBooks','wsTrades'], (type) => {
+    _.forEach(['wsTickers','wsOrderBooks','wsTrades','wsKlines'], (type) => {
         if (features[type].enabled && features[type].emulated)
         {
             this._emulatedWs[type].enabled = true;
-            this._emulatedWs[type].period = features[type].period * 1000;
+            if ('wsKlines' != type)
+            {
+                this._emulatedWs[type].period = features[type].period * 1000;
+            }
         }
     });
     if (undefined !== options)
@@ -602,9 +628,10 @@ _initializeKlinesPair(sessionId, timestamp)
  * @param {string} sessionId session id
  * @param {array} subscribe list of pairs/intervals to subscribe to {pair:string,interval:string}
  * @param {array} unsubscribe list of pairs/intervals to unsubscribe from
+ * @param {array} resync list of pairs/intervals to resync
  * @param {boolean} connect whether or not stream clients should be connected (optional, default = true)
  */
-updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, connect)
+updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, resync, connect)
 {
     if ('string' != typeof(sessionId) || '' === sessionId)
     {
@@ -619,30 +646,8 @@ updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, connect)
         subscribe:[],
         unsubscribe:[]
     };
+    let resyncList = [];
     let updated = false;
-
-    // process subscribe
-    _.forEach(subscribe, (e) => {
-        // no subscriptions for this pair yet
-        if (undefined === this._subscriptions.klines.pairs[e.pair])
-        {
-            this._subscriptions.klines.pairs[e.pair] = {};
-        }
-        // no subscription for this interval
-        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval])
-        {
-            this._subscriptions.klines.pairs[e.pair][e.interval] = this._initializeKlinesPair(sessionId, timestamp);
-            changes.subscribe.push({entity:'klines',pair:e.pair,interval:e.interval});
-            updated = true;
-        }
-        else
-        {
-            if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId])
-            {
-                this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId] = timestamp;
-            }
-        }
-    });
 
     // process unsubscribe
     _.forEach(unsubscribe, (e) => {
@@ -674,18 +679,78 @@ updateKlinesSubscriptions(sessionId, subscribe, unsubscribe, connect)
         }
     });
 
-    if (updated)
+    // process subscribe
+    _.forEach(subscribe, (e) => {
+        // no subscriptions for this pair yet
+        if (undefined === this._subscriptions.klines.pairs[e.pair])
+        {
+            this._subscriptions.klines.pairs[e.pair] = {};
+        }
+        // no subscription for this interval
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval])
+        {
+            this._subscriptions.klines.pairs[e.pair][e.interval] = this._initializeKlinesPair(sessionId, timestamp);
+            changes.subscribe.push({entity:'klines',pair:e.pair,interval:e.interval});
+            updated = true;
+        }
+        else
+        {
+            if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId])
+            {
+                this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId] = timestamp;
+            }
+        }
+    });
+
+    // process resync
+    _.forEach(resync, (e) => {
+        // no subscriptions for this pair
+        if (undefined === this._subscriptions.klines.pairs[e.pair])
+        {
+            return;
+        }
+        // no subscription for this interval
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval])
+        {
+            return;
+        }
+        // no subscription for this session
+        if (undefined === this._subscriptions.klines.pairs[e.pair][e.interval].sessions[sessionId])
+        {
+            return;
+        }
+        // resync is only supported if wsKlines is enabled
+        if (this._emulatedWs.wsKlines.enabled)
+        {
+            resyncList.push({entity:'klines',pair:e.pair,interval:e.interval});
+        }
+    });
+    if (updated || 0 != resyncList.length)
     {
+        if (this._emulatedWs.wsKlines.enabled)
+        {
+            changes.resync = resyncList;
+        }
         if (debug.enabled)
         {
             this._debugChanges(changes);
         }
-        this._subscriptions.klines.timestamp = timestamp;
+        if (updated)
+        {
+            this._subscriptions.klines.timestamp = timestamp;
+        }
         this._subscriptions.klines.count = 0;
         _.forEach(this._subscriptions.klines.pairs, (e, p) => {
             this._subscriptions.klines.count += Object.keys(e).length
         });
-        this._processChanges(changes, {connect:connect});
+        if (!this._emulatedWs.wsKlines.enabled)
+        {
+            this._processChanges(changes, {connect:connect});
+        }
+        else
+        {
+            this._processKlinesLoops(changes, {connect:connect});
+        }
     }
 }
 
@@ -916,6 +981,7 @@ _processTickersLoops(changes, opt)
 
 /**
  * Starts a global ticker loop (will be called if exchange supports retrieving tickers for all pairs)
+ * @return {boolean} true if new loop was registered, false if a loop already exists
  */
 _registerGlobalTickersLoop()
 {
@@ -928,7 +994,7 @@ _registerGlobalTickersLoop()
     // we already have a loop
     if (this._emulatedWs.wsTickers.list[loop_id].enabled)
     {
-        return;
+        return false;
     }
     if (debug.enabled)
     {
@@ -997,6 +1063,7 @@ _registerGlobalTickersLoop()
         });
     }
     doRequest();
+    return true;
 }
 
 /*
@@ -1029,6 +1096,7 @@ _unregisterGlobalTickersLoop()
  * Starts a ticker loop for a given pair (will be called if exchange does not support retrieving tickers for all pairs)
  *
  * @param {string} pair pair to retrieve ticker for
+ * @return {boolean} true if new loop was registered, false if a loop already exists
  */
 _registerTickersLoopForPair(pair)
 {
@@ -1041,7 +1109,7 @@ _registerTickersLoopForPair(pair)
     // we already have a loop
     if (this._emulatedWs.wsTickers.list[loop_id].enabled)
     {
-        return;
+        return false;
     }
     if (debug.enabled)
     {
@@ -1107,6 +1175,7 @@ _registerTickersLoopForPair(pair)
         });
     }
     doRequest();
+    return true;
 }
 
 /**
@@ -1186,6 +1255,7 @@ _processOrderBooksLoops(changes, opt)
  * Starts an order book loop for a given pair
  *
  * @param {string} pair pair to retrieve order book for
+ * @return {boolean} true if new loop was registered, false if a loop already exists
  */
 _registerOrderBookLoop(pair)
 {
@@ -1198,7 +1268,7 @@ _registerOrderBookLoop(pair)
     // we already have a loop
     if (this._emulatedWs.wsOrderBooks.list[loop_id].enabled)
     {
-        return;
+        return false;
     }
     if (debug.enabled)
     {
@@ -1268,6 +1338,7 @@ _registerOrderBookLoop(pair)
         });
     }
     doRequest();
+    return true;
 }
 
 /**
@@ -1348,6 +1419,7 @@ _processTradesLoops(changes, opt)
  * Starts a trades loop for a given pair
  *
  * @param {string} pair pair to retrieve trades for
+ * @return {boolean} true if new loop was registered, false if a loop already exists
  */
 _registerTradesLoop(pair)
 {
@@ -1361,7 +1433,7 @@ _registerTradesLoop(pair)
     // we already have a loop
     if (this._emulatedWs.wsTrades.list[loop_id].enabled)
     {
-        return;
+        return false;
     }
     if (debug.enabled)
     {
@@ -1457,6 +1529,7 @@ _registerTradesLoop(pair)
         });
     }
     doRequest();
+    return true;
 }
 
 /**
@@ -1484,6 +1557,339 @@ _unregisterTradesLoop(pair)
         this._emulatedWs.wsTrades.list[loop_id].timer = null;
     }
     this._emulatedWs.wsTrades.list[loop_id].timestamp = Date.now() / 1000.0;
+}
+
+//-- klines loops are used to emulate wsKlines when exchange does not support ws
+
+/**
+ * @param {object} changes list of changes to process
+ * @param {boolean} opt.connect whether or not changes should trigger a connection
+ *
+ *  Each property (subscribe,unsubscribe) is optional
+ *  Entity can be (klines)
+ *
+ * {
+ *    "subscribe":[{"entity":"","pair":"","interval":""},...],
+ *    "unsubscribe":[{"entity":"","pair":"","interval":""},...],
+ *    "resync":[{"entity":"","pair":"","interval":""},...],
+ * }
+ */
+_processKlinesLoops(changes, opt)
+{
+    // check if we need to unsubscribe
+    if (undefined !== changes.unsubscribe)
+    {
+        _.forEach(changes.unsubscribe, (entry) => {
+            switch (entry.entity)
+            {
+                case 'klines':
+                    this._unregisterKlinesLoop(entry.pair , entry.interval);
+                    break;
+            }
+        });
+    }
+
+    // use to keep track of new loops
+    let newLoops = {};
+
+    // check if we need to subscribe
+    if (undefined !== changes.subscribe)
+    {
+        // only if we'be been asked to connect to exchange streams
+        if (opt.connect)
+        {
+            _.forEach(changes.subscribe, (entry) => {
+                switch (entry.entity)
+                {
+                    case 'klines':
+                        if (this._registerKlinesLoop(entry.pair, entry.interval))
+                        {
+                            // mark the pair/interval so that we don't do a resync for nothing
+                            let id = `${entry.pair}-${entry.interval}`;
+                            newLoops[id] = true;
+                        }
+                        break;
+                }
+            });
+        }
+    }
+
+    // check if we need to resync
+    if (undefined !== changes.resync)
+    {
+        // only if we'be been asked to connect to exchange streams
+        if (opt.connect)
+        {
+            _.forEach(changes.resync, (entry) => {
+                switch (entry.entity)
+                {
+                    case 'klines':
+                        let id = `${entry.pair}-${entry.interval}`;
+                        // only resync klines if we did not create a new loop for this pair/interval
+                        if (undefined === newLoops[id])
+                        {
+                            this._resyncKlines(entry.pair, entry.interval)
+                        }
+                        break;
+                }
+            });
+        }
+    }
+}
+
+/**
+ * Retrieve last kline once
+ * @param {string} pair pair to retrieve trades for
+ * @param {string} interval klines interval
+ */
+_resyncKlines(pair, interval)
+{
+    let loop_id = `${pair}-${interval}`;
+    let self = this;
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Resyncing '${loop_id}' klines for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getKlines(pair, {interval:interval, limit:1}).then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsKlines.list[loop_id].enabled)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Successfully resynced '${loop_id}' klines for exchange '${self._exchangeId}'`);
+            }
+            if (0 != data.length)
+            {
+                // current kline
+                let kline = data[data.length -1];
+
+                // initialize last kline
+                if (null === self._emulatedWs.wsKlines.list[loop_id].lastKline)
+                {
+                    self._emulatedWs.wsKlines.list[loop_id].lastKline = kline;
+                }
+                // do nothing if last kline is newer
+                if (kline.timestamp < self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
+                {
+                    return;
+                }
+                if (kline.timestamp == self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
+                {
+                    // do nothing if last kline has no remaining time & new kline is not closed
+                    if (0 == self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime && !kline.closed)
+                    {
+                        return;
+                    }
+
+                    // do nothing if last kline has less remaining time
+                    if (self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime < kline.remainingTime)
+                    {
+                        return;
+                    }
+                }
+                // update last kline & emit
+                self._emulatedWs.wsKlines.list[loop_id].lastKline = kline;
+                let evt = {
+                    exchange:self._exchangeId,
+                    pair:pair,
+                    interval:interval,
+                    data:kline
+                }
+                self.emit('kline', evt);
+            }
+        }).catch((e) => {
+            // try again after 5s
+            let delay = 5000;
+            logger.warn(`Could not resync '${loop_id}' klines for exchange '${self._exchangeId}' : will try again in ${delay} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            setTimeout(function(){
+                doRequest();
+            }, delay);
+        });
+    }
+    doRequest();
+}
+
+/**
+ * Starts a klines loop for a given pair
+ *
+ * @param {string} pair pair to retrieve trades for
+ * @param {string} interval klines interval
+ * @return {boolean} true if new loop was registered, false if a loop already exists
+ */
+_registerKlinesLoop(pair, interval)
+{
+    let loop_id = `${pair}-${interval}`;
+    let loopPeriod = KLINES_LOOP_PERIODS[interval];
+    // initialize loop information
+    if (undefined === this._emulatedWs.wsKlines.list[loop_id])
+    {
+        // initialize lastTrade with current timestamp, to only return trades which occur after initialization
+        this._emulatedWs.wsKlines.list[loop_id] = {enabled:false, lastKline:null};
+    }
+    // we already have a loop
+    if (this._emulatedWs.wsKlines.list[loop_id].enabled)
+    {
+        return false;
+    }
+    if (debug.enabled)
+    {
+        debug(`Starting '${loop_id}' klines loop for exchange '${this._exchangeId}'`);
+    }
+    let self = this;
+    let timestamp = Date.now() / 1000.0;
+    this._emulatedWs.wsKlines.list[loop_id].enabled = true;
+    this._emulatedWs.wsKlines.list[loop_id].timestamp = timestamp;
+    this._registerConnection(`orderBook-${loop_id}`);
+    const doRequest = function(){
+        if (debug.enabled)
+        {
+            debug(`Retrieving '${loop_id}' klines for exchange '${self._exchangeId}'`);
+        }
+        self._exchangeInstance.getKlines(pair, {interval:interval, limit:5}).then((data) => {
+            // loop has been disabled
+            if (!self._emulatedWs.wsKlines.list[loop_id].enabled)
+            {
+                return;
+            }
+            // we already have a newer loop
+            if (self._emulatedWs.wsKlines.list[loop_id].timestamp > timestamp)
+            {
+                return;
+            }
+            if (debug.enabled)
+            {
+                debug(`Got new '${loop_id}' klines for exchange '${self._exchangeId}'`);
+            }
+            if (0 != data.length)
+            {
+                let forceEmit = false;
+                // initialize lastKline
+                if (null === self._emulatedWs.wsKlines.list[loop_id].lastKline)
+                {
+                    self._emulatedWs.wsKlines.list[loop_id].lastKline = data[data.length - 1];
+                    forceEmit = true;
+                }
+                _.forEach(data, (kline) => {
+                    // do nothing if last kline is newer
+                    if (kline.timestamp < self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
+                    {
+                        return;
+                    }
+                    if (kline.timestamp == self._emulatedWs.wsKlines.list[loop_id].lastKline.timestamp)
+                    {
+                        // do nothing if volume is still the same & new kline is not closed
+                        if (self._emulatedWs.wsKlines.list[loop_id].lastKline.volume == kline.volume && !forceEmit && !kline.closed)
+                        {
+                            return;
+                        }
+
+                        // do nothing if last kline has no remaining time & new kline is not closed
+                        if (0 == self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime && !kline.closed)
+                        {
+                            return;
+                        }
+
+                        // do nothing if last kline has less remaining time
+                        if (self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime < kline.remainingTime)
+                        {
+                            return;
+                        }
+                    }
+                    // update last kline & emit
+                    self._emulatedWs.wsKlines.list[loop_id].lastKline = kline;
+                    let evt = {
+                        exchange:self._exchangeId,
+                        pair:pair,
+                        interval:interval,
+                        data:kline
+                    }
+                    self.emit('kline', evt);
+                });
+            }
+            // schedule next loop
+            let period = loopPeriod;
+            if (!self._emulatedWs.wsKlines.list[loop_id].lastKline.closed)
+            {
+                if (0 == self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime)
+                {
+                    period = 10000;
+                }
+                else
+                {
+                    // add a 5s delay to ensure kline will be closed on next period
+                    let remainingTime = (self._emulatedWs.wsKlines.list[loop_id].lastKline.remainingTime + 5) * 1000;
+                    // use a lower period temporarily if kline will close before the next iteration
+                    if (remainingTime < period)
+                    {
+                        period = remainingTime;
+                    }
+                }
+            }
+            self._emulatedWs.wsKlines.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        }).catch((e) => {
+            // try again after 5s
+            let period = 5000;
+            if (period > loopPeriod)
+            {
+                period = loopPeriod;
+            }
+            logger.warn(`Could not retrieve '${loop_id}' klines for exchange '${self._exchangeId}' : will try again in ${period} ms`);
+            if (e instanceof Errors.BaseError)
+            {
+                logger.warn(JSON.stringify(e));
+            }
+            else
+            {
+                logger.warn(e.stack);
+            }
+            self._emulatedWs.wsKlines.list[loop_id].timer = setTimeout(function(){
+                doRequest();
+            }, period);
+        });
+    }
+    doRequest();
+    return true;
+}
+
+/**
+ * Stops klines loop for a given pair
+ *
+ * @param {string} pair pair to unsubscribe from
+ * @param {string} interval klines interval
+ */
+_unregisterKlinesLoop(pair, interval)
+{
+    let loop_id = `${pair}-${interval}`;
+    // loop is already disabled
+    if (undefined === this._emulatedWs.wsKlines.list[loop_id] || !this._emulatedWs.wsKlines.list[loop_id].enabled)
+    {
+        return;
+    }
+    if (debug.enabled)
+    {
+        debug(`Stopping '${loop_id}' klines loop for exchange '${this._exchangeId}'`);
+    }
+    this._unregisterConnection(`klines-${loop_id}`);
+    this._emulatedWs.wsKlines.list[loop_id].enabled = false;
+    if (null !== this._emulatedWs.wsKlines.list[loop_id].timer)
+    {
+        clearTimeout(this._emulatedWs.wsKlines.list[loop_id].timer);
+        this._emulatedWs.wsKlines.list[loop_id].timer = null;
+    }
+    this._emulatedWs.wsKlines.list[loop_id].timestamp = Date.now() / 1000.0;
 }
 
 }

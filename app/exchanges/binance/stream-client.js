@@ -288,17 +288,24 @@ _processTicker(data)
 _processKline(data)
 {
     let pair = this._toCustomPair(data.s);
+    let now = Math.floor(Date.now() / 1000.0);
     let evt = {
         pair:pair,
         interval:data.k.i,
         data:{
-            timestamp:parseInt(data.k.t / 1000.0),
+            timestamp:Math.floor(data.k.t / 1000.0),
             open:parseFloat(data.k.o),
             close:parseFloat(data.k.c),
             high:parseFloat(data.k.h),
             low:parseFloat(data.k.l),
-            volume:parseFloat(data.k.v)
+            volume:parseFloat(data.k.v),
+            remainingTime:Math.ceil(data.k.T / 1000.0) - now,
+            closed:data.k.x
         }
+    }
+    if (evt.data.remainingTime < 0)
+    {
+        evt.data.remainingTime = 0;
     }
     this.emit('kline', evt);
 }

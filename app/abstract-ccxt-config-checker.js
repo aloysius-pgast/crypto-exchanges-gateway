@@ -123,7 +123,7 @@ _check()
                 }
                 if (obj.enabled)
                 {
-                    if (undefined !== this._config.emulatedWs[type].period)
+                    if ('klines' !== type && undefined !== this._config.emulatedWs[type].period)
                     {
                         let value = parseFloat(this._config.emulatedWs[type].period);
                         if (isNaN(value) || value <= 0)

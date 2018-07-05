@@ -305,7 +305,7 @@ _loadOrderBook()
             wsClient.subscribe(self.state.exchange, 'orderBook', self.state.pair);
         }
     }).catch (function(err){
-        console.log(err);
+        console.error(err);
         if (!self._isMounted)
         {
             return;

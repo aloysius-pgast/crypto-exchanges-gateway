@@ -31,6 +31,11 @@
             "type":"poloniex",
             "name":"Poloniex",
             "enabled":true,
+            "emulatedWs":{
+                "wsKlines":{
+                    "enabled":true
+                }
+            },
             "key":"",
             "secret":""
         },
@@ -38,6 +43,11 @@
             "type":"bittrex",
             "name":"Bittrex",
             "enabled":true,
+            "emulatedWs":{
+                "wsKlines":{
+                    "enabled":true
+                }
+            },
             "key":"",
             "secret":""
         },
@@ -68,6 +78,9 @@
                 "wsTrades":{
                     "enabled":true,
                     "period":30
+                },
+                "wsKlines":{
+                    "enabled":true
                 }
             },
             "key":"",
@@ -77,6 +90,11 @@
             "type":"okex",
             "name":"OKEx",
             "enabled":true,
+            "emulatedWs":{
+                "wsKlines":{
+                    "enabled":true
+                }
+            },
             "verbose":false,
             "timeout":10000,
             "requirePair":false,

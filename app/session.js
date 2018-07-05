@@ -1048,7 +1048,7 @@ unsubscribe(opt)
                     }
                     break;
                 case 'orderBooks':
-                    exchange.manager.updateOrderBooksSubscriptions(this._sid, [], pairs, false);
+                    exchange.manager.updateOrderBooksSubscriptions(this._sid, [], pairs, [], false);
                     if (options.remove)
                     {
                         entry.pairs = {};
@@ -1070,7 +1070,7 @@ unsubscribe(opt)
                             pairList.push({pair:p,interval:interval});
                         });
                     });
-                    exchange.manager.updateKlinesSubscriptions(this._sid, [], pairList, false);
+                    exchange.manager.updateKlinesSubscriptions(this._sid, [], pairList, [], false);
                     if (options.remove)
                     {
                         entry.pairs = {};
@@ -1113,7 +1113,7 @@ _subscribe()
                             pairList.push({pair:p,interval:interval});
                         });
                     });
-                    exchange.manager.updateKlinesSubscriptions(this._sid, pairList, [], true);
+                    exchange.manager.updateKlinesSubscriptions(this._sid, pairList, [], pairList, true);
                     break;
             }
         })
@@ -1364,13 +1364,16 @@ subscribeToOrderBooks(exchangeId, pairs, reset, connect)
             {
                 pairDict[pair] = this._initializeOrderBooksPair(timestamp);
                 changes.subscribe.push(pair);
-                changes.resync.push(pair);
+                if (connect)
+                {
+                    changes.resync.push(pair);
+                }
                 updated = true;
             }
             else
             {
                 pairDict[pair] = exchange.subscriptions.orderBooks.pairs[pair];
-                if (resync)
+                if (resync && connect)
                 {
                     changes.resync.push(pair);
                 }
@@ -1742,7 +1745,7 @@ _initializeKlinesPair(timestamp)
  * Subscribe to klines stream for a list of pairs (method assumes exchange exists, pairs & necessary features are supported)
  *
  * @param {string} exchangeId exchange id
- * @param {array} pairs array of pairs (X-Y) to subscribe to
+ * @param {array} pairs array of pairs (X-Y) or objects {pair:string,resync:boolean} to subscribe to
  * @param {string} interval klines interval
  * @param {boolean} reset if true, all existing subscription will be discarded and replaced by new ones (optional, default = false)
  * @param {boolean} connect whether or not connection with exchange should be established if necessary (optional, default = true)
@@ -1762,7 +1765,8 @@ subscribeToKlines(exchangeId, pairs, interval, reset, connect)
     let timestamp = (new Date().getTime()) / 1000.0;
     let changes = {
         subscribe:[],
-        unsubscribe:[]
+        unsubscribe:[],
+        resync:[]
     }
     let updated = false;
     if (true === reset)
@@ -1770,19 +1774,41 @@ subscribeToKlines(exchangeId, pairs, interval, reset, connect)
         let pairDict = {};
         // check if we have to subscribe
         _.forEach(pairs, (p) => {
-            if (undefined === pairDict[p])
+            let pair = p;
+            let resync = false;
+            if ('object' == typeof p)
             {
-                pairDict[p] = {};
-                if (undefined !== exchange.subscriptions.klines.pairs[p] && undefined !== exchange.subscriptions.klines.pairs[p][interval])
+                if (undefined === p.pair)
                 {
-                    pairDict[p][interval] = exchange.subscriptions.klines.pairs[p][interval];
+                    return;
                 }
-                else
+                pair = p.pair;
+                if (undefined !== p.resync && true === p.resync)
                 {
-                    pairDict[p][interval] = this._initializeKlinesPair(timestamp);
-                    changes.subscribe.push({pair:p,interval:interval});
-                    updated = true;
+                    resync = true;
                 }
+            }
+            if (undefined !== pairDict[pair])
+            {
+                return;
+            }
+            if (undefined !== exchange.subscriptions.klines.pairs[pair] && undefined !== exchange.subscriptions.klines.pairs[pair][interval])
+            {
+                pairDict[pair][interval] = exchange.subscriptions.klines.pairs[pair][interval];
+                if (resync && connect)
+                {
+                    changes.resync.push({pair:pair,interval:interval});
+                }
+            }
+            else
+            {
+                pairDict[pair][interval] = this._initializeKlinesPair(timestamp);
+                changes.subscribe.push({pair:pair,interval:interval});
+                if (connect)
+                {
+                    changes.resync.push({pair:pair,interval:interval});
+                }
+                updated = true;
             }
         });
         // check if we have to unsubscribe
@@ -1802,23 +1828,48 @@ subscribeToKlines(exchangeId, pairs, interval, reset, connect)
         let pairDict = {};
         // check if we have to subscribe
         _.forEach(pairs, (p) => {
-            if (undefined !== pairDict[p])
+            let pair = p;
+            let resync = false;
+            if ('object' == typeof p)
+            {
+                if (undefined === p.pair)
+                {
+                    return;
+                }
+                pair = p.pair;
+                if (undefined !== p.resync && true === p.resync)
+                {
+                    resync = true;
+                }
+            }
+            if (undefined !== pairDict[pair])
             {
                 return;
             }
-            if (undefined !== exchange.subscriptions.klines.pairs[p])
+            if (undefined !== exchange.subscriptions.klines.pairs[pair])
             {
-                pairDict[p] = exchange.subscriptions.klines.pairs[p];
+                pairDict[pair] = exchange.subscriptions.klines.pairs[pair];
             }
             else
             {
-                pairDict[p] = {};
+                pairDict[pair] = {};
             }
-            if (undefined === pairDict[p][interval])
+            if (undefined === pairDict[pair][interval])
             {
-                pairDict[p][interval] = this._initializeKlinesPair(timestamp);
-                changes.subscribe.push({pair:p,interval:interval});
+                pairDict[pair][interval] = this._initializeKlinesPair(timestamp);
+                changes.subscribe.push({pair:pair,interval:interval});
+                if (connect)
+                {
+                    changes.resync.push({pair:pair,interval:interval});
+                }
                 updated = true;
+            }
+            else
+            {
+                if (resync && connect)
+                {
+                    changes.resync.push({pair:pair,interval:interval});
+                }
             }
         });
         // add existing subscriptions
@@ -1831,19 +1882,22 @@ subscribeToKlines(exchangeId, pairs, interval, reset, connect)
         });
         exchange.subscriptions.klines.pairs = pairDict;
     }
-    if (updated)
+    if (updated || 0 != changes.resync.length)
     {
         if (debug.enabled)
         {
             this._debugChanges('klines', changes);
         }
-        exchange.subscriptions.klines.timestamp = timestamp;
-        // store session
-        this._store();
+        if (updated)
+        {
+            exchange.subscriptions.klines.timestamp = timestamp;
+            // store session
+            this._store();
+        }
         // do nothing if we don't have any socket
         if (0 != this._socketsCount)
         {
-            exchange.manager.updateKlinesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, connect);
+            exchange.manager.updateKlinesSubscriptions(this._sid, changes.subscribe, changes.unsubscribe, changes.resync, connect);
         }
     }
 }
@@ -1911,7 +1965,7 @@ unsubscribeFromKlines(exchangeId, pairs, interval)
         // do nothing if we don't have any socket (unless session has been destroyed)
         if (0 != this._socketsCount || this._destroyed)
         {
-            exchange.manager.updateKlinesSubscriptions(this._sid, [], changes.unsubscribe, false);
+            exchange.manager.updateKlinesSubscriptions(this._sid, [], changes.unsubscribe, [], false);
         }
     }
 }
@@ -2191,7 +2245,7 @@ _handleSubscribeToKlines(obj, ws)
         {
             if (!exchange.instance.isKlinesIntervalSupported(obj.p.interval))
             {
-                RpcHelper.replyErrorInvalidParams(ws, obj, "Unsupported value for 'interval' parameter", {interval:interval});
+                RpcHelper.replyErrorInvalidParams(ws, obj, "Unsupported value for 'interval' parameter", {interval:obj.p.interval});
                 return;
             }
             interval = obj.p.interval;
@@ -2201,7 +2255,11 @@ _handleSubscribeToKlines(obj, ws)
         {
             reset = true;
         }
-        self.subscribeToKlines.call(self, obj.p.exchange, obj.p.pairs, interval, reset, true);
+        let pairs = [];
+        _.forEach(obj.p.pairs, (pair) => {
+            pairs.push({pair:pair, resync:true});
+        });
+        self.subscribeToKlines.call(self, obj.p.exchange, pairs, interval, reset, true);
         RpcHelper.replySuccess(ws, obj, true);
     });
 }

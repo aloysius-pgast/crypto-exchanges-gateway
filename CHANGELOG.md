@@ -1,5 +1,14 @@
 # Change Log
 
+## [v1.7.2]
+### Gateway
+* Add _closed_ & _remainingTime_ attributes to _klines_ entries
+* Provide default _wsKlines_ implementation for exchanges which do not support klines over ws by querying REST endpoint periodically
+* Enable _wsKlines_ emulation by default for _Kucoin_, _Bittrex_ & _Poloniex_
+### UI
+* Possibility to choose klines period (ie: to automatically select the best interval to get klines for the last 3 days for example)
+
+
 ## [v1.7.1]
 ### Gateway
 * Support for _OKEx_ exchange (REST) through _ccxt_

@@ -41,12 +41,26 @@ Below config will only give access to public API (since no key/secret combinatio
         "poloniex":{
             "type":"poloniex",
             "enabled":true,
+            /* ws emulation for Poloniex klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             "key":"",
             "secret":""
         },
         "bittrex":{
             "type":"bittrex",
             "enabled":true,
+            /* ws emulation for Bittrex klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             "key":"",
             "secret":""
         },
@@ -82,6 +96,10 @@ Below config will only give access to public API (since no key/secret combinatio
                     "enabled":true,
                     /* how often in second trades should be retrieved using REST API, to emulate ws stream for trades */
                     "period":30
+                },
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
                 }
             },
             "key":"",
@@ -90,6 +108,13 @@ Below config will only give access to public API (since no key/secret combinatio
         "okex":{
             "type":"okex",
             "enabled":true,
+            /* ws emulation for OKEx klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
             "key":"",
@@ -203,6 +228,13 @@ Access will be restricted using the following :
             "type":"poloniex",
             "name":"Poloniex",
             "enabled":true,
+            /* ws emulation for Poloniex klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             /* API key provided by Poloniex */
             "key":"ABCD",
             /* Secret provided by Poloniex */
@@ -223,6 +255,13 @@ Access will be restricted using the following :
             "enabled":true,
             "type":"bittrex",
             "name":"bittrex",
+            /* ws emulation for Bittrex klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             /* API key provided by Bittrex */
             "key":"ABCD",
             /* Secret provided by Bittrex */
@@ -333,6 +372,13 @@ Access will be restricted using the following :
             "timeout":10000,
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
+            /* ws emulation for OKEx klines */
+            "emulatedWs":{
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
+                }
+            },
             /* API key provided by OKEx */
             "key":"ABCD",
             /* Secret provided by OKEx */

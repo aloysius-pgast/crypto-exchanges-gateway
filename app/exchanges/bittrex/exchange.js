@@ -29,7 +29,7 @@ const supportedFeatures = {
     'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true, emulated:false},
     'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true, emulated:false},
     'trades':{enabled:true}, 'wsTrades':{enabled:true, emulated:false},
-    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:false},
+    'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
     'orders':{enabled:true, withoutPair:true},
     'openOrders':{enabled:true, withoutPair:true},
     'closedOrders':{enabled:true, withoutPair:true, completeHistory:false},
@@ -208,15 +208,14 @@ _getPairs()
                         }
                     }
                 });
-                // something must be wrong on exchange
-                if (0 == response.result)
+                // no active pair something must be wrong on exchange
+                if (0 == activePairs)
                 {
-                    logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
-                }
-                else
-                {
-                    // no active pair
-                    if (0 == activePairs)
+                    if (0 == response.result.length)
+                    {
+                        logger.warn("Received no pairs from '%s' : something must be wrong with exchange", self.getId());
+                    }
+                    else
                     {
                         logger.warn("Received %d pairs from '%s' but none is in active state : something must be wrong with exchange", response.result.length, self.getId());
                     }

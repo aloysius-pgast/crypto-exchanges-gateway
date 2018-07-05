@@ -22,6 +22,11 @@ constructor(exchangeId)
         key:"",
         secret:"",
         feesPercent:0.25,
+        emulatedWs:{
+            wsKlines:{
+                enabled:true
+            }
+        },
         throttle:{
             global:{
                 maxRequestsPerSecond:GLOBAL_API_MAX_REQUESTS_PER_SECOND
@@ -66,6 +71,43 @@ _check()
     if (undefined !== this._config.secret)
     {
         this._finalConfig.secret = this._config.secret;
+    }
+
+    //-- check emulated websocket
+    if (undefined !== this._config.emulatedWs)
+    {
+        _.forEach(this._finalConfig.emulatedWs, (obj, type) => {
+            if (undefined !== this._config.emulatedWs[type])
+            {
+                if (undefined !== this._config.emulatedWs[type].enabled)
+                {
+                    if (true === this._config.emulatedWs[type].enabled)
+                    {
+                        obj.enabled = true;
+                    }
+                    else if (false === this._config.emulatedWs[type].enabled)
+                    {
+                        obj.enabled = false;
+                    }
+                }
+                if (obj.enabled)
+                {
+                    if ('klines' !== type && undefined !== this._config.emulatedWs[type].period)
+                    {
+                        let value = parseFloat(this._config.emulatedWs[type].period);
+                        if (isNaN(value) || value <= 0)
+                        {
+                            this._invalid({name:`emulatedWs[${type}][period]`,value:this._config.emulatedWs[type].period});
+                            valid = false;
+                        }
+                        else
+                        {
+                            obj.period = value;
+                        }
+                    }
+                }
+            }
+        });
     }
 
     //-- check feesPercent

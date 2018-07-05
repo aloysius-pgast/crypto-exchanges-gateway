@@ -907,11 +907,11 @@ formatKlines(ccxtData)
     let result = [];
     _.forEach(ccxtData, (e) => {
         result.push({
-            timestamp:e[0] / 1000.0,
-            open:parseFloat(e[1]),
-            high:parseFloat(e[2]),
-            low:parseFloat(e[3]),
-            close:parseFloat(e[4]),
+            timestamp:Math.floor(e[0] / 1000.0),
+            open:null === e[1] ? null : parseFloat(e[1]),
+            high:null === e[2] ? null : parseFloat(e[2]),
+            low:null === e[3] ? null : parseFloat(e[3]),
+            close:null === e[4] ? null : parseFloat(e[4]),
             volume:parseFloat(e[5])
         });
     });

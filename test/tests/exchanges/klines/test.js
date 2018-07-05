@@ -8,6 +8,8 @@ const restClient = require('../../../lib/rest-client').getInstance();
 // schema for a single kline entry (if there was not trade, ohlc values will be null and volume will be 0)
 const klineSchema = joi.object({
     timestamp:joi.number().positive().required(),
+    remainingTime:joi.number().positive().required().allow(0),
+    closed:joi.boolean().required(),
     open:joi.number().required().allow(null),
     high:joi.number().required().allow(null),
     low:joi.number().required().allow(null),
@@ -49,17 +51,26 @@ const defineForExchange = (exchangeId) => {
                     let schema = joi.array().items(klineSchema).max(defaultKlinesSize);
                     restClient.makeRequest(method, path, params).then((result) => {
                         Assert.validateResult(result, schema);
-                        // try to retrieve 2 klines entries in the middle
-                        if (result.body.length >= 4)
+                        // try to retrieve the first 2 klines
+                        if (result.body.length >= 2)
                         {
                             let firstIndex = parseInt(result.body.length / 2);
                             let lastIndex = firstIndex + 1;
                             let klines = [result.body[firstIndex],result.body[lastIndex]];
+                            let _klines = [_.cloneDeep(klines[0]), _.cloneDeep(klines[1])];
+                            // remove closed & remainingTime
+                            _.forEach(_klines, (e) => {
+                                delete e.remainingTime;
+                                delete e.closed;
+                            });
                             let schema = joi.array().items(klineSchema).max(2);
                             restClient.makeRequest(method, path, {fromTimestamp:klines[0].timestamp,toTimestamp:klines[1].timestamp}).then((result) => {
                                 Assert.validateResult(result, schema);
                                 _.forEach(result.body, (e, index) => {
-                                    if (!_.isEqual(result.body[0], klines[0]))
+                                    // remove closed & remainingTime
+                                    delete e.remainingTime;
+                                    delete e.closed;
+                                    if (!_.isEqual(result.body[index], _klines[index]))
                                     {
                                         Assert.fail(`Result entry #${index} should be ${JSON.stringify(klines[index])}`);
                                     }
