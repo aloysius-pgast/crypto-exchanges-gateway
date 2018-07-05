@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.2] NOT RELEASED YET
+## [v1.7.2]
 ### Gateway
 * Add _closed_ & _remainingTime_ attributes to _klines_ entries
 * Provide default _wsKlines_ implementation for exchanges which do not support klines over ws by querying REST endpoint periodically
