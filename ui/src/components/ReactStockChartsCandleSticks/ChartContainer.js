@@ -4,6 +4,25 @@ import SaveChartAsImage from 'react-stockcharts/lib/helper/SaveChartAsImage';
 import ToolBar from './ToolBar';
 import Chart from './Chart';
 
+const klinesPeriods = [
+    {period:'4h', periodLabel:'4 hours', interval:'1m', count:240},
+    {period:'12h', periodLabel:'12 hours', interval:'3m', count:240},
+    {period:'1d', periodLabel:'1 day', interval:'5m', count:288},
+    {period:'3d', periodLabel:'3 days', interval:'15m', count:288},
+    {period:'7d', periodLabel:'7 days', interval:'30m', count:336},
+    {period:'15d', periodLabel:'15 days', interval:'1h', count:360},
+    {period:'1M', periodLabel:'1 month', interval:'2h', count:360},
+    {period:'3M', periodLabel:'3 months', interval:'6h', count:360},
+    {period:'6M', periodLabel:'6 months', interval:'12h', count:360},
+    {period:'1Y', periodLabel:'1 year', interval:'1d', count:365}
+]
+const klinesPeriodToKlinesInterval = {};
+const klinesIntervalToKlinesPeriod = {};
+_.forEach(klinesPeriods, (e) => {
+    klinesPeriodToKlinesInterval[e.period] = e;
+    klinesIntervalToKlinesPeriod[e.interval] = e;
+});
+
 class ChartContainer extends Component {
 
 constructor(props) {
@@ -12,14 +31,42 @@ constructor(props) {
     this.state = {
         data:{loaded:false, data:null, err:null, refreshPeriod:0},
         klinesInterval:this.props.klinesInterval,
+        klinesPeriod:this._klineIntervalToKlinePeriod(this.props.klinesInterval),
+        count:225,
         dimensions:null,
         reset:true
+    }
+    this._klinesPeriods = [];
+    // update periods
+    _.forEach(this.props.klinesIntervals, (e) => {
+        if (undefined !== klinesIntervalToKlinesPeriod[e])
+        {
+            this._klinesPeriods.push(klinesIntervalToKlinesPeriod[e]);
+        }
+    });
+    if (undefined !== klinesIntervalToKlinesPeriod[this.props.klinesInterval])
+    {
+        this.state.count = klinesIntervalToKlinesPeriod[this.props.klinesInterval].count;
     }
     this._parentNode = null;
     this._chart = null;
     this._timer = null;
     this.handleSelectKlinesInterval = this.handleSelectKlinesInterval.bind(this);
+    this.handleSelectKlinesPeriod = this.handleSelectKlinesPeriod.bind(this);
     this.handleSaveImage = this.handleSaveImage.bind(this);
+}
+
+_klineIntervalToKlinePeriod(interval)
+{
+    if (undefined === interval)
+    {
+        return null;
+    }
+    if (undefined === klinesIntervalToKlinesPeriod[interval])
+    {
+        return null;
+    }
+    return klinesIntervalToKlinesPeriod[interval].period;
 }
 
 loadData(isRefresh) {
@@ -164,8 +211,32 @@ handleSelectKlinesInterval(interval)
     {
         return;
     }
+    let count = 225;
+    if (undefined !== klinesIntervalToKlinesPeriod[interval])
+    {
+        count = klinesIntervalToKlinesPeriod[interval].count;
+    }
     this.setState((prevState, props) => {
-        return {klinesInterval:interval};
+        return {klinesInterval:interval,count:count};
+    }, function(){
+        this.loadData(false);
+        if (undefined != this.props.onSelectKlinesInterval)
+        {
+            this.props.onSelectKlinesInterval(this.state.klinesInterval);
+        }
+    });
+}
+
+handleSelectKlinesPeriod(period)
+{
+    if (!this._isMounted)
+    {
+        return;
+    }
+    let klinesInterval = klinesPeriodToKlinesInterval[period].interval;
+    let count = klinesPeriodToKlinesInterval[period].count;
+    this.setState((prevState, props) => {
+        return {klinesInterval:klinesInterval,count:count};
     }, function(){
         this.loadData(false);
         if (undefined != this.props.onSelectKlinesInterval)
@@ -237,8 +308,11 @@ render() {
     const toolBarHeight = 60;
     return (
         <div style={{height:this.state.dimensions.height,color:'#ffffff',backgroundColor:'#131722'}}>
-            <ToolBar height={toolBarHeight} klinesInterval={this.state.klinesInterval} klinesIntervals={this.props.klinesIntervals}
+            <ToolBar height={toolBarHeight}
+                klinesInterval={this.state.klinesInterval} klinesIntervals={this.props.klinesIntervals}
+                klinesPeriods={this._klinesPeriods} klinesPeriod={this.state.klinesPeriod}
                 onSelectKlinesInterval={this.handleSelectKlinesInterval}
+                onSelectKlinesPeriod={this.handleSelectKlinesPeriod}
                 onSaveImage={this.handleSaveImage}
             />
             <Chart
@@ -247,7 +321,7 @@ render() {
                 reset={this.state.reset}
                 exchangeName={this.props.exchangeName} pair={this.props.pair} klinesInterval={this.state.klinesInterval}
                 ratio={this.state.dimensions.ratio} width={this.state.dimensions.width} height={this.state.dimensions.height - toolBarHeight}
-                type="hybrid" data={this.state.data.data}
+                type="hybrid" data={this.state.data.data} count={this.state.count}
             />
         </div>
     );

@@ -32,7 +32,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
     constructor(props) {
 		super(props);
         this._isMounted = false;
-        let scale = this._computeScale(this.props.data);
+        let scale = this._computeScale(this.props.data, this.props.count);
         this.state = {
             pricePrecision:this._computePricePrecision(this.props.data),
             xExtents:scale.xExtents,
@@ -83,7 +83,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
         return finalPrecision;
     }
 
-    _computeScale(initialData)
+    _computeScale(initialData, count)
     {
         const xScaleProvider = discontinuousTimeScaleProvider
 			.inputDateAccessor(d => d.date);
@@ -93,7 +93,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
 			xAccessor,
 		} = xScaleProvider(initialData);
         const start = xAccessor(last(data));
-        const end = xAccessor(data[Math.max(0, data.length - 225)]);
+        const end = xAccessor(data[Math.max(0, data.length - count)]);
         const xExtents = [start, end];
         return {
             domain:xScale.domain(),
@@ -145,7 +145,7 @@ class CandleStickChartWithDarkTheme extends React.Component {
         let newState = {precision:precision};
         if (nextProps.reset)
         {
-            const scale = this._computeScale(nextProps.data);
+            const scale = this._computeScale(nextProps.data, nextProps.count);
             newState.domain = scale.domain;
             newState.xExtents = scale.xExtents;
         }
@@ -361,6 +361,7 @@ CandleStickChartWithDarkTheme.propTypes = {
 };
 
 CandleStickChartWithDarkTheme.defaultProps = {
+    count: 225,
 	type: "hybrid",
     exchangeName: '',
     pair: '',
