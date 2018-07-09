@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.3]
+### Gateway
+* Fix an error when doing klines subscriptions through REST API
+
 ## [v1.7.2]
 ### Gateway
 * Add _closed_ & _remainingTime_ attributes to _klines_ entries
