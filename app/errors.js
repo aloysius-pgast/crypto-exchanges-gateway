@@ -527,7 +527,7 @@ createClass('GatewayError.InvalidRequest.Unsupported.UnsupportedKlineInterval', 
  */
 constructor(exchangeId, interval, message)
 {
-    let defaultMessage = `Kline interval '${interval}' is not supported by exchange '${exchangeId}'`;
+    let defaultMessage = `Klines interval '${interval}' is not supported by exchange '${exchangeId}'`;
     let data = {
         exchange:exchangeId,
         interval:interval

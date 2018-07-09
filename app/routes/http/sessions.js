@@ -620,21 +620,22 @@ app.delete('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => 
                 return;
             }
             let exchange = serviceRegistry.getExchange(req.params.exchange);
-            let schema = schemas[exchange.getId()];
-            if (undefined === schema)
+            let exchangeInstance = exchange.instance;
+            if (undefined === schemas[exchange.id])
             {
-                schemas[exchange.getId()] = Joi.object({
-                    interval: Joi.string().default(exchange.getDefaultKlinesInterval())
+                schemas[exchange.id] = Joi.object({
+                    interval: Joi.string().default(exchangeInstance.getDefaultKlinesInterval())
                 });
             }
+            let schema = schemas[exchange.id];
             const params = JoiHelper.validate(schema, req, {query:true});
             if (null !== params.error)
             {
                 return sendError(res, params.error);
             }
-            if (!exchange.isKlinesIntervalSupported(params.value.interval))
+            if (!exchangeInstance.isKlinesIntervalSupported(params.value.interval))
             {
-                let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedKlineInterval(exchange.getId(), params.value.interval);
+                let err = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedKlineInterval(exchange.id, params.value.interval);
                 return sendError(res, err);
             }
             let session = sessionRegistry.getSession(req.params.sid);
