@@ -108,11 +108,11 @@ Result will be an array of klines object (*the first one being the oldest*)
 |integer (unix timestamp sec)
 |Unix timestamp
 
-|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}remainingTime
+|remainingTime
 |integer
 |Indicates how many seconds are remaining before the end of the kline interval
 
-|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}closed
+|closed
 |boolean
 |Indicates whether or not kline can be considered as _closed_
 
