@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.4] NOT RELEASED YET
+### UI
+* Support for _klines_ subscription in _My Streams_ view
+
 ## [v1.7.3]
 ### Gateway
 * Fix an error when doing klines subscriptions through REST API

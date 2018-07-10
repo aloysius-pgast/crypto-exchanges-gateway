@@ -479,18 +479,28 @@ getSessionSubscriptions(sid)
     return this._sendRequest('get', url);
 }
 
-addSessionSubscription(sid, exchange, type, pair)
+addSessionSubscription(sid, exchange, type, pair, klinesInterval)
 {
     let path = `/sessions/${sid}/subscriptions/${exchange}/${type}/${pair}`;
+    let params = {};
+    if ('klines' == type)
+    {
+        params.interval = klinesInterval;
+    }
     let url = this._getUrl(path);
-    return this._sendRequest('post', url);
+    return this._sendRequest('post', url, params);
 }
 
-deleteSessionSubscription(sid, exchange, type, pair)
+deleteSessionSubscription(sid, exchange, type, pair, klinesInterval)
 {
     let path = `/sessions/${sid}/subscriptions/${exchange}/${type}/${pair}`;
+    let params = {};
+    if ('klines' == type)
+    {
+        params.interval = klinesInterval;
+    }
     let url = this._getUrl(path);
-    return this._sendRequest('delete', url);
+    return this._sendRequest('delete', url, params);
 }
 
 //-- Portfolio

@@ -12,6 +12,8 @@ const getTypeName = (type) => {
             return 'Order Book';
         case 'trades':
             return 'Trades';
+        case 'klines':
+            return 'Klines';
     }
 }
 
@@ -178,12 +180,17 @@ render()
               <tbody>
                 {
                   _.map(this.state.isEditing.session.subscriptions).map((item, index) => {
+                    let pair = item.pair;
+                    if ('klines' == item.type)
+                    {
+                        pair = `${pair} (${item.klinesInterval})`;
+                    }
                     item.sid = this.state.isEditing.session.sid;
                     let key = `${item.sid}-${item.exchange}-${item.type}-${item.timestamp}`  ;
                     return <tr key={key}>
                         <td>{item.exchangeName}</td>
                         <td>{getTypeName(item.type)}</td>
-                        <td>{item.pair}</td>
+                        <td>{pair}</td>
                         <td>{dateTimeHelper.formatDateTime(item.timestamp * 1000)}</td>
                         <td style={{width:'1.2rem'}}>{deleteButton(item)}</td>
                     </tr>
