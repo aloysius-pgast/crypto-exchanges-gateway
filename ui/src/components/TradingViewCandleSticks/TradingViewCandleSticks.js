@@ -2,13 +2,86 @@ import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
 import tradingViewHelper from '../../lib/TradingViewHelper';
 
+const mapInterval = (interval) => {
+    let matches = interval.match(/^([0-9]+)([mhdw])$/);
+    if (null === matches)
+    {
+        return {klinesInterval:5,klinesPeriod:'3d'};
+    }
+    let klinesPeriod;
+    switch (matches[2])
+    {
+        case 'm':
+            klinesPeriod = '1d';
+            switch (matches[1])
+            {
+                case '1':
+                case '3':
+                case '5':
+                    klinesPeriod = '1d';
+                    break;
+                case '15':
+                    klinesPeriod = '3d';
+                    break;
+                case '30':
+                    klinesPeriod = '7d'
+                    break;
+            }
+            return {
+                klinesInterval:matches[1],
+                klinesPeriod:klinesPeriod
+            };
+        case 'h':
+            klinesPeriod = '15d';
+            switch (matches[1])
+            {
+                case '1':
+                    klinesPeriod = '15d';
+                    break;
+                case '2':
+                    klinesPeriod = '30d';
+                    break;
+                case '4':
+                    klinesPeriod = '60d';
+                    break;
+                case '6':
+                    klinesPeriod = '90d';
+                    break;
+            }
+            return {
+                klinesInterval:60 * matches[1],
+                klinesPeriod:klinesPeriod
+            };
+        case 'd':
+            klinesPeriod = '365d';
+            return {
+                klinesInterval:'D',
+                klinesPeriod:klinesPeriod
+            };
+        case 'w':
+            klinesPeriod = '365d';
+            return {
+                klinesInterval:'W',
+                klinesPeriod:klinesPeriod
+            };
+    }
+}
+
+const getRangeFromInterval = (interval) => {
+
+}
+
 class TradingViewCandleSticks extends Component {
 
 constructor(props) {
     super(props);
     this._isMounted = false;
+    let klinesInterval = undefined === this.props.klinesInterval ? '5m' : this.props.klinesInterval;
+    let obj = mapInterval(klinesInterval);
     this.state = {
-        pair:undefined === this.props.pair ? null : this.props.pair
+        pair:undefined === this.props.pair ? null : this.props.pair,
+        klinesInterval:obj.klinesInterval,
+        klinesPeriod:obj.klinesPeriod
     }
     this._parentNode = null;
     this._containerId = "csc_" + ((1 + Math.random()) * 1048576 | 0).toString(16).substring(1);
@@ -30,8 +103,8 @@ _loadChart()
     new TradingView.widget({
       "autosize": true,
       "symbol": tradingViewHelper.getChartId(this.props.exchange, this.state.pair),
-      "interval": "5",
-      "range": "3d",
+      "interval": this.state.klinesInterval,
+      "range": this.state.klinesPeriod,
       "timezone": timezone,
       "theme": "Dark",
       "style": "1",

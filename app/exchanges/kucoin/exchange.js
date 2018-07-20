@@ -106,13 +106,14 @@ async _getOpenOrdersForPair(pair)
 
 /**
  * Retrieve closed orders for a single pair
-
+ *
  * @param {string} pair pair to retrieve closed orders for
  * @param {boolean} completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
  * @return {Promise} Promise which will resolve to an object such as below
  */
 async _getClosedOrdersForPair(pair, completeHistory)
 {
+    // are we sure that it's not possible to have entries returned by fetchClosedOrders when an order is partially filled ?
     let list = {};
     let page = 1;
     while (true)
@@ -121,19 +122,24 @@ async _getClosedOrdersForPair(pair, completeHistory)
         let params = {page:page,limit:CLOSED_ORDERS_LIMIT_PER_ITER};
         try
         {
-            data = await this._client.getClosedOrdersForPair(pair, params);
+            data = await this._client.getClosedOrdersForPair(pair, params, true);
         }
         catch (e)
         {
             throw e;
         }
-        let count = 0;
         _.forEach(data.custom, (order) => {
-            list[order.orderNumber] = order;
-            ++count;
+            if (undefined === list[order.orderNumber])
+            {
+                list[order.orderNumber] = order;
+            }
+            else
+            {
+                this._mergeOrder(order, list[order.orderNumber]);
+            }
         });
         // stop if we received less result than requested
-        if (count < params.limit)
+        if (data.ccxt.length < params.limit)
         {
             break;
         }
@@ -143,11 +149,71 @@ async _getClosedOrdersForPair(pair, completeHistory)
         }
         ++page;
     }
-    // update cached orders
+    // finalize orders & update cached orders
     _.forEach(list, (order, orderNumber) => {
+        // compute actual rate
+        if (!order.quantity.eq(0))
+        {
+            order.actualRate = parseFloat(order.actualPrice.div(order.quantity).toFixed(8));
+            if (null !== order.fees)
+            {
+                let splittedPair = order.pair.split('-');
+                // only compute order.finalPrice & order.finalRate if fees.currency != from baseCurrency (otherwise use order.actualPrice & order.actualRate)
+                if (splittedPair[0] != order.fees.currency)
+                {
+                    order.finalPrice = order.actualPrice;
+                    order.finalRate = order.actualRate;
+                }
+                else
+                {
+                    if ('buy' == order.orderType)
+                    {
+                        order.finalPrice =  order.actualPrice.plus(order.fees.amount);
+                    }
+                    else
+                    {
+                        order.finalPrice =  order.actualPrice.minus(order.fees.amount);
+                    }
+                    order.finalRate = order.finalPrice.div(order.quantity);
+                }
+                order.fees.amount = parseFloat(order.fees.amount.toFixed(8));
+                order.finalPrice = parseFloat(order.finalPrice.toFixed(8));
+                order.finalRate = parseFloat(order.finalRate.toFixed(8));
+            }
+            order.quantity = parseFloat(order.quantity.toFixed(8));
+            order.actualPrice = parseFloat(order.actualPrice.toFixed(8));
+        }
         this._cacheOrder(orderNumber, order.orderType, order.pair, 'closed');
     });
     return list;
+}
+
+/**
+ * Merges one order into another
+ *
+ * @param {object} order order to merge
+ * @param {object} into destination order
+ */
+_mergeOrder(order, into)
+{
+    // update closedTimestamp
+    if (order.closedTimestamp > into.closedTimestamp)
+    {
+        into.closedTimestamp = order.closedTimestamp;
+    }
+    // update quantity & actualPrice
+    into.quantity = into.quantity.plus(order.quantity);
+    into.actualPrice = into.actualPrice.plus(order.actualPrice);
+    // update fees
+    if (null !== order.fees)
+    {
+        // initialize fees if needed
+        if (null === into.fees)
+        {
+            into.fees = {amount:new Big(0), currency:order.fees.currency};
+        }
+        into.fees.amount = into.fees.amount.plus(order.fees.amount);
+    }
 }
 
 /**
