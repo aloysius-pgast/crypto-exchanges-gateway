@@ -158,6 +158,15 @@ Check [documentation in _doc_ directory](doc/config.adoc) for detailed informati
 node gateway.js
 ```
 
+* Build UI
+
+If you want to use the UI, follow these steps to build the UI before starting the gateway:
+
+```
+cd ui
+npm install && ./rebuild-ui
+```
+
 * Check which exchanges are enabled
 
 Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON content such as below :
