@@ -17,7 +17,7 @@ constructor(ccxtExchangeId, ccxtExchangeOpt)
 /**
  * Extract actual rate from ccxt data
  *
- * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
  * @return {float}
  */
 getActualRate(ccxtData)
@@ -36,7 +36,7 @@ getActualRate(ccxtData)
 /**
  * Extract actual price from ccxt data
  *
- * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
  * @return {float}
  */
 getActualPrice(ccxtData)

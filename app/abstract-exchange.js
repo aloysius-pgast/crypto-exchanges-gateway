@@ -1490,9 +1490,20 @@ async getKlines(pair, opt)
         {
             data.shift();
         }
+        // we got less entries than expected => check last entry
+        // we need to do this because there might be missing entries after exchange outage (Binance for example)
         if (data.length < MAX_KLINES_ENTRIES_PER_ITER)
         {
-            stop = true;
+            if (0 != data.length)
+            {
+                let last = data[data.length - 1];
+                // consider we're done is last kline has at least toTimestamp - interval
+                let minTimestamp = toTimestamp - klinesIntervalsMapping[interval];
+                if (last.timestamp >= minTimestamp)
+                {
+                    stop = true;
+                }
+            }
         }
         // no more data
         if (0 == data.length)

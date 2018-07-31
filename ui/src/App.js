@@ -50,6 +50,7 @@ _addExchangeRoutes(obj)
         let path = '/exchanges/' + obj.id + '/prices';
         routeRegistry.registerExchangeRoute(path, obj.id, 'prices', true);
         path += '/:pair?';
+        path += '/:interval?';
         this._routes.push({
             path:path,
             exact:true,

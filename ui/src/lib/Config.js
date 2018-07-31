@@ -8,7 +8,7 @@ constructor()
 {
     let restEndpoint = window.location.protocol + '://' + window.location.hostname + ':' + window.location.port + '/';
     let wsEndpoint;
-    if ('http' ==  window.location.protocol)
+    if ('http:' ==  window.location.protocol)
     {
         wsEndpoint = 'ws://' + window.location.hostname + ':8001/';
     }

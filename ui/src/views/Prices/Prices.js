@@ -153,6 +153,13 @@ constructor(props) {
        klinesIntervals = exchangeInstance.features['klines'].intervals;
        klinesInterval = exchangeInstance.features['klines'].defaultInterval;
    }
+   if (undefined !== this.props.match.params.interval)
+   {
+       if (-1 != klinesIntervals.indexOf(this.props.match.params.interval))
+       {
+           klinesInterval = this.props.match.params.interval;
+       }
+   }
 
    this.state = {
        exchange:this.props.data.exchange,
@@ -242,6 +249,13 @@ componentWillReceiveProps(nextProps)
     {
         klinesIntervals = exchangeInstance.features['klines'].intervals;
         klinesInterval = exchangeInstance.features['klines'].defaultInterval;
+        if (undefined !== nextProps.match.params.interval)
+        {
+            if (-1 != klinesIntervals.indexOf(nextProps.match.params.interval))
+            {
+                klinesInterval = nextProps.match.params.interval;
+            }
+        }
 
         // same exchange ?
         if (exchangeId === this.state.exchangeId)
@@ -300,7 +314,7 @@ render() {
                 <div className="animated fadeIn" style={{width:'92%'}}>
                   <br/>
                   <h6>CHART</h6>
-                  <TradindViewCandleSticks exchange={this.state.exchangeType} pair={this.state.pair}/>
+                  <TradindViewCandleSticks exchange={this.state.exchangeType} pair={this.state.pair} klinesInterval={this.state.klinesInterval}/>
                 </div>
             )
         }

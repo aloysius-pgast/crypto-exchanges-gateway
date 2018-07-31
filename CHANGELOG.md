@@ -1,5 +1,13 @@
 # Change Log
 
+## [v1.7.4]
+### Gateway
+* Fix closed orders retrieval for _Kucoin_ (trades needed to be merged)
+* Fix klines retrieval to handle exchanges outages (in such case some klines entries might be missing)
+### UI
+* Support for _klines_ subscriptions in _My Streams_ view
+* Klines interval can be defined in url when opening _Prices_ view (ex: _/#/exchanges/binance/prices/BTC-NEO/5m_)
+
 ## [v1.7.3]
 ### Gateway
 * Fix an error when doing klines subscriptions through REST API

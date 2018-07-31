@@ -160,11 +160,11 @@ node gateway.js
 
 * Build UI
 
-If you want to use the UI, follow these steps to build the UI prior to starting the gateway:
+If you want to use the UI, follow these steps to build the UI before starting the gateway:
 
 ```
 cd ui
-./rebuild-ui
+npm install && ./rebuild-ui
 ```
 
 * Check which exchanges are enabled

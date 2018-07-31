@@ -28,6 +28,8 @@ const getTypeName = (type) => {
             return 'Order Books';
         case 'trades':
             return 'Trades';
+        case 'klines':
+            return 'Klines';
     }
 }
 
@@ -40,6 +42,8 @@ const getType = (feature) => {
             return 'orderBooks';
         case 'wsTrades':
             return 'trades';
+        case 'wsKlines':
+            return 'klines';
     }
 }
 
@@ -58,6 +62,7 @@ constructor(props) {
        exchange:'',
        type:'',
        pair:'',
+       klinesInterval:'',
        pairFilter:'',
        filteredPairs:[],
        pairs:{loaded:false, isLoading:false, loadedTimestamp:0, err:null, data:null},
@@ -67,9 +72,14 @@ constructor(props) {
    };
    this._exchanges = {};
    this._exchangesNames = [];
-   let filteredFeatures = ['wsTickers', 'wsOrderBooks', 'wsTrades'];
+   let filteredFeatures = ['wsTickers', 'wsOrderBooks', 'wsTrades','wsKlines'];
    _.forEach(serviceRegistry.getExchanges(), (e, id) => {
-       let exchange = {id:id, name:e.name, types:[]};
+       let exchange = {id:id, name:e.name, types:[], klinesIntervals:[], defaultKlinesInterval:''};
+       if (e.features['wsKlines'].enabled)
+       {
+           exchange.klinesIntervals = e.features['wsKlines'].intervals;
+           exchange.defaultKlinesInterval = e.features['wsKlines'].defaultInterval;
+       }
        _.forEach(filteredFeatures, (feature) => {
            if (e.features[feature].enabled)
            {
@@ -185,13 +195,28 @@ _handleSetPairFilter(event)
 _handleSelectPair(event)
 {
     let pair = event.target.id;
-    this.setState({pairFilter:pair,filteredPairs:[],pair:pair});
+    this.setState((prevState, props) => {
+        let state = {isValid:true,pairFilter:pair,filteredPairs:[],pair:pair};
+        state.isAdding = prevState.isAdding;
+        state.isAdding.err = null;
+        return state;
+    });
 }
 
 _handleSelectExchange(event)
 {
-    let value = event.target.value;
-    this.setState({exchange:value, type:'', pair:'', pairFilter:'',filteredPairs:[], pairs:{loaded:false, isLoading:false, err:null, data:null}}, () => {
+    let exchange = event.target.value;
+    let klinesInterval = '';
+    if ('' != exchange)
+    {
+        klinesInterval = this._exchanges[exchange].defaultKlinesInterval;
+    }
+    this.setState((prevState, props) => {
+        let state = {isValid:true,exchange:exchange, type:'', pair:'', klinesInterval:klinesInterval, pairFilter:'',filteredPairs:[], pairs:{loaded:false, isLoading:false, err:null, data:null}};
+        state.isAdding = prevState.isAdding;
+        state.isAdding.err = null;
+        return state;
+    }, () => {
         if ('' != this.state.exchange)
         {
             this._loadPairs();
@@ -202,7 +227,23 @@ _handleSelectExchange(event)
 _handleSelectType(event)
 {
     let value = event.target.value;
-    this.setState({type:value});
+    this.setState((prevState, props) => {
+        let state = {isValid:true,type:value};
+        state.isAdding = prevState.isAdding;
+        state.isAdding.err = null;
+        return state;
+    });
+}
+
+_handleSelectKlinesInterval(event)
+{
+    let value = event.target.value;
+    this.setState((prevState, props) => {
+        let state = {isValid:true,klinesInterval:value};
+        state.isAdding = prevState.isAdding;
+        state.isAdding.err = null;
+        return state;
+    });
 }
 
 _handleCancel(event)
@@ -218,6 +259,7 @@ _handleAdd()
     let item = {
         sid:this.state.isEditing.sid,
         exchange:this.state.exchange,
+        klinesInterval:this.state.klinesInterval,
         type:this.state.type,
         pair:this.state.pair,
     }
@@ -317,6 +359,14 @@ render()
         return (<option key="choose" value="">Choose</option>)
     }
 
+    const chooseKlinesInterval = () => {
+        if ('' != this.state.klinesInterval)
+        {
+            return null;
+        }
+        return (<option key="choose" value="">Choose</option>)
+    }
+
     const isLoading = () => {
         if (!this.state.pairs.isLoading)
         {
@@ -359,9 +409,11 @@ render()
 
     let exchange = this.state.exchange;
     let types = [];
+    let klinesIntervals = [];
     if ('' != this.state.exchange)
     {
         types = this._exchanges[this.state.exchange].types;
+        klinesIntervals = this._exchanges[this.state.exchange].klinesIntervals;
     }
 
     return (
@@ -410,6 +462,24 @@ render()
                         </FormGroup>
                       </Col>
                     </Row>
+                    <Row style={{display:'' !== this.state.exchange && 'klines' == this.state.type ? '' : 'none'}}>
+                      <Col>
+                        <FormGroup>
+                          <Label htmlFor="type">I<small>NTERVAL</small>
+                          </Label>
+                          <InputGroup>
+                              <select disabled={this.state.isDisabled} className="custom-select" style={{backgroundColor:"white"}} onChange={this._handleSelectKlinesInterval.bind(this)} value={this.state.klinesInterval}>
+                                {chooseKlinesInterval()}
+                                {
+                                  _.map(klinesIntervals).map((interval, index) => {
+                                    return <option key={interval} value={interval}>{interval}</option>
+                                  })
+                                }
+                              </select>
+                          </InputGroup>
+                        </FormGroup>
+                      </Col>
+                    </Row>
                     <Row style={{display:'' !== this.state.exchange && (this.state.pairs.loaded || this.state.pairs.isLoading) ? '' : 'none'}}>
                       <Col>
                         <FormGroup>
@@ -444,7 +514,7 @@ render()
                   <CardFooter className="d-flex align-items-center justify-content-end">
                     <span className="" style={{display:this.state.waitAdd ? '' : 'none'}}><i className="fa fa-spinner fa-spin" style={{fontSize:'1.0rem'}}/></span>
                     <button type="button" style={{marginLeft:'10px'}} disabled={this.state.isDisabled} className="btn btn-secondary" onClick={this._handleCancel.bind(this)}>C<small>ANCEL</small></button>
-                    <button type="button" style={{marginLeft:'10px'}} disabled={this.state.isDisabled || this.state.limitReached || ('' == this.state.exchange || '' == this.state.type || '' == this.state.pair)} className="btn btn-secondary" onClick={this._handleAdd.bind(this)}>A<small>DD</small></button>
+                    <button type="button" style={{marginLeft:'10px'}} disabled={this.state.isDisabled || this.state.limitReached || ('' == this.state.exchange || '' == this.state.type || '' == this.state.pair) || ('klines' == this.state.type && '' == this.state.klinesInterval)} className="btn btn-secondary" onClick={this._handleAdd.bind(this)}>A<small>DD</small></button>
                   </CardFooter>
                 </Card>
               </Col>

@@ -1011,6 +1011,7 @@ formatOpenOrder(ccxtData)
 
  * @param {string} pair pair to retrieve closed orders for
  * @param {object} ccxtParams custom parameters (optional, might not be defined)
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
  * @return {ccxt:object[],custom:object}
  */
 /*
@@ -1039,7 +1040,7 @@ ccxt output for fetchClosedOrders
 ]
 
 */
-async getClosedOrdersForPair(pair, ccxtParams)
+async getClosedOrdersForPair(pair, ccxtParams, mergeTrades)
 {
     let ccxtPair = this._toCcxtPair(pair);
     let data;
@@ -1055,32 +1056,80 @@ async getClosedOrdersForPair(pair, ccxtParams)
         }
         throw e;
     }
-    return {ccxt:data,custom:this.formatClosedOrders(data)};
+    return {ccxt:data,custom:this.formatClosedOrders(data, mergeTrades)};
 }
 
 /**
  * Formats a list of open order returned by ccxt
  *
+ * NB: in case mergeTrades is true, following properties will be Big objects (quantity, actualPrice, fees.amount)
+ *
  * @param {object[]} ccxtData list of open orders returned by ccxt fetchClosedOrders
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
  * @return {object}
  */
-formatClosedOrders(ccxtData)
+formatClosedOrders(ccxtData, mergeTrades)
 {
     let result = {};
     _.forEach(ccxtData, (e) => {
-        let order = this.formatClosedOrder(e);
-        result[order.orderNumber] = order;
+        let order = this.formatClosedOrder(e, !mergeTrades);
+        if (undefined === result[order.orderNumber])
+        {
+            if (mergeTrades)
+            {
+                order.quantity = new Big(order.quantity);
+                order.actualPrice = new Big(order.actualPrice);
+                if (null !== order.fees)
+                {
+                    order.fees.amount = new Big(order.fees.amount);
+                }
+            }
+            result[order.orderNumber] = order;
+        }
+        else
+        {
+            this._mergeOrder(order, result[order.orderNumber]);
+        }
     });
     return result;
 }
 
 /**
+ * Merges one order into another. This will be called automatically when exchange API does not return orders but multiple trades for the same order
+ *
+ * @param {object} order order to merge
+ * @param {object} into destination order
+ */
+_mergeOrder(order, into)
+{
+    // update closedTimestamp
+    if (order.closedTimestamp > into.closedTimestamp)
+    {
+        into.closedTimestamp = order.closedTimestamp;
+    }
+    // update quantity & actualPrice
+    into.quantity = into.quantity.plus(order.quantity);
+    into.actualPrice = into.actualPrice.plus(order.actualPrice);
+    // update fees
+    if (null !== order.fees)
+    {
+        // initialize fees if needed
+        if (null === into.fees)
+        {
+            into.fees = {amount:new Big(0), currency:order.fees.currency};
+        }
+        into.fees.amount = into.fees.amount.plus(order.fees.amount);
+    }
+}
+
+/**
  * Formats a single open order returned by ccxt
  *
- * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
+ * @param {boolean} computeFinalRate whether or not final rate should be computed (will be false if exchange API does not return orders but multiple trades for the same order)
  * @return {object}
  */
-formatClosedOrder(ccxtData)
+formatClosedOrder(ccxtData, computeFinalRate)
 {
     let splittedPair = ccxtData.symbol.split('/');
     let order = {
@@ -1109,25 +1158,29 @@ formatClosedOrder(ccxtData)
                 amount:ccxtData.fee.cost,
                 currency:ccxtData.fee.currency
             }
-            // only compute order.finalPrice & order.finalRate if fees.currency != from baseCurrency (otherwise use order.actualPrice & order.actualRate)
-            if (splittedPair[1] != order.fees.currency)
+            // if we're not supposed to compute final rate, don't do it
+            if (computeFinalRate)
             {
-                order.finalPrice = order.actualPrice;
-                order.finalRate = order.actualRate;
-            }
-            else
-            {
-                let finalPrice;
-                if ('buy' == order.orderType)
+                // only compute order.finalPrice & order.finalRate if fees.currency != from baseCurrency (otherwise use order.actualPrice & order.actualRate)
+                if (splittedPair[1] != order.fees.currency)
                 {
-                    finalPrice =  new Big(order.actualPrice).plus(order.fees.amount);
+                    order.finalPrice = order.actualPrice;
+                    order.finalRate = order.actualRate;
                 }
                 else
                 {
-                    finalPrice =  new Big(order.actualPrice).minus(order.fees.amount);
+                    let finalPrice;
+                    if ('buy' == order.orderType)
+                    {
+                        finalPrice =  new Big(order.actualPrice).plus(order.fees.amount);
+                    }
+                    else
+                    {
+                        finalPrice =  new Big(order.actualPrice).minus(order.fees.amount);
+                    }
+                    order.finalPrice = parseFloat(finalPrice.toFixed(8));
+                    order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
                 }
-                order.finalPrice = parseFloat(finalPrice.toFixed(8));
-                order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
             }
         }
     }
@@ -1137,7 +1190,7 @@ formatClosedOrder(ccxtData)
 /**
  * Extract actual rate from ccxt data
  *
- * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
  * @return {float}
  */
 getActualRate(ccxtData)
@@ -1152,7 +1205,7 @@ getActualRate(ccxtData)
 /**
  * Extract actual price from ccxt data
  *
- * @param {object} ccxtData single order entry returned by ccxt fetchOpenOrders
+ * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
  * @return {float}
  */
 getActualPrice(ccxtData)

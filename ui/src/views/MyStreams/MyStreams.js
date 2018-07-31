@@ -119,11 +119,11 @@ _handleCheckSubscription(item)
         {
             return;
         }
-        if (item.type != s.type)
+        if (item.pair != s.pair)
         {
             return;
         }
-        if (item.pair != s.pair)
+        if (item.type != s.type || ('klines' == item.type && item.klinesInterval != s.klinesInterval))
         {
             return;
         }
@@ -136,7 +136,7 @@ _handleCheckSubscription(item)
 _handleAddSubscription(item)
 {
     this.setState({addingSubscription:{enabled:true, item:item, err:null}}, () => {
-        restClient.addSessionSubscription(item.sid, item.exchange, item.type, item.pair).then(() => {
+        restClient.addSessionSubscription(item.sid, item.exchange, item.type, item.pair, item.klinesInterval).then(() => {
             if (!this._isMounted)
             {
                 return;
@@ -168,7 +168,7 @@ _handleAddSubscription(item)
 _handleDeleteSubscription(item)
 {
     this.setState({deletingSubscription:{enabled:true, item:item, err:null}}, () => {
-        restClient.deleteSessionSubscription(item.sid, item.exchange, item.type, item.pair).then(() => {
+        restClient.deleteSessionSubscription(item.sid, item.exchange, item.type, item.pair, item.klinesInterval).then(() => {
             if (!this._isMounted)
             {
                 return;
@@ -208,7 +208,7 @@ _loadSessions(isRefreshing, cb)
                 return;
             }
             let list = {};
-            let filteredSubscriptions = ['tickers', 'orderBooks', 'trades'];
+            let filteredSubscriptions = ['tickers', 'orderBooks', 'trades', 'klines'];
             let substrIndex = 'mystream.'.length;
             _.forEach(data, (session, sid) => {
                 let entry = {sid:sid, creationTimestamp:session.creationTimestamp, name:sid.substr(substrIndex), subscriptions:[]};
@@ -218,13 +218,29 @@ _loadSessions(isRefreshing, cb)
                         {
                             let exchangeName = serviceRegistry.getExchangeName(exchange);
                             _.forEach(list[type].pairs, (e, pair) => {
-                                entry.subscriptions.push({
-                                    exchange:exchange,
-                                    exchangeName:exchangeName,
-                                    type:type,
-                                    pair:pair,
-                                    timestamp:e.timestamp
-                                });
+                                if ('klines' != type)
+                                {
+                                    entry.subscriptions.push({
+                                        exchange:exchange,
+                                        exchangeName:exchangeName,
+                                        type:type,
+                                        pair:pair,
+                                        timestamp:e.timestamp
+                                    });
+                                }
+                                else
+                                {
+                                    _.forEach(e, (obj, interval) => {
+                                        entry.subscriptions.push({
+                                            exchange:exchange,
+                                            exchangeName:exchangeName,
+                                            type:type,
+                                            pair:pair,
+                                            klinesInterval:interval,
+                                            timestamp:obj.timestamp
+                                        });
+                                    });
+                                }
                             });
                         }
                     });

@@ -71,6 +71,7 @@ configPath = 'custom_config/config.json';
 configFile = path.join(__dirname, configPath);
 if (fs.existsSync(configFile))
 {
+    hasCustomConfig = true;
     let customConfig;
     try
     {

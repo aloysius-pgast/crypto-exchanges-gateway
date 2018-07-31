@@ -12,7 +12,6 @@
     <script src="lib/vendor/jsonFormatter.js"></script>
     <script language="javascript">
 Zepto(function($){
-
     var streamName = window.location.hash.substr(1);
     if ('' == streamName)
     {
@@ -45,6 +44,7 @@ Zepto(function($){
             'orderBook':{type:'orderBook','name':'Order Book','inspect':false},
             'orderBookUpdate':{type:'orderBook','name':'Order Book','inspect':false},
             'trades':{type:'trades','name':'Trades','inspect':false},
+            'kline':{type:'kline','name':'Kline','inspect':false},
         }
         var subscriptionsTable = $('#subscriptions-table');
         $('#inspect-all').on('click', function(){
@@ -122,10 +122,15 @@ Zepto(function($){
                 {
                     checked = ' checked';
                 }
+                var pair = subscription.pair;
+                if (undefined !== subscription.klinesInterval)
+                {
+                    pair = sprintf('%s (%s)', subscription.pair, subscription.klinesInterval);
+                }
                 var tr = $(document.createElement('tr'));
                 tr.append(sprintf('<td>%s</td>', subscription.exchange));
                 tr.append(sprintf('<td>%s</td>', subscription.type));
-                tr.append(sprintf('<td>%s</td>', subscription.pair));
+                tr.append(sprintf('<td>%s</td>', pair));
                 tr.append(sprintf('<td>%s</td>', subscription.count));
                 tr.append(sprintf('<td><input subscription="%s" type="checkbox"%s/></td>', subscriptions.list[i], checked));
                 subscriptionsTable.append(tr);
@@ -212,17 +217,26 @@ Zepto(function($){
                     return;
                 }
                 ++counter;
-                let type = subscriptionTypes[obj.n].type;
-                let subscriptionId = sprintf('%s.%s.%s', obj.d.exchange, type, obj.d.pair);
+                var type = subscriptionTypes[obj.n].type;
+                var subscriptionId = sprintf('%s.%s.%s', obj.d.exchange, type, obj.d.pair);
+                if ('kline' == type)
+                {
+                    subscriptionId += sprintf('.%s', obj.d.interval);
+                }
                 if (undefined === subscriptions.byId[subscriptionId])
                 {
-                    subscriptions.byId[subscriptionId] = {
+                    var subscription = {
                         exchange:obj.d.exchange,
                         type:subscriptionTypes[obj.n].name,
                         pair:obj.d.pair,
                         inspect:inspectAll,
                         count:0
                     };
+                    if ('kline' == type)
+                    {
+                        subscription.klinesInterval = obj.d.interval;
+                    }
+                    subscriptions.byId[subscriptionId] = subscription;
                     subscriptions.list.push(subscriptionId);
                 }
                 ++subscriptions.byId[subscriptionId].count;
