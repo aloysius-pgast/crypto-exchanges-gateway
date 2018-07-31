@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.4] NOT RELEASED YET
+## [v1.7.4]
 ### Gateway
 * Fix closed orders retrieval for _Kucoin_ (trades needed to be merged)
 * Fix klines retrieval to handle exchanges outages (in such case some klines entries might be missing)
