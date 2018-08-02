@@ -5,4 +5,9 @@ if [ "$DOCKER_TAG" == "rpi-latest" ] || [ "$DOCKER_TAG" == "rpi-dev" ]
 then
     DOCKERFILE=Dockerfile-rpi-crossbuild
 fi
+# if a docker file was provided, use it
+if ! [ -z $DOCKERFILE_PATH ]
+then
+    DOCKERFILE=`basename $DOCKERFILE_PATH`
+fi
 docker build -f $DOCKERFILE --force-rm=true --rm=true --build-arg GIT_BRANCH=$GIT_BRANCH -t $IMAGE_NAME .
