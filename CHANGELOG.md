@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.5]
+### Gateway
+* Handle changes in OKex WS API (data is now returned compressed using deflate)
+
 ## [v1.7.4]
 ### Gateway
 * Fix closed orders retrieval for _Kucoin_ (trades needed to be merged)

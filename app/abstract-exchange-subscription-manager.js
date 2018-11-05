@@ -9,12 +9,13 @@ const AbstractExchangeClass = require('./abstract-exchange');
 /**
  * Class which handles subscriptions to a single exchange
  *
- * It can emit following events (some events might not be available for all exchanges):
+ * It can emit following events (some events might be emulated using REST API if not available natively over websocket):
  *
  * - ticker (ticker update for a single pair)
  * - orderBook (full order book for a single pair)
  * - orderBookUpdate (order book update for a single pair)
  * - trades (new trades for a single pair)
+ * - kline (new kline for a single pair)
  */
 
 // how often in ms should we retrieve tickers
