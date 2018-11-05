@@ -3,6 +3,7 @@ const _ = require('lodash');
 const debug = require('debug')('CEG:ExchangeStreamClient:OKEx');
 const logger = require('winston');
 const Big = require('big.js');
+const zlib = require('zlib');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
 
 const WS_URI = 'wss://real.okex.com:10441/websocket';
@@ -129,48 +130,76 @@ getUnsubscribeMessage(channel)
  */
 _processMessage(message)
 {
-    let data;
-    try
-    {
-        data = JSON.parse(message);
-    }
-    // ignore invalid JSON
-    catch (e)
-    {
-        return;
-    }
-    try
-    {
-        _.forEach(data, (e) => {
-            // ignore since we won't be able to do anything with this
-            if (undefined === e.type || undefined === e.data)
+    /*
+        Data is sent using Deflate compression (see https://www.okex.com/docs/en/#WebSocketAPI)
+     */
+    this._decodeData(message, (jsonData) => {
+        let data;
+        try
+        {
+            data = JSON.parse(jsonData);
+        }
+        // ignore invalid JSON
+        catch (e)
+        {
+            return;
+        }
+        try
+        {
+            // convert result to an array if needed
+            if (!Array.isArray(data))
             {
-                return;
+                data = [data];
             }
-            if (undefined !== e.data.result)
-            {
-                return this._processResult(e);
-            }
-            let customType = this._getCustomChannelType(e.type);
-            if (null === customType)
-            {
-                return;
-            }
-            switch (customType)
-            {
-                case 'ticker':
-                    return this._processTickerData(e);
-                case 'orderBook':
-                    return this._processOrderBookData(e);
-                case 'trades':
-                    return this._processTradesData(e);
-            }
-        });
-    }
-    catch (e)
-    {
-        this._logError(e);
-    }
+            _.forEach(data, (e) => {
+                // ignore since we won't be able to do anything with this
+                if (undefined === e.type || undefined === e.data)
+                {
+                    return;
+                }
+                if (undefined !== e.data.result)
+                {
+                    return this._processResult(e);
+                }
+                let customType = this._getCustomChannelType(e.type);
+                if (null === customType)
+                {
+                    return;
+                }
+                switch (customType)
+                {
+                    case 'ticker':
+                        return this._processTickerData(e);
+                    case 'orderBook':
+                        return this._processOrderBookData(e);
+                    case 'trades':
+                        return this._processTradesData(e);
+                }
+            });
+        }
+        catch (e)
+        {
+            this._logError(e);
+        }
+    });
+}
+
+/**
+ * Decode data received from endpoint :
+ * 1) gzip inflate
+ */
+_decodeData(d, cb)
+{
+    // we need to use inflateRaw to avoid zlib error 'incorrect header check' (Z_DATA_ERROR)
+    zlib.inflateRaw(d, (err, str) => {
+        if (null !== err)
+        {
+            this._logger.warn("Could not decompress Okex gzip data : %s", err);
+            cb.call(this, undefined);
+            return;
+        }
+        cb.call(this, str);
+    });
 }
 
 /*
@@ -178,36 +207,32 @@ Process result after adding/removing a channel
 
 Example data (success)
 
-[
-    {
-        "base":"btc",
-        "binary":0,
-        "channel":"addChannel",
-        "data":{
-            "result":true
-        },
-        "product":"spot",
-        "quote":"usdt",
-        "type":"ticker"
-    }
-]
+{
+    "base":"btc",
+    "binary":0,
+    "channel":"addChannel",
+    "data":{
+        "result":true
+    },
+    "product":"spot",
+    "quote":"usdt",
+    "type":"ticker"
+}
 
 Example data (error)
 
-[
-    {
-        "binary":0,
-        "channel":"addChannel",
-        "data":{
-            "result":false,
-            "error_msg":"The require parameters cannot be empty.",
-            "error_code":10000
-        },
-        "product":"spot",
-        "quote":"usdt",
-        "type":"ticker"
-    }
-]
+{
+    "binary":0,
+    "channel":"addChannel",
+    "data":{
+        "result":false,
+        "error_msg":"The require parameters cannot be empty.",
+        "error_code":10000
+    },
+    "product":"spot",
+    "quote":"usdt",
+    "type":"ticker"
+}
 
 */
 _processResult(data)
@@ -224,36 +249,34 @@ Process tickers data and emit a 'ticker' event
 
 Example data
 
-[
-    {
-        "base":"btc",
-        "binary":0,
-        "data":{
-            "symbol":"btc_usdt",
-            "last":"6749.4851",
-            "productId":20,
-            "buy":"6745.2065",
-            "change":"-2.2201",
-            "sell":"6748.8549",
-            "outflows":"69471168.36789888",
-            "dayLow":"6558.0000",
-            "volume":"21055.0872",
-            "high":"6774.4826",
-            "createdDate":1529509433300,
-            "inflows":"70899426.01477612",
-            "low":"6558.0000",
-            "marketFrom":118,
-            "changePercentage":"-0.03%",
-            "currencyId":20,
-            "close":"6749.4851",
-            "dayHigh":"6774.4826",
-            "open":"6751.7052"
-        },
-        "product":"spot",
-        "quote":"usdt",
-        "type":"ticker"
-    }
-]
+{
+    "base":"btc",
+    "binary":0,
+    "data":{
+        "symbol":"btc_usdt",
+        "last":"6749.4851",
+        "productId":20,
+        "buy":"6745.2065",
+        "change":"-2.2201",
+        "sell":"6748.8549",
+        "outflows":"69471168.36789888",
+        "dayLow":"6558.0000",
+        "volume":"21055.0872",
+        "high":"6774.4826",
+        "createdDate":1529509433300,
+        "inflows":"70899426.01477612",
+        "low":"6558.0000",
+        "marketFrom":118,
+        "changePercentage":"-0.03%",
+        "currencyId":20,
+        "close":"6749.4851",
+        "dayHigh":"6774.4826",
+        "open":"6751.7052"
+    },
+    "product":"spot",
+    "quote":"usdt",
+    "type":"ticker"
+}
 
 */
 _processTickerData(data)
@@ -291,96 +314,92 @@ Process order books and emit 'orderBook'/'orderBookUpdate'
 
 Data example for full order book
 
-[
-    {
-        "base":"btc",
-        "binary":0,
-        "data":{
-            "init":true,
-            "asks":[
-                {
-                    "totalSize":"8.477",
-                    "price":"6745.65"
-                },
-                {
-                    "totalSize":"1",
-                    "price":"6747.0824"
-                },
-                {
-                    "totalSize":"1",
-                    "price":"6747.87"
-                }
-            ],
-            "bids":[
-                {
-                    "totalSize":"0.02",
-                    "price":"6743.8001"
-                },
-                {
-                    "totalSize":"0.15",
-                    "price":"6743.5845"
-                },
-                {
-                    "totalSize":"1",
-                    "price":"6742.6083"
-                },
-                {
-                    "totalSize":"1",
-                    "price":"6742.5099"
-                }
-            ]
-        },
-        "product":"spot",
-        "quote":"usdt",
-        "type":"depth"
-    }
-]
+{
+    "base":"btc",
+    "binary":0,
+    "data":{
+        "init":true,
+        "asks":[
+            {
+                "totalSize":"8.477",
+                "price":"6745.65"
+            },
+            {
+                "totalSize":"1",
+                "price":"6747.0824"
+            },
+            {
+                "totalSize":"1",
+                "price":"6747.87"
+            }
+        ],
+        "bids":[
+            {
+                "totalSize":"0.02",
+                "price":"6743.8001"
+            },
+            {
+                "totalSize":"0.15",
+                "price":"6743.5845"
+            },
+            {
+                "totalSize":"1",
+                "price":"6742.6083"
+            },
+            {
+                "totalSize":"1",
+                "price":"6742.5099"
+            }
+        ]
+    },
+    "product":"spot",
+    "quote":"usdt",
+    "type":"depth"
+}
 
 Data example for order book update (totalSize == 0 => removed from order book)
 
-[
-    {
-        "base":"btc",
-        "binary":0,
-        "data":{
-            "asks":[
-                {
-                    "totalSize":"0",
-                    "price":"7243.7302"
-                },
-                {
-                    "totalSize":"0",
-                    "price":"6793.27"
-                },
-                {
-                    "totalSize":"0",
-                    "price":"6791.14"
-                },
-                {
-                    "totalSize":"0.11",
-                    "price":"6762.154"
-                }
-            ],
-            "bids":[
-                {
-                    "totalSize":"0",
-                    "price":"6743.8001"
-                },
-                {
-                    "totalSize":"0",
-                    "price":"6741.4351"
-                },
-                {
-                    "totalSize":"0.27652928",
-                    "price":"6740.849"
-                }
-            ]
-        },
-        "product":"spot",
-        "quote":"usdt",
-        "type":"depth"
-    }
-]
+{
+    "base":"btc",
+    "binary":0,
+    "data":{
+        "asks":[
+            {
+                "totalSize":"0",
+                "price":"7243.7302"
+            },
+            {
+                "totalSize":"0",
+                "price":"6793.27"
+            },
+            {
+                "totalSize":"0",
+                "price":"6791.14"
+            },
+            {
+                "totalSize":"0.11",
+                "price":"6762.154"
+            }
+        ],
+        "bids":[
+            {
+                "totalSize":"0",
+                "price":"6743.8001"
+            },
+            {
+                "totalSize":"0",
+                "price":"6741.4351"
+            },
+            {
+                "totalSize":"0.27652928",
+                "price":"6740.849"
+            }
+        ]
+    },
+    "product":"spot",
+    "quote":"usdt",
+    "type":"depth"
+}
 
 */
 _processOrderBookData(data)
@@ -477,31 +496,29 @@ Process trades data and emit a 'trades' event
 
 Example data (side == 1 => buy, side == 2 => sell)
 
-[
-    {
-        "base":"btc",
-        "binary":0,
-        "data":[
-            {
-                "amount":"0.00100707",
-                "side":1,
-                "createdDate":1529509927173,
-                "price":"6742.92",
-                "id":407168620
-            },
-            {
-                "amount":"0.00408789",
-                "side":1,
-                "createdDate":1529509927247,
-                "price":"6742.92",
-                "id":407168625
-            }
-        ],
-        "product":"spot",
-        "quote":"usdt",
-        "type":"deal"
-    }
-]
+{
+    "base":"btc",
+    "binary":0,
+    "data":[
+        {
+            "amount":"0.00100707",
+            "side":1,
+            "createdDate":1529509927173,
+            "price":"6742.92",
+            "id":407168620
+        },
+        {
+            "amount":"0.00408789",
+            "side":1,
+            "createdDate":1529509927247,
+            "price":"6742.92",
+            "id":407168625
+        }
+    ],
+    "product":"spot",
+    "quote":"usdt",
+    "type":"deal"
+}
 */
 _processTradesData(data)
 {
