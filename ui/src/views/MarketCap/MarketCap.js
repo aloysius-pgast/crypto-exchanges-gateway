@@ -92,7 +92,7 @@ render()
         <br/>
         <div>
             Data provided by<br/>
-            <a target="_blank" href="https://coincodex.com/"><img src="img/coincodex.png"/></a>
+            <a target="_blank" href="https://coincodex.com/"><img width="125" src="img/coincodex.png"/></a>
         </div>
         <br/>
         <MarketCapSymbolChooser limit={limit} symbols={this.state.symbols.data} symbol={this.state.symbol} OnSelectSymbol={this._handleSelectSymbol}/>
