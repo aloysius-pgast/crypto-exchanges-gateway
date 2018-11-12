@@ -9,6 +9,9 @@ import PortfolioCurrencyChooser from '../../components/PortfolioCurrencyChooser'
 import PortfolioBalances from '../../components/PortfolioBalances';
 import PortfolioChart from '../../components/PortfolioChart';
 
+// list of fiat currencies
+const fiatCurrencies = ['BGN','CAD','BRL','HUF','DKK','JPY','ILS','TRY','RON','GBP','PHP','HRK','NOK','ZAR','MXN','AUD','USD','KRW','HKD','EUR','ISK','CZK','THB','MYR','NZD','PLN','CHF','SEK','CNY','SGD','INR','IDR','RUB'];
+
 class Portfolio extends Component
 {
 
@@ -253,7 +256,8 @@ render()
             classNames = 'animated fadeIn';
         }
         let precision = 4;
-        if ('USD' != this.state.balances.data.convertCurrency)
+        // not a fiat currency
+        if (-1 == fiatCurrencies.indexOf(this.state.balances.data.convertCurrency))
         {
             precision = 8;
         }
