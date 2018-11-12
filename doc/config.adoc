@@ -24,10 +24,11 @@ Below config will only give access to public API (since no key/secret combinatio
         "enabled":true
     },
     "logLevel":"warn",
-    "coinmarketcap":{
-        "enabled":true,
-        /* history is enabled by default */
-        "history":true
+    "marketCap":{
+        "enabled":true
+    },
+    "fxConverter":{
+        "enabled":true
     },
     "pushover":{
         "enabled":false,
@@ -195,18 +196,13 @@ Access will be restricted using the following :
             "allow":["145.26.47.14"]
         }
     },
-    /* CoinMarketCap configuration */
-    "coinmarketcap":{
+    /* MarketCap configuration */
+    "marketCap":{
         "enabled":true,
-        /* history is enabled by default */
-        "history":true,
-        /* rate limiting to comply with CoinMarketCap */
-        "throttle":{
-            "publicApi":{
-                /* one request every 2 seconds */
-                "minPeriod":2
-            }
-        }
+    },
+    /* fxConverter configuration */
+    "fxConverter":{
+        "enabled":true,
     },
     /* PushOver configuration */
     "pushover":{

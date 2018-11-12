@@ -8,12 +8,12 @@ const restClient = require('../../../lib/rest-client').getInstance();
 // the alert we want to create
 const ALERT_NAME = 'mocha-2af54305f183778d87de0c70c591fae4';
 
-const SUPPORTED_SERVICES = ['coinmarketcap'];
+const SUPPORTED_SERVICES = ['marketCap'];
 
 const EXCHANGE_FIELDS = ['last', 'buy', 'sell', 'high', 'low', 'volume', 'priceChangePercent'];
 
 const SERVICES_FIELDS = {
-    'coinmarketcap':['price_usd', 'price_btc', 'volume_24_usd', 'volume_24_btc', 'total_supply', 'circulating_supply', 'market_cap_usd', 'market_cap_btc', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d']
+    'marketCap':['price_usd', 'price_btc', 'volume_24_usd', 'circulating_supply', 'market_cap_usd', 'percent_change_1h', 'percent_change_1d', 'percent_change_7d']
 }
 
 let allSupportedFields = [];
@@ -244,11 +244,11 @@ MochaHelper.prepare(() => {
             });
         }, {name:ALERT_NAME, enabled:true, any:true, conditions:[]});
 
-        // condition with coinmarketcap while coinmarketcap is disabled
-        if (undefined === services.others['coinmarketcap'])
+        // condition with marketCap while marketCap is disabled
+        if (undefined === services.others['marketCap'])
         {
             MochaHelper.describe('POST', '/tickerMonitor', function(method, path, params){
-                it("it should fail with a 400 error (GatewayError.InvalidRequest.Unsupported.UnsupportedService) when using CoinMarketCap while it's disabled", (done) => {
+                it("it should fail with a 400 error (GatewayError.InvalidRequest.Unsupported.UnsupportedService) when using marketCap while it's disabled", (done) => {
                     restClient.makeRequest(method, path, params, true).then((result) => {
                         Assert.validateResult(result, undefined, {httpCode:400,errorType:'GatewayError.InvalidRequest.Unsupported.UnsupportedService'});
                         done();
@@ -263,7 +263,7 @@ MochaHelper.prepare(() => {
                 any:true,
                 conditions:[
                     {
-                        origin:{type:'service', id:'coinmarketcap'},
+                        origin:{type:'service', id:'marketCap'},
                         condition:{symbol:'BTC',field:'price_usd',operator:'gt',value:50000}
                     }
                 ]
@@ -624,10 +624,10 @@ MochaHelper.prepare(() => {
 
     }, (services) => {
         // tickerMonitor must be enabled and we must have one of the following services/exchanges enabled :
-        // - coinmarketcap
+        // - marketCap
         // - at least one exchange
         return MochaHelper.checkService('tickerMonitor') &&
-            (MochaHelper.checkService('coinmarketcap') || Object.keys(services.exchanges).length > 0);
+            (MochaHelper.checkService('marketCap') || Object.keys(services.exchanges).length > 0);
     });
 
 });

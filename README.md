@@ -103,7 +103,7 @@ See [documentation in _doc_ directory](doc/unitTests.adoc) for informations rega
 Have you ever wanted to receive an alert in case ALL of the following conditions are met :
 * NEO-USDT price in range [120, 135] on Binance
 * NEO-BTC price on Bittrex < 0.010
-* NEO price on CoinMarketCap > 125$
+* NEO price in MarketCap module > 125$
 
 Probably not ;) Anyway, you will now be able to define this kind of custom alerts. See [documentation in _doc_ directory](doc/tickerMonitor/index.adoc)
 
@@ -115,14 +115,13 @@ Probably not ;) Anyway, you will now be able to define this kind of custom alert
 
 ## Other services
 
-### Coin Market Cap
+### MarketCap
 
-[CoinMarketCap](https://coinmarketcap.com/) module supports :
+MarketCap module supports :
 
 * Tickers
-* History (history of USD prices)
 
-See [documentation in _doc_ directory](doc/coinmarketcap/index.adoc) for an overview of each API
+See [documentation in _doc_ directory](doc/marketCap/index.adoc) for an overview of each API
 
 ### Push Over
 
@@ -177,53 +176,39 @@ Open http://127.0.0.1:8000/exchanges/ in your browser. You should see JSON conte
 
 By default, only public API will be enabled. In order to access trading/private API, you need to update _config.json_ with appropriate _user_ and _secret_ provided by exchange (check [documentation in _doc_ directory](doc/config.adoc) )
 
-* Check BTC & ETH prices on CoinMarketCap
+* Check BTC & ETH prices using _MarketCap_ module
 
-Open http://127.0.0.1:8000/coinmarketcap/tickers?symbols=BTC,ETH in your browser. You should see JSON content such as below :
+Open http://127.0.0.1:8000/marketCap/tickers?symbols=BTC,ETH in your browser. You should see JSON content such as below :
 
 ```javascript
 [
     {
-        "name":"Bitcoin",
         "symbol":"BTC",
+        "name":"Bitcoin",
+        "circulating_supply":17372012,
+        "price_usd":6406.1049,
+        "percent_change_1h":-0.08,
+        "percent_change_1d":-0.08,
+        "percent_change_7d":-0.15,
+        "volume_24h_usd":3120534126.1266,
+        "lastUpdated":1542009997,
+        "market_cap_usd":111286930723.4185,
         "rank":1,
-        "circulating_supply":17040712,
-        "total_supply":17040712,
-        "max_supply":21000000,
-        "last_updated":1526661572,
-        "converted":{
-
-        },
-        "price_usd":8117.73,
-        "market_cap_usd":138331899024,
-        "volume_24h_usd":6104730000,
-        "percent_change_1h":0.08,
-        "percent_change_24h":-2.29,
-        "percent_change_7d":-5.63,
-        "price_btc":1,
-        "market_cap_btc":17040712,
-        "volume_24h_btc":752024.2727954737
+        "price_btc":1
     },
     {
-        "name":"Ethereum",
         "symbol":"ETH",
+        "name":"Ethereum",
+        "circulating_supply":103150460,
+        "price_usd":210.4854,
+        "percent_change_1h":-0.39,
+        "percent_change_1d":-0.39,
+        "percent_change_7d":-0.8,
+        "volume_24h_usd":1294093048.2094,
+        "lastUpdated":1542009997,
+        "market_cap_usd":21711669585.6914,
         "rank":2,
-        "circulating_supply":99514883,
-        "total_supply":99514883,
-        "max_supply":null,
-        "last_updated":1526661558,
-        "converted":{
-
-        },
-        "price_usd":678.931,
-        "market_cap_usd":67563739348,
-        "volume_24h_usd":2444350000,
-        "percent_change_1h":0.13,
-        "percent_change_24h":-3.28,
-        "percent_change_7d":-0.76,
-        "price_btc":0.083635573,
-        "market_cap_btc":8322984,
-        "volume_24h_btc":301112.5031258739
+        "price_btc":0.032857
     }
 ]
 ```
@@ -296,8 +281,7 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.auth.apikey : API Key used to protect access
 * cfg.ui.enabled : enable/disable UI (value should be set to _1_ to enable UI, _0_ to disable UI)
 * cfg.tickerMonitor.enabled : enable/disable Ticker Monitor module (value should be set to _1_ to enable Ticker Monitor, _0_ to disable Ticker Monitor) (default = _1_)
-* cfg.coinmarketcap.enabled : enable/disable CoinMarketCap module (value should be set to _1_ to enable CoinMarketCap module, _0_ to disable CoinMarketCap module) (default = _1_)
-* cfg.coinmarketcap.history : enable/disable CoinMarketCap history feature (value should be set to _1_ to enable CoinMarketCap history, _0_ to disable CoinMarketCap history) (will be ignored if CoinMarketCap is disabled) (default = _1_)
+* cfg.marketCap.enabled : enable/disable MarketCap module (value should be set to _1_ to enable MarketCap module, _0_ to disable MarketCap module) (default = _1_)
 * cfg.pushover.user : PushOver user key
 * cfg.pushover.token : PushOver token
 * cfg.exchanges.poloniex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import serviceRegistry from './ServiceRegistry';
 
 class RestClient
 {
@@ -437,6 +438,89 @@ getCoinMarketCapCurrencies()
                     list.push(c);
                 });
             });
+            return resolve(list.sort());
+        });
+    });
+}
+
+//-- MarketCap
+getMarketCapTickers(limit, symbols)
+{
+    let path = '/marketCap/tickers';
+    let params = {};
+    if (undefined !== symbols && 0 != symbols.length)
+    {
+        params.symbols = symbols;
+    }
+    else
+    {
+        if (undefined != limit)
+        {
+            params.limit = limit;
+        }
+    }
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url, params);
+}
+
+/**
+ * Retrieves the symbols supported by marketCap srvice
+ */
+getMarketCapSymbols()
+{
+    let path = '/marketCap/symbols';
+    let url = this._getUrl(path);
+    return this._sendRequest('get', url, {includeAliases:true});
+}
+
+/**
+ * Retrieves the list of all possible currencies which can be used for portfolio
+ */
+getPortfolioCurrencies()
+{
+    return new Promise((resolve, reject) => {
+        let list = [];
+        let arr = [];
+        let self = this;
+        // retrieve symbols
+        arr.push(new Promise((resolve, reject) => {
+            let path = '/marketCap/symbols';
+            let url = self._getUrl.call(self, path);
+            self._sendRequest.call(self, 'get', url, {includeAliases:true}).then(function(data){
+                return resolve({data:data,success:true});
+            }).catch (function(err){
+                return resolve({data:null,success:false,err:err});
+            });
+        }));
+        let service = serviceRegistry.getService('fxConverter');
+        if (null !== service)
+        {
+            // retrieve fiat currencies
+            arr.push(new Promise((resolve, reject) => {
+                let path = '/fxConverter/currencies';
+                let url = self._getUrl.call(self, path);
+                self._sendRequest.call(self, 'get', url).then(function(data){
+                    return resolve({data:data,success:true});
+                }).catch (function(err){
+                    return resolve({data:null,success:false,err:err});
+                });
+            }));
+        }
+        Promise.all(arr).then(function(values){
+            _.forEach(values, (entry) => {
+                if (!entry.success)
+                {
+                    return;
+                }
+                _.forEach(entry.data, (c) => {
+                    list.push(c);
+                });
+            });
+            // add USD if it's missing
+            if (-1 == list.indexOf('USD'))
+            {
+                list.push('USD');
+            }
             return resolve(list.sort());
         });
     });

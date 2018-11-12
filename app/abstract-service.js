@@ -13,8 +13,8 @@ class AbstractService
 {
 
 /**
- * @param {string} id service unique identifier (ex: coinmarketcap)
- * @param {string} name service name (ex: 'Coin Market Cap')
+ * @param {string} id service unique identifier (ex: marketCap)
+ * @param {string} name service name (ex: 'Market Cap')
  * @param {object} supportedFeatures dictionary of all supportedFeatures
  * @param {boolean} whether or not service is running in demo mode
  */

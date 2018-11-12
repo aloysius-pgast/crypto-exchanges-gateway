@@ -1,5 +1,7 @@
 = Currencies
 
+*Support for Coin Market Cap API will be removed around mid-december*
+
 [NOTE]
 ====
 Those routes will only be available if _coinmarketcap_ service is enabled

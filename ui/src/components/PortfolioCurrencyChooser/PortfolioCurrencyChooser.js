@@ -8,7 +8,7 @@ import {
 } from "reactstrap";
 import dataStore from '../../lib/DataStore';
 
-class CoinMarketCapCurrencyChooser extends Component
+class PortfolioCurrencyChooser extends Component
 {
 
 constructor(props)
@@ -189,4 +189,4 @@ render()
 
 }
 
-export default CoinMarketCapCurrencyChooser;
+export default PortfolioCurrencyChooser;

@@ -13,7 +13,8 @@ constructor()
 {
     // default config
     let cfg = {
-        enabled:true,
+        // disabled by default
+        enabled:false,
         history:true,
         throttle:{
             publicApi:{

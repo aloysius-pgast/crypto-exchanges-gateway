@@ -10,7 +10,7 @@ User interface provides following access to :
 * Creation of new orders
 * Balances
 * Market Overview (an overview of all your favourite pairs)
-* Coin Market Cap (top 20 currencies)
+* MarketCap (top 20 currencies)
 
 .Prices
 [caption="",link=img/tickers.png]
@@ -36,9 +36,9 @@ image::img/balances.png[My Balances,400]
 [caption="",link=img/marketOverview.png]
 image::img/marketOverview.png[Market Overview,400]
 
-.Coin Market Cap
-[caption="",link=img/coinMarketCap.png]
-image::img/coinMarketCap.png[Coin Market Cap,400]
+.MarketCap
+[caption="",link=img/marketCap.png]
+image::img/marketCap.png[MarketCap,400]
 
 == Installation
 

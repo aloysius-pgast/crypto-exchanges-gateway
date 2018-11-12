@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Big from 'big.js';
+import formatNumber from '../../lib/FormatNumber';
 import ComponentLoadedTimestamp from '../../components/ComponentLoadedTimestamp';
 
 class PortfolioBalances extends Component
@@ -74,9 +75,10 @@ render()
                   {
                       precision = 8;
                   }
+                  let priceStr = formatNumber.formatFloat(item.price, precision, {truncate:true});
                   return <tr key={index}>
                       <td>{item.currency}</td>
-                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{item.price.toFixed(precision)}</span></td>
+                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{priceStr}</span></td>
                       <td className="text-right">{item.pricePercent.toFixed(2)} %</td>
                       <td className="text-right">{item.volume.toFixed(8)}</td>
                   </tr>

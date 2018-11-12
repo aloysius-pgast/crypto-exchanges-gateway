@@ -1,6 +1,7 @@
 "use strict";
 const _ = require('lodash');
 const Big = require('big.js');
+const logger = require('winston');
 const Errors = require('../../errors');
 const serviceRegistry = require('../../service-registry');
 const PromiseHelper = require('../../promise-helper');
@@ -23,18 +24,23 @@ _.forEach(serviceRegistry.getExchanges(), (obj, id) => {
         }
     }
 });
-let coinmarketcap = serviceRegistry.getService('coinmarketcap');
-if (null !== coinmarketcap)
+let marketCap = serviceRegistry.getService('marketCap');
+if (null !== marketCap)
 {
-    coinmarketcap = coinmarketcap.instance;
+    marketCap = marketCap.instance;
 }
 
-//-- only enable route if we have exchanges with supported feature AND coinmarketcap
-if (null === coinmarketcap || _.isEmpty(exchanges))
+//-- only enable route if we have exchanges with supported feature AND marketCap
+if (null === marketCap || _.isEmpty(exchanges))
 {
     return;
 }
 
+let fxConverter = serviceRegistry.getService('fxConverter');
+if (null !== fxConverter)
+{
+    fxConverter = fxConverter.instance;
+}
 
 const logError = (e, method) => {
     Errors.logError(e, `portfolio|${method}`)
@@ -45,6 +51,16 @@ const logError = (e, method) => {
  * @param {string[]} convertTo used to convert result to some others symbols/currencies (optional)
  */
 app.get('/portfolio', (req, res) => {
+    getPortfolio(req, res).catch((e) => {
+        logError(e, 'getPortfolio');
+        let extError = new Errors.GatewayError.InternalError();
+        return Errors.sendHttpError(res, extError);
+    });
+});
+
+const getPortfolio = async (req, res) => {
+    let data;
+
     let filteredList = [];
     if (undefined !== req.query.exchanges && '' != req.query.exchanges)
     {
@@ -78,25 +94,48 @@ app.get('/portfolio', (req, res) => {
         // by default query all supported exchanges
         filteredList = Object.keys(exchanges);
     }
-    let convertTo = [];
+    const convertTo = {};
     if (undefined !== req.query.convertTo && '' != req.query.convertTo)
     {
+        const convertCurrencies = [];
         // support both array and comma-separated string
         if (Array.isArray(req.query.convertTo))
         {
             _.forEach(req.query.convertTo, (c) => {
-                convertTo.push(c);
+                convertCurrencies.push(c);
             });
         }
         else
         {
-            let arr = req.query.convertTo.split(',');
+            const arr = req.query.convertTo.split(',');
             _.forEach(arr, (c) => {
-                convertTo.push(c);
+                convertCurrencies.push(c);
             });
         }
+        convertCurrencies.forEach(async (c) => {
+            if ('USD' == c)
+            {
+                return;
+            }
+            if (null !== fxConverter)
+            {
+                if (await fxConverter.isValidCurrency(c))
+                {
+                    convertTo[c] = {currency:c, unknown:false, fiat:true, pair:`USD-${c}`};
+                    return;
+                }
+            }
+            if (await marketCap.isValidSymbol(c))
+            {
+                convertTo[c] = {currency:c, unknown:false, fiat:false};
+                return;
+            }
+            convertTo[c] = {currency:c, unknown:true};
+        });
     }
-    let arr = [];
+
+    //-- retrieve all balances
+    const arr = [];
     _.forEach(filteredList, (id) => {
         let p;
         if (exchanges[id].isDemo)
@@ -109,58 +148,94 @@ app.get('/portfolio', (req, res) => {
         }
         arr.push({promise:p, context:{exchange:id,api:'getBalances'}});
     });
-    let balances = {};
-    PromiseHelper.all(arr).then(function(data){
-        _.forEach(data, function (entry) {
-            // could not retrieve balances for this exchange
-            if (!entry.success)
+    const balances = {};
+    try
+    {
+        data = await PromiseHelper.all(arr);
+    }
+    catch (e)
+    {
+        return Errors.sendHttpError(res, e, 'portfolio');
+    }
+    _.forEach(data, (entry) => {
+        // could not retrieve balances for this exchange
+        if (!entry.success)
+        {
+            return;
+        }
+        _.forEach(entry.value, (e, currency) => {
+            if (undefined === balances[currency])
+            {
+                balances[currency] = {volume:0,price:0,pricePercent:0,convertedPrice:{},unknownPrice:true}
+            }
+            balances[currency].volume += e.total;
+        });
+    });
+
+    //-- retrieve tickers from marketCap
+    const balancesSymbols = Object.keys(balances);
+    const  symbols = [];
+    balancesSymbols.forEach((s) => {
+        symbols.push(s);
+    });
+    // add conversion symbols
+    _.forEach(convertTo, (c) => {
+        if (c.unknown || c.fiat)
+        {
+            return;
+        }
+        symbols.push(c.currency);
+    });
+    const marketCapSymbols = mapExchangeCurrenciesToMarketCapSymbols(symbols);
+    let opt = {symbols:marketCapSymbols};
+    // get data from marketCap
+    try
+    {
+        data = await marketCap.getTickers(opt);
+    }
+    catch (e)
+    {
+        return Errors.sendHttpError(res, e, 'portfolio');
+    }
+    const marketCapTickers = {};
+    data.forEach((t) => {
+        // ignore tickers we're not interested in
+        if (undefined === balances[t.symbol] && undefined === convertTo[t.symbol])
+        {
+            t.symbol = mapMarketCapSymbolToExchangeCurrency(t.symbol);
+            // ignore symbol which we're not interested in
+            if (undefined === balances[t.symbol] && undefined === convertTo[t.symbol])
             {
                 return;
             }
-            _.forEach(entry.value, (e, currency) => {
-                if (undefined === balances[currency])
-                {
-                    balances[currency] = {volume:0,price:0,pricePercent:0,convertedPrice:{},unknownPrice:true}
-                }
-                balances[currency].volume += e.total;
-            });
-        });
-        let symbols = mapExchangeCurrenciesToCoinMarketCapSymbol(Object.keys(balances));
-        let opt = {symbols:symbols};
-        // do we need to convert ?
-        if (0 != convertTo.length)
-        {
-            opt.convertTo = convertTo;
         }
-        // get data from coinmarketcap
-        coinmarketcap.getTickers(opt).then(function(data) {
-            let tickers = {};
-            _.forEach(data, (entry) => {
-                // ignore tickers without price
-                if (null === entry.price_usd)
-                {
-                    return;
-                }
-                // ignore tickers we're not interested in
-                if (undefined === balances[entry.symbol])
-                {
-                    entry.symbol = mapCoinMarketCapSymbolToExchangeCurrency(entry.symbol);
-                    if (undefined === balances[entry.symbol])
-                    {
-                        return;
-                    }
-                }
-                tickers[entry.symbol] = {'USD':entry.price_usd,'BTC':entry.price_btc};
-                _.forEach(entry.converted, (e, symbol) => {
-                    tickers[entry.symbol][symbol] = e.price;
-                });
-            });
-            return sendPortfolio(res, balances, tickers);
-        }).catch(function(err) {
-            return Errors.sendHttpError(res, err, 'portfolio');
-        });
+        marketCapTickers[t.symbol] = {price_usd:t.price_usd,price_btc:t.price_btc};
     });
-});
+
+    //-- retrieve rates from fxConverter
+    const fxPairs = [];
+    _.forEach(convertTo, (c) => {
+        if (c.unknown || !c.fiat)
+        {
+            return;
+        }
+        fxPairs.push(c.pair);
+    });
+    let fxRates = {};
+    if (0 != fxPairs.length)
+    {
+        try
+        {
+            fxRates = await fxConverter.getRates({pairs:fxPairs});
+        }
+        catch (e)
+        {
+            return Errors.sendHttpError(res, e, 'portfolio');
+        }
+    }
+
+    return sendPortfolio(res, balances, convertTo, marketCapTickers, fxRates);
+}
 
 /**
  * When exchange is in demo mode, only generate balances for symbols in the top 20
@@ -170,7 +245,7 @@ const getTop20Tickers = () => {
     if (null === top20TickersPromise)
     {
         top20TickersPromise = new Promise((resolve, reject) => {
-            coinmarketcap.getTickers({limit:20}).then((list) => {
+            marketCap.getTickers({limit:20}).then((list) => {
                 top20TickersPromise = null;
                 return resolve(list);
             }).catch((e) => {
@@ -181,6 +256,7 @@ const getTop20Tickers = () => {
     }
     return top20TickersPromise;
 }
+
 const getDemoBalances = async (exchange) => {
     let tickers = await getTop20Tickers();
     if (0 == tickers.length)
@@ -191,7 +267,13 @@ const getDemoBalances = async (exchange) => {
     return exchange.getBalances(currencies);
 }
 
-const mapExchangeCurrenciesToCoinMarketCapSymbol = (list) => {
+/**
+ * Converts a list of exchanges currencies to marketCap symbols
+ *
+ * @param {string[]} array of exchanges currencies
+ * @return {string[]} array of marketCap symbols
+ */
+const mapExchangeCurrenciesToMarketCapSymbols = (list) => {
     return _.map(list, (c) => {
         switch (c)
         {
@@ -204,8 +286,14 @@ const mapExchangeCurrenciesToCoinMarketCapSymbol = (list) => {
     });
 }
 
-const mapCoinMarketCapSymbolToExchangeCurrency = (symbol) => {
-    // try to map currency to coinmarketcap symbol
+/**
+ * Converts a marketCap symbol to an exchange symbol
+ *
+ * @param {string} marketCap symbol
+ * @return {string[]} exchange symbol
+ */
+const mapMarketCapSymbolToExchangeCurrency = (symbol) => {
+    // try to map currency to marketCap symbol
     switch (symbol)
     {
         case 'MIOTA':
@@ -216,46 +304,85 @@ const mapCoinMarketCapSymbolToExchangeCurrency = (symbol) => {
     return symbol;
 }
 
-const sendPortfolio = (res, balances, tickers) => {
+/**
+ * Send portfolio to client
+ */
+const sendPortfolio = (res, balances, convertTo, marketCapTickers, fxRates) => {
     let totalPriceUSD = 0;
     let totalPriceConverted = {};
-    // update balances
+    // initialize totalPriceConverted
+    _.forEach(convertTo, (c) => {
+        if (c.unknown)
+        {
+            totalPriceConverted[c.currency] = {price:0, unknownPrice:true};
+            return;
+        }
+        totalPriceConverted[c.currency] = {price:0, unknownPrice:false};
+    });
+
+    // update USD price in balances + compute total USD price
     _.forEach(balances, (entry, currency) => {
-        if (undefined === tickers[currency])
+        if (undefined === marketCapTickers[currency])
         {
             return;
         }
         entry.unknownPrice = false;
-        _.forEach(tickers[currency], (p, symbol) => {
-            let price;
-            if ('USD' == symbol)
+        // compute USD price
+        entry.price = new Big(entry.volume).times(marketCapTickers[currency].price_usd);
+        // compute convertedPrice
+        _.forEach(convertTo, (c) => {
+            if (c.unknown)
             {
-                price = parseFloat(new Big(entry.volume).times(p).toFixed(4));
-                entry.price = price;
-                totalPriceUSD += price;
+                entry.convertedPrice[c.currency] = {price:0, unknownPrice:true};
+                return;
             }
+            let priceConverted;
+            // this is a crypto currency
+            if (!c.fiat)
+            {
+                if (0 == marketCapTickers[c.currency].price_usd)
+                {
+                    entry.convertedPrice[c.currency] = {price:0, unknownPrice:true};
+                    return;
+                }
+                priceConverted = new Big(entry.price).div(marketCapTickers[c.currency].price_usd);
+            }
+            // use fxConverter
             else
             {
-                price = parseFloat(new Big(entry.volume).times(p).toFixed(8));
-                entry.convertedPrice[symbol] = price;
-                if (undefined === totalPriceConverted[symbol])
-                {
-                    totalPriceConverted[symbol] = 0;
-                }
-                totalPriceConverted[symbol] += price;
+                priceConverted = new Big(entry.price).div(fxRates[c.pair].rate);
             }
+            entry.convertedPrice[c.currency] = {
+                price:parseFloat(priceConverted.toFixed(4)),
+                unknownPrice:false
+            };
+            totalPriceConverted[c.currency].price += entry.convertedPrice[c.currency].price;
         });
+        // format USD price
+        entry.price = parseFloat(entry.price.toFixed(4));
         // format volume
         entry.volume = parseFloat(entry.volume.toFixed(8));
+        // update total price
+        totalPriceUSD += entry.price;
     });
+
     // update %
     _.forEach(balances, (entry, currency) => {
-        entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPriceUSD).toFixed(2));
+        entry.pricePercent = 0;
+        if (0 != totalPriceUSD)
+        {
+            entry.pricePercent = parseFloat(new Big(100.0 * entry.price).div(totalPriceUSD).toFixed(2));
+        }
     });
-    // update total price
+
+    // format total price & totalPriceConverted
     totalPriceUSD = parseFloat(totalPriceUSD.toFixed(4));
-    _.forEach(Object.keys(totalPriceConverted), (symbol) => {
-        totalPriceConverted[symbol] = parseFloat(totalPriceConverted[symbol].toFixed(8));
+    _.forEach(totalPriceConverted, (e) => {
+        if (e.unknownPrice)
+        {
+            return;
+        }
+        e.price = parseFloat(e.price.toFixed(8));
     });
     return res.send({balances:balances,price:totalPriceUSD,convertedPrice:totalPriceConverted});
 }

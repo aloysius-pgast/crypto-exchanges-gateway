@@ -71,6 +71,17 @@ _defineCoinMarketCapEntry(obj)
     );
 }
 
+_defineMarketCapEntry(obj)
+{
+    this._menu.push(
+        {
+            name: 'Market Cap',
+            url: obj.default.path,
+            icon: 'fa fa-bitcoin'
+        }
+    );
+}
+
 _definePortfolioEntry(obj)
 {
     this._menu.push(
@@ -121,6 +132,9 @@ _defineServiceEntry(obj, id)
     {
         case 'coinmarketcap':
             this._defineCoinMarketCapEntry(obj);
+            break;
+        case 'marketCap':
+            this._defineMarketCapEntry(obj);
             break;
     }
 }

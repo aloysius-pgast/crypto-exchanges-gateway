@@ -1,0 +1,93 @@
+= Rates
+
+Uses https://exchangeratesapi.io/[Foreign exchange rates] API
+
+[NOTE]
+====
+Those routes will only be available if _fxConverter_ service is enabled
+Rates are cached for 12 hours
+====
+
+== Get rates
+
+*GET* _/fxConverter/rates_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|pairs
+|string (comma-separated)
+|
+|Comma-separated list of pairs to retrieve tickers for
+
+|===
+
+[NOTE]
+====
+If you want to retrieve the rate of _1 EUR_ in _USD_, you should use pair _USD-EUR_
+====
+
+=== Result
+
+Result will be a dictionary using pairs as keys
+
+[cols="1,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|_pair_
+|string
+|Pair name _X-Y_
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pair
+|string
+|Pair name _X-Y_ (same as _pair_ key)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}baseCurrency
+|float
+|The currency which is used as a unit for the rate (if _baseCurrency_ is _USD_, rate is in _USD_)
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}currency
+|float
+|The currency you want to get a rate for
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}rate
+|float
+|Conversion rate (the value of _1 currency unit_ in _baseCurrency_)
+
+|===
+
+=== Result
+
+Result will be a dictionary using pairs as keys
+
+.Examples
+
+Example for *GET* _/fxConverter/rates/?pairs=USD-EUR,USD-GBP_
+
+[source,json]
+----
+{
+    "USD-EUR":{
+        "pair":"USD-EUR",
+        "baseCurrency":"USD",
+        "currency":"EUR",
+        "rate":1.1423999999
+    },
+    "USD-GBP":{
+        "pair":"USD-GBP",
+        "baseCurrency":"USD",
+        "currency":"GBP",
+        "rate":1.3106478666
+    }
+}
+----

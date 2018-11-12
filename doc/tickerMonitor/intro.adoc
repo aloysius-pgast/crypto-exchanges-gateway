@@ -8,7 +8,7 @@ Following exchanges are supported :
 
 Following services are supported :
 
-* Coin Market Cap
+* MarketCap
 
 == Supported fields on exchanges
 
@@ -20,16 +20,15 @@ Following services are supported :
 * _volume_ : volume (last 24H)
 * _priceChangePercent_ : % change of price in last 24H (0-100)
 
-== Supported fields on CoinMarketCap
+== Supported fields on MarketCap
 
 * _price_usd_ : per-unit price in _USD_
 * _price_btc_ : per-unit price in _BTC_
 * _volume_24_usd_ : _USD_ volume of last 24H
-* _total_supply_ : the total number of coins in existence
 * _circulating_supply_ : the number of coins in existence available to the public
 * _market_cap_usd_ : _USD_ market cap
 * _percent_change_1h_ : % change of price in last hour (0-100)
-* _percent_change_24h_ : % change of price in last 24H (0-100)
+* _percent_change_1d_ : % change of price in last 24H (0-100)
 * _percent_change_7d_ : % change of price in last 7d (0-100)
 
 == Supported operators

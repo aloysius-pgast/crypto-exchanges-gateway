@@ -5,7 +5,7 @@
 Those routes will only be available if :
 
 * at least one exchange has _balances_ feature enabled
-* _coinmarketcap_ service is enabled
+* _marketCap_ service is enabled
 
 ====
 
@@ -35,6 +35,11 @@ Those routes will only be available if :
 
 |===
 
+[NOTE]
+====
+Using a fiat currency for conversion required service _fxConverter_
+====
+
 === Result
 
 [cols="1,1a,3a", options="header"]
@@ -52,8 +57,16 @@ Those routes will only be available if :
 |Estimated value of portfolio in multiple currencies
 
 |_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertCurrency_
-|float
+|object
 |Estimated value of portfolio in currency _convertCurrency_
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price_
+|float
+|Estimated value of portfolio in currency _convertCurrency_. Will be _0_ if _convertCurrency_ is not supported
+
+|{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}unknownPrice
+|boolean
+|Whether or not price is unknown. Price will be unknown if _convertCurrency_ is not supported
 
 |balances
 |object
@@ -69,15 +82,23 @@ Those routes will only be available if :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}price
 |float
-|Estimated value in _USD_ of the balance for current currency. Will be _0_ if currency does not exist on _CoinMarketCap_
+|Estimated value in _USD_ of the balance for current currency. Will be _0_ if currency is not supported by _marketCap_ service
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertedPrice
 |object
-|Estimated value of the balance for current currency in multiple currencies. Will be empty if currency does not exist on _CoinMarketCap_
+|Estimated value of the balance for current currency in multiple currencies. Will be an empty object if currency is not supported by _marketCap_ service
 
 |_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertCurrency_
-|float
+|object
 |Estimated value in _convertCurrency_ of the balance for current currency
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}convertCurrency_
+|float
+|Estimated value in _convertCurrency_ of the balance for current currency. Will be _0_ if _convertCurrency_ is not supported
+
+|_{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}unknownPrice_
+|boolean
+|Whether or not price is unknown. Price will be unknown if _convertCurrency_ is not supported
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}pricePercent
 |float [0,100]
@@ -85,7 +106,7 @@ Those routes will only be available if :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}unknownPrice
 |boolean
-|Whether or not price is unknown. Price will be unknown if such currency does not exist on _CoinMarketCap_
+|Whether or not price is unknown. Price will be unknown if currency is not supported by _marketCap_ service
 
 |===
 

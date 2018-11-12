@@ -2,9 +2,10 @@ import React, { Component } from 'react';
 
 import restClient from '../../lib/RestClient';
 import serviceRegistry from '../../lib/ServiceRegistry';
+import formatNumber from '../../lib/FormatNumber';
 //-- components
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
-import CoinMarketCapCurrencyChooser from '../../components/CoinMarketCapCurrencyChooser';
+import PortfolioCurrencyChooser from '../../components/PortfolioCurrencyChooser';
 import PortfolioBalances from '../../components/PortfolioBalances';
 import PortfolioChart from '../../components/PortfolioChart';
 
@@ -111,7 +112,7 @@ componentDidMount()
 _loadCurrencies()
 {
     let self = this;
-    restClient.getCoinMarketCapCurrencies().then(function(data){
+    restClient.getPortfolioCurrencies().then(function(data){
         if (!self._isMounted)
         {
             return;
@@ -146,13 +147,13 @@ _loadBalances(isFirstLoad)
             obj.currency = currency;
             if ('USD' != convertCurrency)
             {
-                if (undefined !== obj.convertedPrice[convertCurrency])
+                if (!obj.convertedPrice[convertCurrency].unknownPrice)
                 {
-                    obj.price = obj.convertedPrice[convertCurrency];
+                    obj.price = obj.convertedPrice[convertCurrency].price;
                 }
                 else
                 {
-                    obj.price = 0;
+                    obj.price = null;
                 }
             }
             balances.push(obj);
@@ -162,13 +163,13 @@ _loadBalances(isFirstLoad)
         });
         if ('USD' != convertCurrency)
         {
-            if (undefined !== data.convertedPrice[convertCurrency])
+            if (!data.convertedPrice[convertCurrency].unknownPrice)
             {
-                data.price = data.convertedPrice[convertCurrency];
+                data.price = data.convertedPrice[convertCurrency].price;
             }
             else
             {
-                data.price = 0;
+                data.price = null;
             }
         }
         let d = {convertCurrency:convertCurrency, price:data.price, balances:balances};
@@ -256,9 +257,14 @@ render()
         {
             precision = 8;
         }
+        let priceStr = 'N/A';
+        if (null !== this.state.balances.data.price)
+        {
+            priceStr = formatNumber.formatFloat(this.state.balances.data.price, precision, {truncate:true});
+        }
         return (
             <div className={classNames}>
-                <h7>PORTFOLIO VALUE =~ {this.state.balances.data.price.toFixed(precision)} {this.state.balances.data.convertCurrency}</h7>
+                <h7>PORTFOLIO VALUE =~ {priceStr} {this.state.balances.data.convertCurrency}</h7>
                 <br/>
                 <br/>
                 <PortfolioChart isRefreshing={this.state.balances.isRefreshing} isFirstLoad={this.state.balances.isFirstLoad} loaded={this.state.balances.loaded} updateTimestamp={this.state.balances.updateTimestamp} err={this.state.balances.err} data={this.state.balances.data} OnRefresh={this._handleRefresh}/>
@@ -273,7 +279,7 @@ render()
         <br/>
         <Exchanges/>
         <br/>
-        <CoinMarketCapCurrencyChooser currencies={this.state.currencies.data} currency={this.state.currency} OnSelectCurrency={this._handleSelectCurrency}/>
+        <PortfolioCurrencyChooser currencies={this.state.currencies.data} currency={this.state.currency} OnSelectCurrency={this._handleSelectCurrency}/>
         <br/>
         <Portfolio/>
       </div>

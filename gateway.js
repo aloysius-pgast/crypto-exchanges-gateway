@@ -128,7 +128,6 @@ if (!hasCustomConfig)
         }
     }
 }
-
 // add log if CoinMarketCap is enabled
 if (config.coinmarketcap.enabled)
 {
@@ -140,6 +139,52 @@ if (config.coinmarketcap.enabled)
     {
         logger.warn("CoinMarketCap API is enabled (without history)");
     }
+}
+
+//-- check Market Cap
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    let enableMarketCap = process.env['cfg.marketCap.enabled'];
+    if (undefined !== enableMarketCap && '' !== enableMarketCap)
+    {
+        if (true === enableMarketCap || '1' == enableMarketCap)
+        {
+            config.marketCap.enabled = true;
+        }
+        else if (false === enableMarketCap || '0' == enableMarketCap)
+        {
+            config.marketCap.enabled = false;
+        }
+    }
+}
+// add log if Market Cap is enabled
+if (config.marketCap.enabled)
+{
+    logger.warn("MarketCap API is enabled");
+}
+
+//-- check Fx Converter
+// check env (only if custom config does not exist)
+if (!hasCustomConfig)
+{
+    let enableFxConverter = process.env['cfg.fxConverter.enabled'];
+    if (undefined !== enableFxConverter && '' !== enableFxConverter)
+    {
+        if (true === enableFxConverter || '1' == enableFxConverter)
+        {
+            config.fxConverter.enabled = true;
+        }
+        else if (false === enableFxConverter || '0' == enableFxConverter)
+        {
+            config.fxConverter.enabled = false;
+        }
+    }
+}
+// add log if Market Cap is enabled
+if (config.fxConverter.enabled)
+{
+    logger.warn("FxConverter API is enabled");
 }
 
 // check env (only if custom config does not exist)

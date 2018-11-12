@@ -1,0 +1,59 @@
+= Currencies
+
+Uses https://exchangeratesapi.io/[Foreign exchange rates] API
+
+[NOTE]
+====
+Those routes will only be available if _fxConverter_ service is enabled
+====
+
+== List currencies
+
+*GET* _/fxConverter/currencies_
+
+=== Result
+
+Result will be an array of symbols
+
+.Examples
+
+Example for *GET* _/fxConverter/currencies_
+
+[source,json]
+----
+[
+    "BGN",
+    "CAD",
+    "BRL",
+    "HUF",
+    "DKK",
+    "JPY",
+    "ILS",
+    "TRY",
+    "RON",
+    "GBP",
+    "PHP",
+    "HRK",
+    "NOK",
+    "ZAR",
+    "MXN",
+    "AUD",
+    "USD",
+    "KRW",
+    "HKD",
+    "EUR",
+    "ISK",
+    "CZK",
+    "THB",
+    "MYR",
+    "NZD",
+    "PLN",
+    "CHF",
+    "SEK",
+    "CNY",
+    "SGD",
+    "INR",
+    "IDR",
+    "RUB"
+]
+----

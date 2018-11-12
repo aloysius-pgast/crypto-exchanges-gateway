@@ -1,5 +1,7 @@
 = CoinMarketCap
 
+*Support for Coin Market Cap API will be removed around mid-december*
+
 include::currencies.adoc[leveloffset=1]
 
 include::tickers.adoc[leveloffset=1]
