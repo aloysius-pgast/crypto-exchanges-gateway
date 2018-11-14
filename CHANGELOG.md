@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.6] **NOT RELEASED YET**
+## [v1.7.6]
 ### Gateway
 * [CoinMarketCap](https://coinmarketcap.com/) support is deprecated and will be removed around mid-december (module _coinmarketcap_ needs to be enabled explicitely)
 * Use [Coin Codex](https://coincodex.com/) API instead of [CoinMarketCap](https://coinmarketcap.com/) to provide market cap informations

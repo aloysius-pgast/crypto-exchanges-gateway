@@ -7,7 +7,7 @@ const PromiseHelper = require('./promise-helper');
 const Errors = require('./errors');
 const CcxtErrors = require('./ccxt-errors');
 
-const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
+const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001];
 
 const orderedKlinesIntervals = [
     '1m', '3m', '5m', '15m', '30m',
@@ -252,11 +252,11 @@ _precisionToStep(value)
     let step = 0.00000001;
     if ('string' == typeof(value))
     {
-        step = value.toFixed(8);
+        step = value.toFixed(10);
     }
     else
     {
-        if (value >= 0 && value <= 8)
+        if (value >= 0 && value <= 10)
         {
             step = precisionToStep[value];
         }
@@ -279,7 +279,7 @@ _stepToPrecision(value)
     }
     else
     {
-        split = value.toFixed(8).replace(/0+$/g, '').split('.');
+        split = value.toFixed(10).replace(/0+$/g, '').split('.');
     }
     return (split.length > 1) ? (split[1].length) : 0;
 }
