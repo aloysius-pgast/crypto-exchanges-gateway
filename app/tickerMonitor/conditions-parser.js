@@ -11,12 +11,17 @@ const exchangeTickerFields = ['last', 'buy', 'sell', 'high', 'low', 'volume', 'p
 /**
  * List of possible services
  */
-const supportedServices = ['coinmarketcap'];
+const supportedServices = ['coinmarketcap', 'marketCap'];
 
 /**
  * List of possible fields for coinmarketcap
  */
 const coinmarketcapTickerFields = ['price_usd', 'price_btc', 'volume_24_usd', 'volume_24_btc', 'total_supply', 'circulating_supply', 'market_cap_usd', 'market_cap_btc', 'percent_change_1h', 'percent_change_24h', 'percent_change_7d'];
+
+/**
+ * List of possible fields for marketCap
+ */
+const marketCapTickerFields = ['price_usd', 'price_btc', 'volume_24_usd', 'circulating_supply', 'market_cap_usd', 'percent_change_1h', 'percent_change_1d', 'percent_change_7d'];
 
 /**
  * List of supported operators and whether or not they require array parameter
@@ -81,7 +86,7 @@ checkConditions()
 }
 
 /**
- * Checks a condition coinmarketcap condition
+ * Checks a condition
  *
  * @param {object} c condition object
  * @param {integer} index index of the condition in the array
@@ -264,6 +269,9 @@ _checkServiceCondition(c, index)
             case 'coinmarketcap':
                 p = this._checkCoinmarketcapCondition(c, index);
                 break;
+            case 'marketCap':
+                p = this._checkMarketCapCondition(c, index);
+                break;
             default:
                 let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedService(c.origin.id);
                 return reject(extErr);
@@ -309,6 +317,48 @@ _checkCoinmarketcapCondition(c, index)
         }
         // check if field is supported
         if (-1 == coinmarketcapTickerFields.indexOf(c.condition.field))
+        {
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][field]`, c.condition.field);
+            return reject(extErr);
+        }
+        entry.condition.field = c.condition.field;
+        resolve(true);
+    });
+}
+
+/**
+ * Checks marketCap condition
+ *
+ * @param {object} c condition object
+ * @param {integer} index index of the condition in the array
+ * @return {Promise} which resolve to true or reject error
+ */
+_checkMarketcapCondition(c, index)
+{
+    return new Promise((resolve, reject) => {
+        // check if marketCap service is enabled
+        let service = serviceRegistry.getService(c.origin.id);
+        if (null === service)
+        {
+            let extErr = new Errors.GatewayError.InvalidRequest.Unsupported.UnsupportedService(c.origin.id);
+            return reject(extErr);
+        }
+        let entry = this._finalList[index];
+        entry.origin.id = c.origin.id;
+        // ensure symbol attribute is defined
+        if (undefined === c.condition.symbol)
+        {
+            let extErr = new Errors.GatewayError.InvalidRequest.MissingParameters(`conditions[${index}][condition][symbol]`);
+            return reject(extErr);
+        }
+        entry.condition.symbol = c.condition.symbol.trim();
+        if ('' == entry.condition.symbol)
+        {
+            let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][symbol]`, '', undefined, true);
+            return reject(extErr);
+        }
+        // check if field is supported
+        if (-1 == marketCapTickerFields.indexOf(c.condition.field))
         {
             let extErr = new Errors.GatewayError.InvalidRequest.InvalidParameter(`conditions[${index}][condition][field]`, c.condition.field);
             return reject(extErr);

@@ -44,6 +44,12 @@ constructor(defaultConfig)
         coinmarketcap:{
             enabled:false
         },
+        marketCap:{
+            enabled:false
+        },
+        fxConverter:{
+            enabled:false
+        },
         pushover:{
             enabled:false
         },
@@ -102,6 +108,14 @@ _check()
         valid = false;
     }
     if (!this._checkCoinMarketCap())
+    {
+        valid = false;
+    }
+    if (!this._checkMarketCap())
+    {
+        valid = false;
+    }
+    if (!this._checkFxConverter())
     {
         valid = false;
     }
@@ -168,6 +182,58 @@ _checkCoinMarketCap()
     else
     {
         this._finalConfig.coinmarketcap = checker.getCfg();
+    }
+    return valid;
+}
+
+_checkMarketCap()
+{
+    let valid = true;
+    const checkerClass = require('./marketCap/config-checker');
+    let checker = new checkerClass();
+    let config = {};
+    if (undefined !== this._config.marketCap)
+    {
+        config = this._config.marketCap;
+    }
+    if (!checker.check(config))
+    {
+        // mark config as invalid
+        valid = false;
+        // copy errors
+        _.forEach(checker.getErrors(), (err) => {
+            this._err(err);
+        });
+    }
+    else
+    {
+        this._finalConfig.marketCap = checker.getCfg();
+    }
+    return valid;
+}
+
+_checkFxConverter()
+{
+    let valid = true;
+    const checkerClass = require('./fxConverter/config-checker');
+    let checker = new checkerClass();
+    let config = {};
+    if (undefined !== this._config.fxConverter)
+    {
+        config = this._config.fxConverter;
+    }
+    if (!checker.check(config))
+    {
+        // mark config as invalid
+        valid = false;
+        // copy errors
+        _.forEach(checker.getErrors(), (err) => {
+            this._err(err);
+        });
+    }
+    else
+    {
+        this._finalConfig.fxConverter = checker.getCfg();
     }
     return valid;
 }

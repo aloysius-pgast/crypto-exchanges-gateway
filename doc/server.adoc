@@ -462,11 +462,10 @@ Example for *GET* _/server/services_
         }
     },
     "others":{
-        "coinmarketcap":{
-            "id":"coinmarketcap",
-            "name":"Coin Market Cap",
+        "marketCap":{
+            "id":"marketCap",
+            "name":"Market Cap",
             "features":{
-                "history":true
             },
             "cfg": {
 
@@ -687,12 +686,12 @@ Example for *GET* _/server/statistics_
         }
     },
     "others":{
-        "coinmarketcap":{
+        "marketCap":{
             "getTickers":{
                 "success":3,
                 "failure":1
             },
-            "getSymbols":{
+            "listSymbols":{
                 "success":0,
                 "failure":1
             }

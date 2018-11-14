@@ -1,0 +1,281 @@
+= Tickers
+
+Uses https://coincodex.com/[Coin Codex] API
+
+[NOTE]
+====
+Those routes will only be available if _marketCap_ service is enabled
+Tickers are cached for 15 minutes
+====
+
+== Retrieve tickers for all symbols or a list of symbols
+
+*GET* _/marketCap/tickers_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|symbols
+|string (comma-separated)
+|
+|Comma-separated list of symbols to retrieve tickers for
+
+|limit
+|integer
+|100
+|Only returns the top _limit_ results (will be ignored if _symbols_ is set)
+
+|===
+
+=== Result
+
+Result will be an array of entries such as below
+
+[NOTE]
+====
+If some symbols are invalid, they won't appear in array. No error will be triggered
+
+====
+
+[cols="1a,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|name
+|string
+|Currency name (ex: _Bitcoin_)
+
+|symbol
+|string
+|Currency symbol (ex: _BTC_)
+
+|rank
+|integer
+|Currency rank
+
+|price_usd
+|float
+|Per-unit price in _USD_
+
+|volume_24h_usd
+|float
+|_USD_ volume of last 24H
+
+|market_cap_usd
+|float
+|_USD_ market cap
+
+|price_btc
+|float
+|Per-unit price in _BTC_
+
+|circulating_supply
+|float
+|The number of coins in existence available to the public
+
+|percent_change_1h
+|float
+|Price change during last hour (in %) (can be _null_)
+
+|percent_change_1d
+|float
+|Price change during last 24 hours (in %) (can be _null_)
+
+|percent_change_7d
+|float
+|Price change during last 7 days (in %) (can be _null_)
+
+|last_updated
+|integer
+|Unix timestamp of last update
+
+|===
+
+.Examples
+
+Example for *GET* _/marketCap/tickers?limit=3
+
+[source,json]
+----
+[
+    {
+        "symbol":"BTC",
+        "name":"Bitcoin",
+        "circulating_supply":17366225,
+        "price_usd":6474.672,
+        "percent_change_1h":-0.1,
+        "percent_change_1d":-0.1,
+        "percent_change_7d":-0.88,
+        "volume_24h_usd":3849580304.7763,
+        "lastUpdated":1541705806,
+        "market_cap_usd":112440611000.5298,
+        "rank":1,
+        "price_btc":1
+    },
+    {
+        "symbol":"ETH",
+        "name":"Ethereum",
+        "circulating_supply":103079167,
+        "price_usd":213.8525,
+        "percent_change_1h":0.08,
+        "percent_change_1d":0.08,
+        "percent_change_7d":-1.84,
+        "volume_24h_usd":1482222148.0864,
+        "lastUpdated":1541705806,
+        "market_cap_usd":22043735416.8208,
+        "rank":2,
+        "price_btc":0.03302909
+    },
+    {
+        "symbol":"XRP",
+        "name":"Ripple",
+        "circulating_supply":40205508733,
+        "price_usd":0.5035,
+        "percent_change_1h":-0.17,
+        "percent_change_1d":-0.17,
+        "percent_change_7d":-5.06,
+        "volume_24h_usd":583415935.75768,
+        "lastUpdated":1541705611,
+        "market_cap_usd":20241642205.7317,
+        "rank":3,
+        "price_btc":0.00007776
+    }
+]
+----
+
+== Retrieve ticker for a single symbol
+
+*GET* _/marketCap/tickers/{symbol}_
+
+=== Url parameters
+
+[cols="1,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Description
+
+|{symbol}
+|string
+|Symbol to retrieve ticker for
+
+|===
+
+=== Result in case data exist
+
+Result will be a single object such as below
+
+[cols="1a,1a,3a", options="header"]
+|===
+|Name
+|Type
+|Description
+
+|name
+|string
+|Currency name (ex: _Bitcoin_)
+
+|symbol
+|string
+|Currency symbol (ex: _BTC_)
+
+|rank
+|integer
+|Currency rank
+
+|price_usd
+|float
+|Per-unit price in _USD_
+
+|volume_24h_usd
+|float
+|_USD_ volume of last 24H
+
+|market_cap_usd
+|float
+|_USD_ market cap
+
+|price_btc
+|float
+|Per-unit price in _BTC_
+
+|circulating_supply
+|float
+|The number of coins in existence available to the public
+
+|percent_change_1h
+|float
+|Price change during last hour (in %) (can be _null_)
+
+|percent_change_1d
+|float
+|Price change during last 24 hours (in %) (can be _null_)
+
+|percent_change_7d
+|float
+|Price change during last 7 days (in %) (can be _null_)
+
+|last_updated
+|integer
+|Unix timestamp of last update
+
+|===
+
+.Examples
+
+Example for *GET* _/marketCap/tickers/ETH_
+
+[source,json]
+----
+{
+    "symbol":"ETH",
+    "name":"Ethereum",
+    "circulating_supply":103079167,
+    "price_usd":213.8525,
+    "percent_change_1h":0.08,
+    "percent_change_1d":0.08,
+    "percent_change_7d":-1.84,
+    "volume_24h_usd":1482222148.0864,
+    "lastUpdated":1541705806,
+    "market_cap_usd":22043735416.8208,
+    "rank":2,
+    "price_btc":0.03302909
+}
+----
+
+=== Result in case data does not exist
+
+A _GatewayError.InvalidRequest.ObjectNotFound_ error will be returned
+
+.Examples
+
+Example for *GET* _/marketCap/tickers/INVALID_
+
+[source,json]
+----
+{
+    "origin":"gateway",
+    "error":"Symbol 'INVALID' does not exist",
+    "route":{
+        "method":"GET",
+        "path":"/marketCap/tickers/INVALID"
+    },
+    "extError":{
+        "errorType":"GatewayError.InvalidRequest.ObjectNotFound",
+        "message":"Symbol 'INVALID' does not exist",
+        "data":{
+            "symbol":"INVALID"
+        }
+    }
+}
+----

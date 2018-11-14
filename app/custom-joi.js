@@ -25,14 +25,14 @@ customJoi = customJoi.extend([
         base: joi.string(),
         name: 'string',
         language: {
-            pair: 'must be an exchange pair [A-Za-z0-9]+-[A-Za-z0-9]+',
-            currency: 'must be an exchange currency [A-Za-z0-9]+'
+            pair: 'must be an exchange pair [A-Za-z0-9$]+-[A-Za-z0-9$]+',
+            currency: 'must be an exchange currency [A-Za-z0-9$]+'
         },
         rules: [
             {
                 name:'pair',
                 validate(params, value, state, options) {
-                    if (null === value.match(/^[A-Za-z0-9]+-[A-Za-z0-9]+$/))
+                    if (null === value.match(/^[A-Za-z0-9$]+-[A-Za-z0-9$]+$/))
                     {
                         if (2 == state.path.length)
                         {
@@ -46,7 +46,7 @@ customJoi = customJoi.extend([
             {
                 name:'currency',
                 validate(params, value, state, options) {
-                    if (null === value.match(/^[A-Za-z0-9]+$/))
+                    if (null === value.match(/^[A-Za-z0-9$]+$/))
                     {
                         if (2 == state.path.length)
                         {

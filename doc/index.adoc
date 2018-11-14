@@ -12,7 +12,9 @@ include::ws/index.adoc[leveloffset=1]
 
 include::portfolio/index.adoc[leveloffset=1]
 
-include::coinmarketcap/index.adoc[leveloffset=1]
+include::marketCap/index.adoc[leveloffset=1]
+
+include::fxConverter/index.adoc[leveloffset=1]
 
 include::pushover/index.adoc[leveloffset=1]
 

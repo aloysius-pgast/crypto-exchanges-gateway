@@ -79,7 +79,7 @@ Result will be an array of objects
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
 |string
-|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _marketCap_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}condition
 |object
@@ -103,7 +103,7 @@ Result will be an array of objects
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
 |string
-|_Coinmarketcap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _coinmarketcap_
+|_MarketCap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _marketCap_
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}status
 |object
@@ -179,7 +179,7 @@ Example for *GET* _/tickerMonitor_
                 },
                 "origin":{
                     "type":"service",
-                    "id":"coinmarketcap"
+                    "id":"marketCap"
                 },
                 "value":136.402,
                 "condition":{
@@ -286,7 +286,7 @@ A condition object should have following format :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
 |string
-|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _marketCap_)
 
 |condition
 |object
@@ -310,7 +310,7 @@ A condition object should have following format :
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
 |string
-|_Coinmarketcap_ symbol (ex: _NEO_). Only supported when _type_ is _service_ and _id_ is _coinmarketcap_
+|_MarketCap_ symbol (ex: _NEO_). Only supported when _type_ is _service_ and _id_ is _marketCap_
 
 |===
 
@@ -403,7 +403,7 @@ Creation of a new entry with following properties :
 * enabled : _true_ (default)
 * any : _false_ (default)
 * pushover : _disabled_ (default)
-* conditions : _buy price on binance for NEO-USDT > 130.5_ AND _price for NEO on Coin Market Cap in range [120,125]_
+* conditions : _buy price on binance for NEO-USDT > 130.5_ AND _price for NEO in MarketCap module in range [120,125]_
 
 [source,json]
 ----
@@ -425,7 +425,7 @@ Creation of a new entry with following properties :
         {
             "origin":{
                 "type":"service",
-                "id":"coinmarketcap"
+                "id":"marketCap"
             },
             "condition":{
                 "symbol":"NEO",

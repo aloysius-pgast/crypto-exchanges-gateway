@@ -1,0 +1,5 @@
+= Fx Converter
+
+include::currencies.adoc[leveloffset=1]
+
+include::rates.adoc[leveloffset=1]

@@ -1,0 +1,109 @@
+= Coins
+
+Uses https://coincodex.com/[Coin Codex] API
+
+[NOTE]
+====
+Those routes will only be available if _marketCap_ service is enabled
+====
+
+== List symbols
+
+*GET* _/marketCap/symbols_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|includeAliases
+|boolean
+|false
+|If _true_, symbol aliases such as _XRB_ for _NANO_ will also be returned
+
+|===
+
+=== Result
+
+Result will be an array of symbols
+
+.Examples
+
+Example for *GET* _/marketCap/symbols_
+
+[source,json]
+----
+[
+    "$$$",
+    "020",
+    "1337",
+    "1CR",
+    "1ST",
+    ...
+    "BNB",
+    "BTC",
+    ...
+    "ETH",
+    ...
+    "NEO",
+    ...
+]
+----
+
+== Retrieve coins
+
+*GET* _/marketCap/coins_
+
+=== Optional query parameters
+
+[cols="1,1a,1a,3a", options="header"]
+|===
+
+|Name
+|Type
+|Default
+|Description
+
+|includeAliases
+|boolean
+|false
+|If _true_, symbol aliases such as _XRB_ for _NANO_ will also be returned
+
+|names
+|string (comma-separated)
+|
+|Comma-separated list of coin names. Any coin with a name which matches _partially_ will be returned
+
+|symbols
+|string (comma-separated)
+|
+|Comma-separated list of coin symbols. Any coin with a symbol which matches _exactly_ will be returned
+
+|===
+
+=== Result
+
+Result will be a dictionary using symbols as keys
+
+.Examples
+
+Example for *GET* _/marketCap/coins/?symbols=BTC,ETH_
+
+[source,json]
+----
+{
+    "BTC":{
+        "symbol":"BTC",
+        "name":"Bitcoin"
+    },
+    "ETH":{
+        "symbol":"ETH",
+        "name":"Ethereum"
+    }
+}
+----

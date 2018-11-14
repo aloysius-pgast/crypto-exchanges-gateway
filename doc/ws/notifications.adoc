@@ -552,7 +552,7 @@ _closed_ will be _true_ only once the kline has been finalized.
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
 |string
-|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _coinmarketcap_)
+|Identifier of the _exchange_ (ex: _binance_) or the _service_ (ex: _marketCap_)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}condition
 |object
@@ -576,7 +576,7 @@ _closed_ will be _true_ only once the kline has been finalized.
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}symbol
 |string
-|_Coinmarketcap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _coinmarketcap_
+|_MarketCap_ symbol (ex: _NEO_). Only defined when _type_ is _service_ and _id_ is _marketCap_
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}value
 |float
@@ -589,7 +589,7 @@ _closed_ will be _true_ only once the kline has been finalized.
 Below event will be emitted if all following conditions are met :
 
 * _buy_ price for _USDT-NEO_ pair is _> 134_ on _Binance_ exchange
-* _USD price_ of _NEO_ on _CoinMarketCap_ is in range _[130,140]_
+* _USD price_ of _NEO_ in _MarketCap_ module is in range _[130,140]_
 
 [source,json]
 ----
@@ -628,7 +628,7 @@ Below event will be emitted if all following conditions are met :
                 },
                 "origin":{
                     "type":"service",
-                    "id":"coinmarketcap"
+                    "id":"marketCap"
                 },
                 "value":135.968,
                 "condition":{

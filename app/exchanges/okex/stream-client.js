@@ -146,7 +146,7 @@ _processMessage(message)
         }
         try
         {
-            // convert result to an array if needed
+            // convert result to an array if needed (for 'trades', an object is returned instead of an array of objects)
             if (!Array.isArray(data))
             {
                 data = [data];

@@ -4,6 +4,8 @@ const server = require('./server');
 const auth = require('../auth');
 const errors = require('../errors');
 const coinmarketcap = require('../../coinmarketcap/routes');
+const marketCap = require('../../marketCap/routes');
+const fxConverter = require('../../fxConverter/routes');
 const pushover = require('../../pushover/routes');
 const exchanges = require('./exchanges');
 const sessions = require('./sessions');
@@ -15,6 +17,8 @@ module.exports = function(app, bodyParsers, config) {
     auth(app, config);
     debug(app, bodyParsers, config);
     coinmarketcap(app, bodyParsers, config);
+    marketCap(app, bodyParsers, config);
+    fxConverter(app, bodyParsers, config);
     pushover(app, bodyParsers, config);
     exchanges(app, bodyParsers, config);
     sessions(app, bodyParsers, config);

@@ -24,6 +24,8 @@ const STATUS_INVALID = 'invalid';
 const EXPIRY_EXCHANGE_TICKER = 300;
 // expiry for coinmarketcap ticker (15 min)
 const EXPIRY_COINMARKETCAP_TICKER = 900;
+// expiry for marketCap ticker (1 hour)
+const EXPIRY_MARKET_CAP_TICKER = 3600;
 
 class Entry
 {
@@ -761,6 +763,27 @@ _getCoinmarketcapChecker(c)
     let f = this._getFunction(c.condition.operator);
     return function(now){
         c.value = tickerCache.getCoinmarketcapTickerField(c.condition.symbol, c.condition.field, now - EXPIRY_COINMARKETCAP_TICKER);
+        return f(c.value, c.condition.value);
+    }
+}
+
+/**
+ * Creates a function to check a a marketCap condition
+ * @param {object} c condition object
+ * @return {function}
+ */
+_getMarketCapChecker(c)
+{
+    let service = serviceRegistry.getService(c.origin.id);
+    if (null === service)
+    {
+        c.invalid = true;
+        logger.warn(`TickerMonitor entry '${this._id}' has a condition for service '${c.origin.id}' but service is not supported anymore`);
+        return this._getDummyChecker(false);
+    }
+    let f = this._getFunction(c.condition.operator);
+    return function(now){
+        c.value = tickerCache.getMarketCapTickerField(c.condition.symbol, c.condition.field, now - EXPIRY_MARKET_CAP_TICKER);
         return f(c.value, c.condition.value);
     }
 }

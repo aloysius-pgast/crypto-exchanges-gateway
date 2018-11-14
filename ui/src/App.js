@@ -29,6 +29,7 @@ import MyBalances from './views/MyBalances';
 import MarketOverview from './views/MarketOverview';
 import Portfolio from './views/Portfolio';
 import CoinMarketCap from './views/CoinMarketCap/';
+import MarketCap from './views/MarketCap/';
 import Settings from './views/Settings';
 import MyStreams from './views/MyStreams';
 import Alerts from './views/Alerts/';
@@ -162,12 +163,23 @@ _loadRoutes()
             component:CoinMarketCap
         });
     }
+    // MarketCap service
+    if (undefined !== services['marketCap'])
+    {
+        let path = '/services/marketCap';
+        routeRegistry.registerServiceRoute(path, 'marketCap');
+        this._routes.push({
+            path:path,
+            exact:true,
+            component:MarketCap
+        });
+    }
 
     //-- remaining routes
     let path;
 
-    // Portfolio requires coinmarket cap & support for 'balances' features in exchanges
-    if (undefined !== services['coinmarketcap'] && 0 != exchangesWithBalancesSupport.length)
+    // Portfolio requires marketCap & support for 'balances' features in exchanges
+    if (undefined !== services['marketCap'] && 0 != exchangesWithBalancesSupport.length)
     {
         path = '/services/portfolio';
         routeRegistry.registerRoute(path, 'portfolio', true);

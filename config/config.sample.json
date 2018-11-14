@@ -14,9 +14,11 @@
         "enabled":true
     },
     "logLevel":"warn",
-    "coinmarketcap":{
-        "enabled":true,
-        "history":true
+    "marketCap":{
+        "enabled":true
+    },
+    "fxConverter":{
+        "enabled":true
     },
     "pushover":{
         "enabled":false,

@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import Big from 'big.js';
+import formatNumber from '../../lib/FormatNumber';
 import ComponentLoadedTimestamp from '../../components/ComponentLoadedTimestamp';
+
+// list of fiat currencies
+const fiatCurrencies = ['BGN','CAD','BRL','HUF','DKK','JPY','ILS','TRY','RON','GBP','PHP','HRK','NOK','ZAR','MXN','AUD','USD','KRW','HKD','EUR','ISK','CZK','THB','MYR','NZD','PLN','CHF','SEK','CNY','SGD','INR','IDR','RUB'];
 
 class PortfolioBalances extends Component
 {
@@ -70,13 +74,15 @@ render()
                       titlePrice = 'Value is unknown';
                   }
                   let precision = 4;
-                  if ('USD' != this._props.currency)
+                  // not a fiat currency
+                  if (-1 == fiatCurrencies.indexOf(this._props.currency))
                   {
                       precision = 8;
                   }
+                  let priceStr = formatNumber.formatFloat(item.price, precision, {truncate:true});
                   return <tr key={index}>
                       <td>{item.currency}</td>
-                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{item.price.toFixed(precision)}</span></td>
+                      <td className="text-right"><span title={titlePrice} style={stylePrice}>{priceStr}</span></td>
                       <td className="text-right">{item.pricePercent.toFixed(2)} %</td>
                       <td className="text-right">{item.volume.toFixed(8)}</td>
                   </tr>

@@ -5,7 +5,7 @@ const _ = require('lodash');
 const Big = require('big.js');
 const CcxtErrors = require('./ccxt-errors');
 
-const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001];
+const precisionToStep = [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001, 0.00000001, 0.000000001, 0.0000000001];
 
 /*
 
@@ -148,11 +148,11 @@ _precisionToStep(value)
     let step = 0.00000001;
     if ('string' == typeof(value))
     {
-        step = value.toFixed(8);
+        step = value.toFixed(10);
     }
     else
     {
-        if (value >= 0 && value <= 8)
+        if (value >= 0 && value <= 10)
         {
             step = precisionToStep[value];
         }

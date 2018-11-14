@@ -77,11 +77,11 @@ const defineForExchange = (exchangeId) => {
                         let finalPrice = new Big(result.body.finalPrice);
                         let targetPrice = new Big(result.body.targetPrice);
                         let fees = new Big(result.body.fees);
-                        if (!quantity.times(targetRate).eq(targetPrice))
+                        if (quantity.times(targetRate).toFixed(8) != targetPrice.toFixed(8))
                         {
                             Assert.fail("'targetPrice' should be (quantity * targetRate)", result.body);
                         }
-                        if (!targetPrice.plus(fees).eq(finalPrice))
+                        if (targetPrice.plus(fees).toFixed(8) != finalPrice.toFixed(8))
                         {
                             Assert.fail("'finalPrice' should be (targetPrice + fees)", result.body);
                         }
@@ -111,11 +111,11 @@ const defineForExchange = (exchangeId) => {
                         let finalPrice = new Big(result.body.finalPrice);
                         let targetPrice = new Big(result.body.targetPrice);
                         let fees = new Big(result.body.fees);
-                        if (!quantity.times(targetRate).eq(targetPrice))
+                        if (quantity.times(targetRate).toFixed(8) != targetPrice.toFixed(8))
                         {
                             Assert.fail("'targetPrice' should be (quantity * targetRate)", result.body);
                         }
-                        if (!targetPrice.plus(fees).eq(finalPrice))
+                        if (targetPrice.plus(fees).toFixed(8) != finalPrice.toFixed(8))
                         {
                             Assert.fail("'finalPrice' should be (targetPrice + fees)", result.body);
                         }
@@ -147,11 +147,11 @@ const defineForExchange = (exchangeId) => {
                         let finalPrice = new Big(result.body.finalPrice);
                         let targetPrice = new Big(result.body.targetPrice);
                         let fees = new Big(result.body.fees);
-                        if (!quantity.times(targetRate).eq(targetPrice))
+                        if (quantity.times(targetRate).toFixed(8) != targetPrice.toFixed(8))
                         {
                             Assert.fail("'targetPrice' should be (quantity * targetRate)", result.body);
                         }
-                        if (!targetPrice.plus(fees).eq(finalPrice))
+                        if (targetPrice.plus(fees).toFixed(8) != finalPrice.toFixed(8))
                         {
                             Assert.fail("'finalPrice' should be (targetPrice + fees)", result.body);
                         }
@@ -196,11 +196,11 @@ const defineForExchange = (exchangeId) => {
                         let finalPrice = new Big(result.body.finalPrice);
                         let targetPrice = new Big(result.body.targetPrice);
                         let fees = new Big(result.body.fees);
-                        if (!quantity.times(targetRate).eq(targetPrice))
+                        if (quantity.times(targetRate).toFixed(8) != targetPrice.toFixed(8))
                         {
                             Assert.fail("'targetPrice' should be (quantity * targetRate)", result.body);
                         }
-                        if (!targetPrice.plus(fees).eq(finalPrice))
+                        if (targetPrice.plus(fees).toFixed(8) != finalPrice.toFixed(8))
                         {
                             Assert.fail("'finalPrice' should be (targetPrice + fees)", result.body);
                         }
