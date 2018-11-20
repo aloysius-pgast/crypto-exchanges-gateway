@@ -1,10 +1,14 @@
 # Change Log
 
+## [v1.7.7]
+### Gateway
+* Fix typo in _tickerMonitor_ module
+
 ## [v1.7.6]
 ### Gateway
 * [CoinMarketCap](https://coinmarketcap.com/) support is deprecated and will be removed around mid-december (module _coinmarketcap_ needs to be enabled explicitely)
 * Use [Coin Codex](https://coincodex.com/) API instead of [CoinMarketCap](https://coinmarketcap.com/) to provide market cap informations
-* New endpoint _/fxConverter_ to convert between fiat currencies usng module _fxConverter*
+* New endpoint _/fxConverter_ to convert between fiat currencies usng module *fxConverter*
 
 ## [v1.7.5]
 ### Gateway

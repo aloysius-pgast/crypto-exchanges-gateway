@@ -333,7 +333,7 @@ _checkCoinmarketcapCondition(c, index)
  * @param {integer} index index of the condition in the array
  * @return {Promise} which resolve to true or reject error
  */
-_checkMarketcapCondition(c, index)
+_checkMarketCapCondition(c, index)
 {
     return new Promise((resolve, reject) => {
         // check if marketCap service is enabled
