@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.7]
+### Gateway
+* Fix typo in _tickerMonitor_ module
+
 ## [v1.7.6]
 ### Gateway
 * [CoinMarketCap](https://coinmarketcap.com/) support is deprecated and will be removed around mid-december (module _coinmarketcap_ needs to be enabled explicitely)
