@@ -996,7 +996,7 @@ Errors.errorToHttpCode = (e) => {
 
 /**
  * Used to log an unexpected error
- * @param {string|object} error message or exception
+ * @param {string|object} e error message or exception
  * @param {string} context (optional, used to log a message before logging the error)
  */
 Errors.logError = (e, context) => {
@@ -1011,6 +1011,35 @@ Errors.logError = (e, context) => {
     else
     {
         logger.error(e);
+    }
+}
+
+/**
+ * Used to log a network error
+ * @param {string|object} e error message or exception
+ * @param {string} context (optional, used to log a message before logging the error)
+ */
+Errors.logNetworkError = (e, context) => {
+    if (undefined !== context)
+    {
+        logger.error(`NetworkError (${context})`);
+    }
+    if (undefined !== e.stack)
+    {
+        logger.error(e.stack);
+    }
+    else
+    {
+        // only log part status code, reason & part of the body
+        if (undefined !== e.statusCode && undefined !== e.statusMessage)
+        {
+            const err = {statusCode:e.statusCode,statusMessage:e.statusMessage}
+            logger.error(JSON.stringify(err));
+        }
+        else
+        {
+            logger.error(e);
+        }
     }
 }
 

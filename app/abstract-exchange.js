@@ -222,29 +222,12 @@ _isDDosProtectionError(e)
 
 __logError(e, method)
 {
-    Errors.logError(e, `${this.__id}|${method}`)
+    Errors.logError(e, `exchange|${this.__id}|${method}`)
 }
 
 __logNetworkError(e, method)
 {
-    logger.error(`NetworkError (${this.__id}|${method})`);
-    if (undefined !== e.stack)
-    {
-        logger.error(e.stack);
-    }
-    else
-    {
-        // only log part status code, reason & part of the body
-        if (undefined !== e.statusCode && undefined !== e.statusMessage)
-        {
-            let err = {statusCode:e.statusCode,statusMessage:e.statusMessage}
-            logger.error(JSON.stringify(err));
-        }
-        else
-        {
-            logger.error(e);
-        }
-    }
+    Errors.logNetworkError(e, `exchange|${this.__id}|${method}`);
 }
 
 _precisionToStep(value)
