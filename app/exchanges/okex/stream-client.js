@@ -179,7 +179,7 @@ _processMessage(message)
         }
         catch (e)
         {
-            this._logError(e);
+            this._logError(e, '_processMessage');
         }
     });
 }
@@ -194,7 +194,7 @@ _decodeData(d, cb)
     zlib.inflateRaw(d, (err, str) => {
         if (null !== err)
         {
-            this._logger.warn("Could not decompress Okex gzip data : %s", err);
+            logger.warn("Could not decompress Okex gzip data : %s", err);
             cb.call(this, undefined);
             return;
         }
