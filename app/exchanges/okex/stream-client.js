@@ -302,7 +302,6 @@ _processTickerData(data)
         low: parseFloat(data.data.low),
         timestamp:data.data.createdDate / 1000.0
     }
-    if (isNaN)
     this.emit('ticker', {
         pair:pair,
         data:ticker
