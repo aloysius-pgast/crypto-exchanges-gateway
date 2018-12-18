@@ -587,7 +587,7 @@ formatTicker(pair, ccxtData)
     let priceChangePercent = null;
     if (undefined !== ccxtData.percentage)
     {
-        priceChangePercent = 100 * ccxtData.percentage;
+        priceChangePercent = parseFloat((100 * ccxtData.percentage).toFixed(4));
     }
     return {
         pair:pair,
