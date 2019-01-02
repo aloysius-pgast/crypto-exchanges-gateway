@@ -1071,10 +1071,8 @@ async getOrderBook(pair, opt)
     {
         if (data.buy.length > requestedLimit || data.sell.length > requestedLimit)
         {
-            return {
-                buy:data.buy.slice(0, requestedLimit),
-                sell:data.sell.slice(0, requestedLimit)
-            }
+            data.buy = data.buy.slice(0, requestedLimit);
+            data.sell = data.sell.slice(0, requestedLimit);
         }
     }
     return data;
@@ -1136,7 +1134,7 @@ async _getOrderBook(pair, opt)
  *
  * @param {string} pair pair to retrieve trades for
  * @param {integer} opt.limit maximum number of entries (optional)
- * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional)
+ * @param {integer|string} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional)
  * @param {float} opt.afterTimestamp unix timestamp (sec) to only retrieve trade with a timestamp > opt.afterTimestamp (optional)
  * @param {object} opt.custom exchange specific options (optional)
  * @return {Promise} Promise which will resolve to an array such as below

@@ -345,7 +345,7 @@ Following notifications can be sent
 |Trades data
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}id
-|integer
+|integer|string
 |Unique identifier of the trade. Some exchanges do not always provide this property for so *you should consider it as being optional*
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}quantity
