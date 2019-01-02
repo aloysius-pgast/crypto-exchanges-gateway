@@ -2,6 +2,9 @@
 const retry = require('retry');
 const WebSocket = require('ws');
 const EventEmitter = require('events');
+const url = require('url');
+const querystring = require('querystring');
+const _ = require('lodash');
 const internalConfig = require('./internal-config');
 const debug = require('debug')('CEG:WebSocketConnection');
 
@@ -32,11 +35,12 @@ const STATE_DISCONNECTED = 4;
 
    2) connectionError, when a connection error occurs (ie: WS cannot be connnected)
 
-   Data will be an object {attempts:integer,retry:boolean,error:err}
+   Data will be an object {attempts:integer,retry:boolean,error:err,uri:string}
 
    - attempts : number of attempts to connect
    - retry : whether or not there are retry left
    - error : the connection error which occurred
+   - uri : ws uri (including query parameters)
 
    3) disconnected, when websocket connection has been disconnected
 
@@ -44,11 +48,17 @@ const STATE_DISCONNECTED = 4;
    Event will not be emitted in case connection is disconnected by client or on connection failure
    Event will not be emitted for connection/reconnection error (event connectionError will be emitted instead)
 
-   Data will be an object {code:integer,reason:string}
+   Data will be an object {code:integer,reason:string,uri:string}
+
+   - uri : ws uri (including query parameters)
 
    4) connected, when websocket connection is ready to receive message
 
    Event will only be emitted once in the lifetime of the object
+
+   Data will be an object {uri:string}
+
+   - uri : ws uri (including query parameters)
 
  */
 
@@ -58,8 +68,9 @@ const STATE_DISCONNECTED = 4;
  * @param {string} uri WS uri (ws://xxx or wss://xxx)
  * @param {integer} options.retryCount how many times we should retry to connect upon connection error (optional, default = 11)
  * @param {integer} options.retryDelay how many ms to wait before retry (optional, default = 10000)
- * @param {integer} options.pingTimeout timeout in ms before closing WS connection (optional, default = see internalConfig)
+ * @param {integer} options.pingTimeout timeout in ms before closing WS connection (optional, default = see internalConfig) (0 means disable PING)
  * @param {string} options.userAgent user agent to set when opening WS (optional, default = see internalConfig)
+ * @param {function} options.onPrepareRequest function returning a Promise which should resolve to {uri:string, headers:{},queryParams:{}}
  */
 class WebSocketConnection extends EventEmitter
 {
@@ -72,6 +83,7 @@ constructor(uri, options)
     this._retryDelay = RETRY_DELAY;
     this._pingTimeout = PING_TIMEOUT;
     this._userAgent = USER_AGENT;
+    this._onPrepareRequest = null;
     if (undefined !== options)
     {
         // retry count
@@ -90,6 +102,10 @@ constructor(uri, options)
         if (undefined !== options.pingTimeout)
         {
             this._pingTimeout = options.pingTimeout;
+        }
+        if (undefined !== options.onPrepareRequest)
+        {
+            this._onPrepareRequest = options.onPrepareRequest;
         }
     }
     this._ws = null;
@@ -143,10 +159,9 @@ connect()
     }
     let attempt = 1;
     this._connectionState = STATE_CONNECTING;
-    let self = this;
     try
     {
-        let retryOptions = {
+        const retryOptions = {
             minTimeout:this._retryDelay,
             // do not use any exponential factor
             factor:1,
@@ -160,154 +175,248 @@ connect()
         {
             retryOptions.retries = this._retryCount;
         }
-        let wsOptions = {
-            perMessageDeflate: false,
-            handshakeTimeout:HANDSHAKE_TIMEOUT,
-            headers: {
-                'User-Agent': this._userAgent
-            }
-        }
-        let operation = retry.operation(retryOptions);
-        operation.attempt(function(currentAttempt){
+        const operation = retry.operation(retryOptions);
+        operation.attempt(async (currentAttempt) => {
             // connection has already been disconnected by client
-            if (STATE_CONNECTING != self._connectionState)
+            if (STATE_CONNECTING != this._connectionState)
             {
                 return;
             }
+            let uri = this._uri;
+            const wsOptions = {
+                perMessageDeflate: false,
+                handshakeTimeout:HANDSHAKE_TIMEOUT,
+                headers: {
+                    'User-Agent': this._userAgent
+                }
+            }
             attempt = currentAttempt;
+            // call _onPrepareRequest callback to retrieve extra headers & query parameters
+            if (null !== this._onPrepareRequest)
+            {
+                let data;
+                try
+                {
+                    data = await this._onPrepareRequest();
+                    if (undefined === data || null === data)
+                    {
+                        if (debug.enabled)
+                        {
+                            debug("onPrepareRequest callback returned no data for WS '%s'", uri);
+                        }
+                        const err = {code:'NO_DATA',message:'onPrepareRequest callback returned no data'};
+                        this._ws = null;
+                        if (operation.retry(err))
+                        {
+                            this.emit('connectionError', {uri:uri,attempts:attempt,retry:true,error:err});
+                            return;
+                        }
+                        this.emit('connectionError', {uri:uri,attempts:attempt,retry:false,error:err});
+                        return;
+                    }
+                    if (undefined === data.uri)
+                    {
+                        if (debug.enabled)
+                        {
+                            debug("onPrepareRequest callback returned no uri for WS '%s'", uri);
+                        }
+                        const err = {code:'NO_DATA',message:"Missing 'uri' in data returned by onPrepareRequest callback"};
+                        this._ws = null;
+                        if (operation.retry(err))
+                        {
+                            this.emit('connectionError', {uri:uri,attempts:attempt,retry:true,error:err});
+                            return;
+                        }
+                        this.emit('connectionError', {uri:uri,attempts:attempt,retry:false,error:err});
+                        return;
+                    }
+                    uri = data.uri;
+                    // update headers
+                    if (undefined !== data.headers)
+                    {
+                        _.forEach(data.headers, (value, name) => {
+                            //wsOptions.headers[name] = value;
+                        });
+                    }
+                    // update uri if we have extra query parameters
+                    if (undefined !== data.queryParams)
+                    {
+                        const u = url.parse(uri);
+                        let params;
+                        // merge uri params with query
+                        if (null !== u.query && '' != u.query)
+                        {
+                            params = querystring.parse(u.query);
+                            _.forEach(data.queryParams, (value, key) => {
+                                params[key] = value;
+                            });
+                        }
+                        else
+                        {
+                            params = data.queryParams;
+                        }
+                        // if we have params, rebuild uri
+                        if (!_.isEmpty(params))
+                        {
+                            const query = querystring.stringify(params);
+                            uri = `${u.protocol}//${u.host}`;
+                            if (null !== u.pathname)
+                            {
+                                uri += u.pathname;
+                            }
+                            uri += `?${query}`;
+                        }
+                    }
+                }
+                catch (e)
+                {
+                    if (debug.enabled)
+                    {
+                        debug("Exception for WS '%s' : %s", uri, e.stack);
+                    }
+                    const err = {code:'EXCEPTION',message:e.message};
+                    this._ws = null;
+                    if (operation.retry(err))
+                    {
+                        this.emit('connectionError', {uri:uri,attempts:attempt,retry:true,error:err});
+                        return;
+                    }
+                    this.emit('connectionError', {uri:uri,attempts:attempt,retry:false,error:err});
+                    return;
+                }
+            }
             let doRetry = true;
-            let ws = new WebSocket(self._uri, wsOptions);
+            const ws = new WebSocket(uri, wsOptions);
             let ignoreErrorEvent = false;
             let skipCloseEvent = false;
-            ws.on('open', function() {
+            ws.on('open', () => {
                 // connection has already been disconnected by client
-                if (STATE_CONNECTING != self._connectionState)
+                if (STATE_CONNECTING != this._connectionState)
                 {
                     return;
                 }
-                self._connectionState = STATE_CONNECTED;
+                this._connectionState = STATE_CONNECTED;
                 if (debug.enabled)
                 {
-                    debug("WS (%s) connected", self._uri);
+                    debug("WS (%s) connected", uri);
                 }
-                self._ignoreCloseEvent = false;
+                this._ignoreCloseEvent = false;
                 skipCloseEvent = false;
-                self._timestamp = new Date().getTime();
-                self._ws = this;
+                this._timestamp = new Date().getTime();
+                this._ws = ws;
                 // start ping/pong
-                if (0 != self._pingTimeout)
+                if (0 != this._pingTimeout)
                 {
-                    let _ws = this;
-                    _ws.isAlive = false;
+                    ws.isAlive = false;
                     // initial ping
-                    _ws.ping('', true, true);
-                    let interval = setInterval(function() {
-                        if (WebSocket.OPEN != _ws.readyState)
+                    ws.ping('', true, true);
+                    const interval = setInterval(() => {
+                        if (WebSocket.OPEN != ws.readyState)
                         {
-                            clearTimeout(interval);
+                            clearInterval(interval);
                             return;
                         }
-                        if (!_ws.isAlive)
+                        if (!ws.isAlive)
                         {
                             if (debug.enabled)
                             {
-                                debug("WS (%s) timeout : timeout = %d", self._uri, self._pingTimeout);
+                                debug("WS (%s) timeout : timeout = %d", uri, this._pingTimeout);
                             }
-                            _ws.terminate();
-                            clearTimeout(interval);
+                            ws.terminate();
+                            clearInterval(interval);
                             return;
                         }
-                        _ws.isAlive = false;
+                        ws.isAlive = false;
                         if (debug.enabled)
                         {
-                            debug("Sending WS PING (%s)", self._uri);
+                            debug("Sending WS PING (%s)", uri);
                         }
-                        _ws.ping('', true, true);
-                    }, self._pingTimeout);
+                        ws.ping('', true, true);
+                    }, this._pingTimeout);
                 }
-                self.emit('connected');
+                this.emit('connected', {uri:uri});
             });
-            ws.on('message', function(message) {
-                self.emit('message', message);
+            ws.on('message', (message) => {
+                this.emit('message', message);
             });
-            ws.on('error', function(e) {
+            ws.on('error', (e) => {
                 if (ignoreErrorEvent)
                 {
                     return;
                 }
                 // connection has already been disconnected by client
-                if (STATE_CONNECTING != self._connectionState)
+                if (STATE_CONNECTING != this._connectionState)
                 {
                     return;
                 }
-                let err = {code:e.code,message:e.message}
+                const err = {code:e.code,message:e.message};
                 if (debug.enabled)
                 {
-                    debug("WS (%s) error (attempt %d/%s) : %s", self._uri, attempt, -1 === self._retryCount ? 'unlimited' : (1 + self._retryCount), JSON.stringify(err));
+                    debug("WS (%s) error (attempt %d/%s) : %s", uri, attempt, -1 === this._retryCount ? 'unlimited' : (1 + this._retryCount), JSON.stringify(err));
                 }
                 skipCloseEvent = true;
-                self._ws = null;
-                this.terminate();
+                this._ws = null;
+                ws.terminate();
                 // ws is not open yet, likely to be a connection error
-                if (null === self._timestamp)
+                if (null === this._timestamp)
                 {
                     if (doRetry && operation.retry(err))
                     {
-                        self.emit('connectionError', {attempts:attempt,retry:true,error:err});
+                        this.emit('connectionError', {uri:uri,attempts:attempt,retry:true,error:err});
                         return;
                     }
-                    self.emit('connectionError', {attempts:attempt,retry:false,error:err});
+                    this.emit('connectionError', {uri:uri,attempts:attempt,retry:false,error:err});
                 }
             });
             // likely to be an auth error
-            ws.on('unexpected-response', function(request, response){
+            ws.on('unexpected-response', (request, response) => {
                 // connection has already been disconnected by client
-                if (STATE_CONNECTING != self._connectionState)
+                if (STATE_CONNECTING != this._connectionState)
                 {
                     return;
                 }
-                let err = {code:response.statusCode,message:response.statusMessage};
+                const err = {code:response.statusCode,message:response.statusMessage};
                 ignoreErrorEvent = true;
                 skipCloseEvent = true;
                 if (debug.enabled)
                 {
-                    debug("WS (%s) unexpected-response (attempt %d/%s) : %s", self._uri, attempt, -1 === self._retryCount ? 'unlimited' : (1 + self._retryCount), JSON.stringify(err));
+                    debug("WS (%s) unexpected-response (attempt %d/%s) : %s", uri, attempt, -1 === this._retryCount ? 'unlimited' : (1 + this._retryCount), JSON.stringify(err));
                 }
-                self._ws = null;
+                this._ws = null;
                 if (doRetry && operation.retry(err))
                 {
-                    self.emit('connectionError', {attempts:attempt,retry:true,error:err});
+                    this.emit('connectionError', {uri:uri,attempts:attempt,retry:true,error:err});
                     return;
                 }
-                self.emit('connectionError', {attempts:attempt,retry:false,error:err});
+                this.emit('connectionError', {uri:uri,attempts:attempt,retry:false,error:err});
             });
-            ws.on('close', function(code, reason){
-                if (self._ignoreCloseEvent)
+            ws.on('close', (code, reason) => {
+                if (this._ignoreCloseEvent)
                 {
                     return;
                 }
                 // connection has already been disconnected by client
-                if (STATE_CONNECTING != self._connectionState && STATE_CONNECTED != self._connectionState)
+                if (STATE_CONNECTING != this._connectionState && STATE_CONNECTED != this._connectionState)
                 {
                     return;
                 }
                 if (debug.enabled)
                 {
-                    debug("WS (%s) closed : code = %d, reason = '%s'", self._uri, code, reason);
+                    debug("WS (%s) closed : code = %d, reason = '%s'", uri, code, reason);
                 }
-                self._ws = null;
-                self._finalize(true, STATE_DISCONNECTED);
+                this._ws = null;
+                this._finalize(true, STATE_DISCONNECTED);
                 if (!skipCloseEvent)
                 {
-                    self.emit('disconnected', {code:code, reason:reason});
+                    this.emit('disconnected', {uri:uri,code:code,reason:reason});
                 }
             });
             // reply to ping
-            ws.on('ping', function(data){
-                this.pong('', true, true);
+            ws.on('ping', (data) => {
+                ws.pong('', true, true);
             });
-            ws.on('pong', function(data){
-                this.isAlive = true;
+            ws.on('pong', (data) => {
+                ws.isAlive = true;
             });
         });
     }
@@ -315,9 +424,8 @@ connect()
     {
         if (debug.enabled)
         {
-            debug("Exception for WS '%s' : %s", self._uri, e.stack);
+            debug("Exception for WS '%s' : %s", uri, e.stack);
         }
-
     }
     return true;
 }
@@ -333,7 +441,7 @@ _finalize(terminate, newState)
     // close ws
     if (null !== this._ws)
     {
-        let ws = this._ws;
+        const ws = this._ws;
         this._ws = null;
         this._ignoreCloseEvent = true;
         try

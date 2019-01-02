@@ -2782,7 +2782,6 @@ async __getOrderPair(orderNumber, pairs)
         return pair;
     }
     // TODO : use a bottleneck instance to send queries in batch
-
     let arr = [];
     _.forEach(pairs, (pair) => {
         let p = this._getOrder(orderNumber, pair);
