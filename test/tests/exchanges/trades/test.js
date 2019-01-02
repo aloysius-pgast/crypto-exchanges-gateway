@@ -7,7 +7,8 @@ const restClient = require('../../../lib/rest-client').getInstance();
 
 // schema for a single trade
 const tradeSchema = joi.object({
-    id:joi.string().allow(null).required(),
+    // can be integer or string
+    id:joi.alternatives().try(joi.number(), joi.string()).allow(null).required(),
     quantity:joi.number().positive().required(),
     rate:joi.number().positive().required(),
     // seems like it's possible to have a price = 0 (see below example for Poloniex)
