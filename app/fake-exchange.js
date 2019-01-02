@@ -335,7 +335,7 @@ async getBalances(currencies)
             list[arr[1]] = true;
         });
         // retrieve all pairs with matching baseCurrency
-        pairs = await this._realExchange.getPairsSymbols(true, {currencies:currencies});
+        pairs = await this._realExchange.getPairsSymbols(true, {baseCurrencies:currencies});
         _.forEach(pairs, (p) => {
             let arr = p.split('-');
             list[arr[0]] = true;
