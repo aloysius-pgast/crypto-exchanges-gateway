@@ -71,18 +71,6 @@
             "timeout":10000,
             "requirePair":false,
             "emulatedWs":{
-                "wsTickers":{
-                    "enabled":true,
-                    "period":30
-                },
-                "wsOrderBooks":{
-                    "enabled":true,
-                    "period":30
-                },
-                "wsTrades":{
-                    "enabled":true,
-                    "period":30
-                },
                 "wsKlines":{
                     "enabled":true
                 }

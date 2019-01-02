@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.7.8] *NOT RELEASED YET*
+### Gateway
+* Use native WS for Kucoin exchange
+* Change fake balances generation for demo mode
+* Support `string` value instead of `integer` for `afterTradeId` query parameter in `/exchanges/xxx/trades/yyyy` endpoint
+* Minor fixes & code cleaning
+
 ## [v1.7.7]
 ### Gateway
 * Fix typo in _tickerMonitor_ module

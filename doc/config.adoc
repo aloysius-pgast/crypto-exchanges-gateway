@@ -80,24 +80,6 @@ Below config will only give access to public API (since no key/secret combinatio
             "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
             "emulatedWs":{
-                "wsTickers":{
-                    /* whether or not ws emulation should be enabled for tickers */
-                    "enabled":true,
-                    /* how often in second tickers should be retrieved using REST API, to emulate ws stream for tickers */
-                    "period":30
-                },
-                "wsOrderBooks":{
-                    /* whether or not ws emulation should be enabled for order books */
-                    "enabled":true,
-                    /* how often in second order books should be retrieved using REST API, to emulate ws stream for order book */
-                    "period":30
-                },
-                "wsTrades":{
-                    /* whether or not ws emulation should be enabled for trades */
-                    "enabled":true,
-                    /* how often in second trades should be retrieved using REST API, to emulate ws stream for trades */
-                    "period":30
-                },
                 "wsKlines":{
                     /* whether or not ws emulation should be enabled for klines */
                     "enabled":true
@@ -326,23 +308,9 @@ Access will be restricted using the following :
             "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
             "emulatedWs":{
-                "wsTickers":{
-                    /* whether or not ws emulation should be enabled for tickers */
-                    "enabled":true,
-                    /* how often in second tickers should be retrieved using REST API, to emulate ws stream for tickers */
-                    "period":30
-                },
-                "wsOrderBooks":{
-                    /* whether or not ws emulation should be enabled for order books */
-                    "enabled":true,
-                    /* how often in second order books should be retrieved using REST API, to emulate ws stream for order book */
-                    "period":30
-                },
-                "wsTrades":{
-                    /* whether or not ws emulation should be enabled for trades */
-                    "enabled":true,
-                    /* how often in second trades should be retrieved using REST API, to emulate ws stream for trades */
-                    "period":30
+                "wsKlines":{
+                    /* whether or not ws emulation should be enabled for klines */
+                    "enabled":true
                 }
             },
             /* API key provided by Kucoin */

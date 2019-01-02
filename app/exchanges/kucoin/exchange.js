@@ -3,7 +3,7 @@ const logger = require('winston');
 const _ = require('lodash');
 const Errors = require('../../errors');
 const CcxtErrors = require('../../ccxt-errors');
-const CcxtClient = require('../../default-ccxt-client');
+const CcxtClient = require('./ccxt-client');
 const AbstractCcxtExchangeClass = require('../../abstract-ccxt-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
@@ -31,9 +31,9 @@ const defaultKlinesInterval = '5m';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true,emulated:true},
-    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:true},
-    'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:true},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true,emulated:false},
+    'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:false},
+    'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:false},
     'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
     'orders':{enabled:true, withoutPair:false},
     'openOrders':{enabled:true, withoutPair:false},
@@ -78,6 +78,33 @@ getDefaultOrderBookLimit()
 getDefaultTradesLimit()
 {
     return TRADES_DEFAULT_LIMIT;
+}
+
+/**
+ * Retrieve order book for a single pair
+
+ * @param {string} pair pair to retrieve order book for
+ * @param {integer} opt.limit maximum number of entries (for both ask & bids) (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
+ * @param {object} opt.custom.includeTimestamp whether or not 'timestamp' field should be present in result (optional, default = false)
+ * @return {Promise} Promise which will resolve to an object such as below
+ */
+async _getOrderBook(pair, opt)
+{
+    let customOpt = opt.custom;
+    // we don't want to pass opt.custom.includeTimestamp to ccxt client
+    if (undefined !== opt.custom.includeTimestamp)
+    {
+        customOpt = _.clone(opt.custom);
+        delete customOpt.includeTimestamp;
+    }
+    const data = await this._client.getOrderBook(pair, opt.limit, customOpt);
+    // timestamp will be requested by subscription manager to sort full orderbook & order book updates
+    if (true === opt.custom.includeTimestamp)
+    {
+        data.custom.timestamp = data.ccxt.timestamp;
+    }
+    return data.custom;
 }
 
 /**
