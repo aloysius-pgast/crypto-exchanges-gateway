@@ -98,49 +98,6 @@ if (fs.existsSync(configFile))
 
 //-- update config based on environment (used when using docker container)
 
-//-- check CoinMarketCap
-// check env (only if custom config does not exist)
-if (!hasCustomConfig)
-{
-    let enableCoinMarketCap = process.env['cfg.coinmarketcap.enabled'];
-    if (undefined !== enableCoinMarketCap && '' !== enableCoinMarketCap)
-    {
-        if (true === enableCoinMarketCap || '1' == enableCoinMarketCap)
-        {
-            config.coinmarketcap.enabled = true;
-        }
-        else if (false === enableCoinMarketCap || '0' == enableCoinMarketCap)
-        {
-            config.coinmarketcap.enabled = false;
-        }
-    }
-    // check history feature
-    if (config.coinmarketcap.enabled)
-    {
-        let enableHistory = process.env['cfg.coinmarketcap.history'];
-        if (true === enableHistory || '1' == enableHistory)
-        {
-            config.coinmarketcap.history = true;
-        }
-        else if (false === enableHistory || '0' == enableHistory)
-        {
-            config.coinmarketcap.history = false;
-        }
-    }
-}
-// add log if CoinMarketCap is enabled
-if (config.coinmarketcap.enabled)
-{
-    if (config.coinmarketcap.history)
-    {
-        logger.warn("CoinMarketCap API is enabled (with history)");
-    }
-    else
-    {
-        logger.warn("CoinMarketCap API is enabled (without history)");
-    }
-}
-
 //-- check Market Cap
 // check env (only if custom config does not exist)
 if (!hasCustomConfig)

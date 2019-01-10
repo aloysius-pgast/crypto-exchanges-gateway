@@ -60,17 +60,6 @@ _defineMarketOverviewEntry(obj)
     );
 }
 
-_defineCoinMarketCapEntry(obj)
-{
-    this._menu.push(
-        {
-            name: 'Coin Market Cap',
-            url: obj.default.path,
-            icon: 'fa fa-bitcoin'
-        }
-    );
-}
-
 _defineMarketCapEntry(obj)
 {
     this._menu.push(
@@ -130,9 +119,6 @@ _defineServiceEntry(obj, id)
 {
     switch (id)
     {
-        case 'coinmarketcap':
-            this._defineCoinMarketCapEntry(obj);
-            break;
         case 'marketCap':
             this._defineMarketCapEntry(obj);
             break;

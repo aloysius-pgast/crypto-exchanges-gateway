@@ -13,9 +13,6 @@
         "enabled":true
     },
     "logLevel":"info",
-    "coinmarketcap":{
-        "enabled":false
-    },
     "marketCap":{
         "enabled":true
     },

@@ -6,6 +6,7 @@
 * Change fake balances generation for demo mode
 * Support `string` value instead of `integer` for `afterTradeId` query parameter in `/exchanges/xxx/trades/yyyy` endpoint
 * Minor fixes & code cleaning
+* Support for module _coinmarketcap_ has been removed (replaced by module _marketCap_)
 
 ## [v1.7.7]
 ### Gateway

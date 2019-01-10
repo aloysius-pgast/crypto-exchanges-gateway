@@ -28,7 +28,6 @@ import MyBalances from './views/MyBalances';
 //-- services views
 import MarketOverview from './views/MarketOverview';
 import Portfolio from './views/Portfolio';
-import CoinMarketCap from './views/CoinMarketCap/';
 import MarketCap from './views/MarketCap/';
 import Settings from './views/Settings';
 import MyStreams from './views/MyStreams';
@@ -152,17 +151,6 @@ _loadRoutes()
 
     //-- services
     let services = serviceRegistry.getServices();
-    // CoinMarketCap service
-    if (undefined !== services['coinmarketcap'])
-    {
-        let path = '/services/coinMarketCap';
-        routeRegistry.registerServiceRoute(path, 'coinmarketcap');
-        this._routes.push({
-            path:path,
-            exact:true,
-            component:CoinMarketCap
-        });
-    }
     // MarketCap service
     if (undefined !== services['marketCap'])
     {

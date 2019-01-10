@@ -1,6 +1,0 @@
-{
-  "name": "CoinMarketCapSymbolChooser",
-  "version": "0.0.0",
-  "private": true,
-  "main": "./CoinMarketCapSymbolChooser.js"
-}
