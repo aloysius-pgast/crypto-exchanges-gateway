@@ -324,6 +324,24 @@ async _getPairs()
                     }
                 }
             }
+            // set max to null instead of 0 for rate & quantity
+            if (0 == obj.limits.rate.max)
+            {
+                obj.limits.rate.max = null;
+            }
+            if (0 == obj.limits.quantity.max)
+            {
+                obj.limits.quantity.max = null;
+            }
+            // set min to step value if min == 0 for rate & quantity
+            if (0 == obj.limits.rate.min)
+            {
+                obj.limits.rate.min = obj.limits.rate.step;
+            }
+            if (0 == obj.limits.quantity.min)
+            {
+                obj.limits.quantity.min = obj.limits.quantity.step;
+            }
             list[pair] = obj;
         });
         // no active pair something must be wrong on exchange
