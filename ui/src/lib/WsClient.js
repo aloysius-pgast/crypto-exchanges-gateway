@@ -18,6 +18,8 @@ constructor()
         entities:{},
         pair:null,
         exchange:null,
+        // klines interval
+        interval:null,
         unsubscribe:false
     }
 }
@@ -178,6 +180,7 @@ _createConnection()
                 case 'orderBook':
                 case 'orderBookUpdate':
                 case 'trades':
+                case 'kline':
                     self.emit(data.n, data.d);
                     break;
                 default:
@@ -197,14 +200,16 @@ _createConnection()
  * @param {string} exchange exchange identifier
  * @param {string[]} entities (ticker|orderBook|trades)
  * @param {string} pair
+ * @param {string} interval (optional, only used for klines)
  */
-subscribe(exchange, entity, pair)
+subscribe(exchange, entity, pair, interval)
 {
     switch (entity)
     {
         case 'ticker':
         case 'orderBook':
         case 'trades':
+        case 'klines':
             break;
         default:
             console.warn(`Unsupported entity : '${entity}'`);
@@ -217,6 +222,11 @@ subscribe(exchange, entity, pair)
     }
     this._subscriptions.exchange = exchange;
     this._subscriptions.pair = pair;
+    this._subscriptions.interval = null;
+    if ('klines' == entity)
+    {
+        this._subscriptions.interval = interval;
+    }
     if (undefined != this._subscriptions.entities[entity])
     {
         return;
@@ -275,6 +285,10 @@ _subscribe(entity)
                 break;
             case 'trades':
                 message.m = 'subscribeToTrades';
+                break;
+            case 'klines':
+                message.m = 'subscribeToKlines';
+                message.p.interval = this._subscriptions.interval;
                 break;
         }
         messageList.push(message);

@@ -5,16 +5,16 @@ import ToolBar from './ToolBar';
 import Chart from './Chart';
 
 const klinesPeriods = [
-    {period:'4h', periodLabel:'4 hours', interval:'1m', count:240},
-    {period:'12h', periodLabel:'12 hours', interval:'3m', count:240},
-    {period:'1d', periodLabel:'1 day', interval:'5m', count:288},
-    {period:'3d', periodLabel:'3 days', interval:'15m', count:288},
-    {period:'7d', periodLabel:'7 days', interval:'30m', count:336},
-    {period:'15d', periodLabel:'15 days', interval:'1h', count:360},
-    {period:'1M', periodLabel:'1 month', interval:'2h', count:360},
-    {period:'3M', periodLabel:'3 months', interval:'6h', count:360},
-    {period:'6M', periodLabel:'6 months', interval:'12h', count:360},
-    {period:'1Y', periodLabel:'1 year', interval:'1d', count:365}
+    {period:'4h', periodLabel:'4 hours', interval:'1m', count:240, duration:60},
+    {period:'12h', periodLabel:'12 hours', interval:'3m', count:240, duration:180},
+    {period:'1d', periodLabel:'1 day', interval:'5m', count:288, duration:300},
+    {period:'3d', periodLabel:'3 days', interval:'15m', count:288, duration:900},
+    {period:'7d', periodLabel:'7 days', interval:'30m', count:336, duration:1800},
+    {period:'15d', periodLabel:'15 days', interval:'1h', count:360, duration:3600},
+    {period:'1M', periodLabel:'1 month', interval:'2h', count:360, duration:7200},
+    {period:'3M', periodLabel:'3 months', interval:'6h', count:360, duration:21600},
+    {period:'6M', periodLabel:'6 months', interval:'12h', count:360, duration:43200},
+    {period:'1Y', periodLabel:'1 year', interval:'1d', count:365, duration:86400}
 ]
 const klinesPeriodToKlinesInterval = {};
 const klinesIntervalToKlinesPeriod = {};
@@ -23,13 +23,16 @@ _.forEach(klinesPeriods, (e) => {
     klinesIntervalToKlinesPeriod[e.interval] = e;
 });
 
+// update last kline every 20s
+const REFRESH_PERIOD = 20 * 1000;
+
 class ChartContainer extends Component {
 
 constructor(props) {
     super(props);
     this._isMounted = false;
     this.state = {
-        data:{loaded:false, data:null, err:null, refreshPeriod:0},
+        data:{loaded:false, data:null, err:null},
         klinesInterval:this.props.klinesInterval,
         klinesPeriod:this._klineIntervalToKlinePeriod(this.props.klinesInterval),
         count:225,
@@ -69,105 +72,100 @@ _klineIntervalToKlinePeriod(interval)
     return klinesIntervalToKlinesPeriod[interval].period;
 }
 
-loadData(isRefresh) {
-    if (null !== this._timer)
-    {
-        clearTimeout(this._timer);
-        this._timer = null;
-    }
-    if (undefined === isRefresh)
-    {
-        isRefresh = false;
-    }
+loadData() {
     let klinesInterval = this.state.klinesInterval;
-    if (!isRefresh)
-    {
-        this.setState({reset:!isRefresh, data:{loaded:false, data:null, err:null, refreshPeriod:0}}, () => {
-            let refreshPeriod = this.state.data.refreshPeriod;
-            this.props.onLoadData(klinesInterval).then((result) => {
-                if (!this._isMounted || klinesInterval !== this.state.klinesInterval)
-                {
-                    return;
-                }
-                if (undefined !== result.refreshPeriod)
-                {
-                    refreshPeriod = result.refreshPeriod;
-                }
-                this.setState({reset:true, data:{loaded:true, data:result.data, err:null, refreshPeriod:refreshPeriod}}, () => {
-                    if (0 !== refreshPeriod)
-                    {
-                        if (null !== this._timer)
-                        {
-                            clearTimeout(this._timer);
-                        }
-                        this._timer = setTimeout(() => {
-                            this.loadData(true);
-                        }, refreshPeriod);
-                    }
-                });
-            }).catch ((e) => {
-                if (!this._isMounted || klinesInterval !== this.state.klinesInterval)
-                {
-                    return;
-                }
-                this.setState({reset:!isRefresh, data:{loaded:true, data:null, err:e, refreshPeriod:0}});
-            });
-        });
-    }
-    else
-    {
-        let refreshPeriod = this.state.data.refreshPeriod;
+    this.setState({reset:true, data:{loaded:false, data:null, err:null}}, () => {
+        if (null !== this._timer)
+        {
+            clearInterval(this._timer);
+            this._timer = null;
+        }
         this.props.onLoadData(klinesInterval).then((result) => {
             if (!this._isMounted || klinesInterval !== this.state.klinesInterval)
             {
                 return;
             }
-            if (undefined !== result.refreshPeriod)
-            {
-                refreshPeriod = result.refreshPeriod;
-            }
-            this.setState((prevState, props) => {
-                let data = prevState.data;
-                data.data = result.data;
-                data.err = null;
-                data.refreshPeriod = refreshPeriod
-                return {reset:!isRefresh, data:data};
-            }, () => {
-                if (0 !== refreshPeriod)
-                {
-                    if (null !== this._timer)
-                    {
-                        clearTimeout(this._timer);
-                    }
-                    this._timer = setTimeout(() => {
-                        this.loadData(true);
-                    }, refreshPeriod);
-                }
+            this.setState({reset:true, data:{loaded:true, data:result.data, err:null}}, () => {
+                this._timer = setInterval(() => {
+                    this._getNewKline(klinesInterval);
+                }, REFRESH_PERIOD);
             });
         }).catch ((e) => {
-            console.error(e);
             if (!this._isMounted || klinesInterval !== this.state.klinesInterval)
             {
                 return;
             }
-            this.setState((prevState, props) => {
-                let data = prevState.data;
-                data.err = e;
-                return {reset:!isRefresh, data:data};
-            }, () => {
-                if (0 !== refreshPeriod)
-                {
-                    if (null !== this._timer)
-                    {
-                        clearTimeout(this._timer);
-                    }
-                    this._timer = setTimeout(() => {
-                        this.loadData(true);
-                    }, refreshPeriod);
-                }
-            });
+            this.setState({reset:true, data:{loaded:true, data:null, err:e}});
         });
+    });
+}
+
+_getNewKline(klinesInterval) {
+    if (null === this.state.data.data)
+    {
+        return;
     }
+    if (klinesInterval != this.state.klinesInterval)
+    {
+        return;
+    }
+    const newKline = this.props.onGetNewKline();
+    if (null == newKline)
+    {
+        return;
+    }
+    const data = this.state.data.data;
+    if (0 == data.length)
+    {
+        return;
+    }
+    const lastKline = data[data.length - 1];
+    const newTimestamp = newKline.date.getTime();
+    const lastTimestamp =  lastKline.date.getTime();
+    // ignore if timestamp is older than what we retrieved using REST API
+    if (newTimestamp < lastTimestamp)
+    {
+        return;
+    }
+    // in case we have a missing kline, reload data
+    const maxDelta = 1000 * klinesIntervalToKlinesPeriod[klinesInterval].duration;
+    if (newTimestamp - lastTimestamp > maxDelta)
+    {
+        console.warn(`Found missing kline for ${this.props.exchangeName}-${this.props.pair}-${klinesInterval}. Data will be reloaded`);
+        return this.loadData();
+    }
+
+    let needUpdate = false;
+    // this is a new kline
+    if (newTimestamp != lastTimestamp)
+    {
+        needUpdate = true;
+        // push new kline & remove first one
+        data.push(newKline);
+        data.shift();
+    }
+    // this is an update for last kline
+    else
+    {
+        if (newKline.open != lastKline.open || newKline.close != lastKline.close ||
+            newKline.high != lastKline.high || newKline.low != lastKline.low ||
+            newKline.volume != lastKline.volume
+        )
+        {
+            needUpdate = true;
+            // replace last kline
+            data[data.length - 1] = newKline;
+        }
+    }
+    if (!needUpdate)
+    {
+        return;
+    }
+    this.setState((prevState, props) => {
+        prevState.data.data = data;
+        prevState.reset = false;
+        return prevState;
+    });
 }
 
 _recomputeDimensions(cb) {
@@ -193,7 +191,7 @@ _recomputeDimensions(cb) {
 componentDidMount() {
     this._isMounted = true;
     this._recomputeDimensions(() => {
-        this.loadData(false);
+        this.loadData();
     });
     window.addEventListener('resize', () => {
         this._recomputeDimensions();
@@ -202,6 +200,11 @@ componentDidMount() {
 
 componentWillUnmount() {
     this._isMounted = false;
+    if (null !== this._timer)
+    {
+        clearInterval(this._timer);
+        this._timer = null;
+    }
     window.removeEventListener('resize', this._recomputeDimensions);
 }
 
@@ -219,7 +222,7 @@ handleSelectKlinesInterval(interval)
     this.setState((prevState, props) => {
         return {klinesInterval:interval,count:count};
     }, function(){
-        this.loadData(false);
+        this.loadData();
         if (undefined != this.props.onSelectKlinesInterval)
         {
             this.props.onSelectKlinesInterval(this.state.klinesInterval);
@@ -238,7 +241,7 @@ handleSelectKlinesPeriod(period)
     this.setState((prevState, props) => {
         return {klinesInterval:klinesInterval,count:count};
     }, function(){
-        this.loadData(false);
+        this.loadData();
         if (undefined != this.props.onSelectKlinesInterval)
         {
             this.props.onSelectKlinesInterval(this.state.klinesInterval);
@@ -337,7 +340,10 @@ ChartContainer.defaultProps = {
     heightPercent:0.8,
     onLoadData:(interval) => {
         // no data, no refresh
-        return Promise.resolve({data:[],refreshPeriod:0});
+        return Promise.resolve({data:[]});
+    },
+    onGetNewKline:() => {
+        return null;
     }
 }
 
