@@ -1,13 +1,13 @@
 # Change Log
 
-## [v1.7.8] *NOT RELEASED YET*
+## [v1.7.8]
 ### Gateway
-* Use native WS for Kucoin exchange
+* Use native WS for Kucoin exchange instead of emulated
 * Change fake balances generation for demo mode
-* Support `string` value instead of `integer` for `afterTradeId` query parameter in `/exchanges/xxx/trades/yyyy` endpoint
-* Minor fixes & code cleaning
+* Support `string` value as well as `integer` for `afterTradeId` query parameter in `/exchanges/xxx/trades/yyyy` endpoint
 * Support for module _coinmarketcap_ has been removed (replaced by module _marketCap_)
 * Ensure we retrieve up-to-date market cap data from CoinCodex by adding current timestamp to request
+* Minor fixes & code cleaning
 ### UI
 * Use WS to retrieve klines instead of REST when displaying chart using *react-stockcharts*
 
