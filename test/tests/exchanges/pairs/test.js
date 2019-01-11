@@ -12,8 +12,8 @@ const pairSchema = joi.object({
     currency:joi.string().regex(/^[A-Za-z0-9]+$/).required(),
     limits:joi.object({
         rate:joi.object({
-            min:joi.number().positive().required(),
-            max:joi.number().positive().allow(null).required(),
+            min:joi.number().positive().allow(0).required(),
+            max:joi.number().positive().allow(0).allow(null).required(),
             step:joi.number().positive(),
             // it's possible to have precision = 0 (with step 1)
             precision:joi.number().integer().required()

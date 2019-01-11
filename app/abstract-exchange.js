@@ -222,29 +222,12 @@ _isDDosProtectionError(e)
 
 __logError(e, method)
 {
-    Errors.logError(e, `${this.__id}|${method}`)
+    Errors.logError(e, `exchange|${this.__id}|${method}`)
 }
 
 __logNetworkError(e, method)
 {
-    logger.error(`NetworkError (${this.__id}|${method})`);
-    if (undefined !== e.stack)
-    {
-        logger.error(e.stack);
-    }
-    else
-    {
-        // only log part status code, reason & part of the body
-        if (undefined !== e.statusCode && undefined !== e.statusMessage)
-        {
-            let err = {statusCode:e.statusCode,statusMessage:e.statusMessage}
-            logger.error(JSON.stringify(err));
-        }
-        else
-        {
-            logger.error(e);
-        }
-    }
+    Errors.logNetworkError(e, `exchange|${this.__id}|${method}`);
 }
 
 _precisionToStep(value)
@@ -1088,10 +1071,8 @@ async getOrderBook(pair, opt)
     {
         if (data.buy.length > requestedLimit || data.sell.length > requestedLimit)
         {
-            return {
-                buy:data.buy.slice(0, requestedLimit),
-                sell:data.sell.slice(0, requestedLimit)
-            }
+            data.buy = data.buy.slice(0, requestedLimit);
+            data.sell = data.sell.slice(0, requestedLimit);
         }
     }
     return data;
@@ -1153,7 +1134,7 @@ async _getOrderBook(pair, opt)
  *
  * @param {string} pair pair to retrieve trades for
  * @param {integer} opt.limit maximum number of entries (optional)
- * @param {integer} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional)
+ * @param {integer|string} opt.afterTradeId only retrieve trade with an ID > opt.afterTradeId (optional)
  * @param {float} opt.afterTimestamp unix timestamp (sec) to only retrieve trade with a timestamp > opt.afterTimestamp (optional)
  * @param {object} opt.custom exchange specific options (optional)
  * @return {Promise} Promise which will resolve to an array such as below
@@ -2801,7 +2782,6 @@ async __getOrderPair(orderNumber, pairs)
         return pair;
     }
     // TODO : use a bottleneck instance to send queries in batch
-
     let arr = [];
     _.forEach(pairs, (pair) => {
         let p = this._getOrder(orderNumber, pair);

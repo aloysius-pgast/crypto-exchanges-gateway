@@ -108,13 +108,6 @@ MochaHelper.prepare(() => {
                         }).required()
                     })),
                     others:joi.object({
-                        coinmarketcap:joi.object({
-                            id:joi.string().required(),
-                            name:joi.string().required(),
-                            demo:joi.boolean().required(),
-                            features:joi.object().required(),
-                            cfg:joi.object()
-                        }),
                         marketCap:joi.object({
                             id:joi.string().required(),
                             name:joi.string().required(),

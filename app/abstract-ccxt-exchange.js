@@ -105,7 +105,7 @@ _isDDosProtectionError(e)
 
 __logNetworkError(e, method)
 {
-    logger.error(`NetworkError (${this.__id}|${method})`);
+    logger.error(`NetworkError (exchange|${this.__id}|${method})`);
     logger.error(e.inspect());
     // only log part status code, reason & part of the body
     if (undefined !== e.response)

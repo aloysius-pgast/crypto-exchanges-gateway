@@ -3,7 +3,6 @@ const _default = require('./default');
 const server = require('./server');
 const auth = require('../auth');
 const errors = require('../errors');
-const coinmarketcap = require('../../coinmarketcap/routes');
 const marketCap = require('../../marketCap/routes');
 const fxConverter = require('../../fxConverter/routes');
 const pushover = require('../../pushover/routes');
@@ -16,7 +15,6 @@ const ui = require('./ui');
 module.exports = function(app, bodyParsers, config) {
     auth(app, config);
     debug(app, bodyParsers, config);
-    coinmarketcap(app, bodyParsers, config);
     marketCap(app, bodyParsers, config);
     fxConverter(app, bodyParsers, config);
     pushover(app, bodyParsers, config);
@@ -24,7 +22,7 @@ module.exports = function(app, bodyParsers, config) {
     sessions(app, bodyParsers, config);
     ui(app, bodyParsers, config);
     server(app, bodyParsers, config);
-    // must be loaded after coinmarketcap
+    // must be loaded after marketCap
     portfolio(app, bodyParsers, config);
     // must be loaded after pushover
     tickerMonitor(app, bodyParsers, config);

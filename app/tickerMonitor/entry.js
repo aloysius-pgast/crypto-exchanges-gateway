@@ -22,8 +22,6 @@ const STATUS_INVALID = 'invalid';
 //-- expiry in seconds when retrieving values from tickerCache
 // expiry for exchanges ticker (5 min)
 const EXPIRY_EXCHANGE_TICKER = 300;
-// expiry for coinmarketcap ticker (15 min)
-const EXPIRY_COINMARKETCAP_TICKER = 900;
 // expiry for marketCap ticker (1 hour)
 const EXPIRY_MARKET_CAP_TICKER = 3600;
 
@@ -735,35 +733,14 @@ _getServiceChecker(c)
 {
     switch (c.origin.id)
     {
-        case 'coinmarketcap':
-            return this._getCoinmarketcapChecker(c);
+        case 'marketCap':
+            return this._getMarketCapChecker(c);
             break;
         // this should not happen
         default:
             c.invalid = true;
             logger.error(`Unknown value for 'condition[origin][id]' (service) : value = '${c.origin.id}'`);
             return this._getDummyChecker(false);
-    }
-}
-
-/**
- * Creates a function to check a a coinmarketcap condition
- * @param {object} c condition object
- * @return {function}
- */
-_getCoinmarketcapChecker(c)
-{
-    let service = serviceRegistry.getService(c.origin.id);
-    if (null === service)
-    {
-        c.invalid = true;
-        logger.warn(`TickerMonitor entry '${this._id}' has a condition for service '${c.origin.id}' but service is not supported anymore`);
-        return this._getDummyChecker(false);
-    }
-    let f = this._getFunction(c.condition.operator);
-    return function(now){
-        c.value = tickerCache.getCoinmarketcapTickerField(c.condition.symbol, c.condition.field, now - EXPIRY_COINMARKETCAP_TICKER);
-        return f(c.value, c.condition.value);
     }
 }
 
@@ -886,8 +863,8 @@ _subscribeForService(c)
 {
     switch (c.origin.id)
     {
-        case 'coinmarketcap':
-            return tickerCache.subscribeToCoinmarketcapTicker(this._subscribeId, c.condition.symbol);
+        case 'marketCap':
+            return tickerCache.subscribeToMarketCapTicker(this._subscribeId, c.condition.symbol);
         // this should not happen
         default:
             logger.error(`Unknown value for 'condition[origin][id]' (service) : value = '${c.origin.id}'`);
@@ -939,8 +916,8 @@ _unsubscribeForService(c)
 {
     switch (c.origin.id)
     {
-        case 'coinmarketcap':
-            return tickerCache.unsubscribeFromCoinmarketcapTicker(this._subscribeId, c.condition.symbol);
+        case 'marketCap':
+            return tickerCache.unsubscribeFromMarketCapTicker(this._subscribeId, c.condition.symbol);
         // this should not happen
         default:
             logger.error(`Unknown value for 'condition[origin][id]' (service) : value = '${c.origin.id}'`);

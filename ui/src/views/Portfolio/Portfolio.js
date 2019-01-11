@@ -150,7 +150,8 @@ _loadBalances(isFirstLoad)
             obj.currency = currency;
             if ('USD' != convertCurrency)
             {
-                if (!obj.convertedPrice[convertCurrency].unknownPrice)
+                // converted price will be unknown if currency price in USD is unknown
+                if (undefined !== obj.convertedPrice[convertCurrency] && !obj.convertedPrice[convertCurrency].unknownPrice)
                 {
                     obj.price = obj.convertedPrice[convertCurrency].price;
                 }
@@ -166,7 +167,8 @@ _loadBalances(isFirstLoad)
         });
         if ('USD' != convertCurrency)
         {
-            if (!data.convertedPrice[convertCurrency].unknownPrice)
+            // converted price will be unknown if currency price in USD is unknown
+            if (undefined !== data.convertedPrice[convertCurrency] && !data.convertedPrice[convertCurrency].unknownPrice)
             {
                 data.price = data.convertedPrice[convertCurrency].price;
             }
@@ -183,6 +185,7 @@ _loadBalances(isFirstLoad)
         {
             return;
         }
+        console.error(err);
         let timestamp = new Date().getTime();
         let newState = {balances:{loaded:true, isRefreshing:false, updateTimestamp:timestamp, isFirstLoad:isFirstLoad, data:null, err:err}};
         self.setState(newState);

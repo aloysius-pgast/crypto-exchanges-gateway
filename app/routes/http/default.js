@@ -18,7 +18,7 @@ app.use(function (req, res) {
         return;
     }
     let u = url.parse(req.url);
-    if ('/favicon.ico' == u.pathname)
+    if ('/favicon.ico' == u.pathname || '/robots.txt' == u.pathname)
     {
         res.status(404).end();
         return;

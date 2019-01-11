@@ -16,21 +16,23 @@ class AbstractExchangeStreamClient extends EventEmitter
 
     1) connectionError, when a connection/reconnection error occurs (ie: WS cannot be connnected)
 
-    Data will be an object {connectionId:integer,attempts:integer,error:err}
+    Data will be an object {connectionId:integer,attempts:integer,error:err,uri:string}
 
     - connectionId : id of WS connection
     - attempts : number of attempts to connect
     - error : the connection error which occurred
+    - uri : ws uri (including query parameters)
 
     Reconnection will be automatic
 
     2) disconnected, when WS has been disconnected by exchange
 
-    Data will be an object {connectionId:integer,code:integer,reason:string}
+    Data will be an object {connectionId:integer,code:integer,reason:string,uri:string}
 
     - connectionId : id of WS connection
     - code: disconnection code
     - reason : disconnection reason
+    - uri : ws uri (including query parameters)
 
     Reconnection will be automatic
 
@@ -38,17 +40,20 @@ class AbstractExchangeStreamClient extends EventEmitter
 
     This is a final event. Client will need to call method reconnect
 
-    Data will be an object {connectionId:integer,attempts:integer,error:err}
+    Data will be an object {connectionId:integer,attempts:integer,error:err,uri:string}
 
     - connectionId : id of WS connection
     - attempts : number of attempts to connect
     - error : the connection error which occurred
+    - uri : ws uri (including query parameters)
 
     4) connected, when websocket is connected/reconnected
 
-    Data will be an object {connectionId:integer}
+    Data will be an object {connectionId:integer,uri:string}
 
     - connectionId : id of WS connection
+    - uri : ws uri (including query parameters)
+
 */
 
 /**
@@ -58,8 +63,9 @@ class AbstractExchangeStreamClient extends EventEmitter
  * @param {string} uri WS uri (ws://xxx or wss://xxx)
  * @param {integer} options.retryCount how many times we should retry to connect upon connection error (optional, default = see WebSocketConnection)
  * @param {integer} options.retryDelay how many ms to wait before retry (optional, default = 10000)
- * @param {integer} options.pingTimeout timeout in ms before closing WS connection (optional, default = see WebSocketConnection)
+ * @param {integer} options.pingTimeout timeout in ms before closing WS connection (optional, default = see WebSocketConnection) (0 means disable PING)
  * @param {boolean} options.useQueue whether or not messages should be cached while WS is not connected (optional, default = false)
+ * @param {function} options.onPrepareRequest function returning a Promise which should resolve to {uri:string, headers:{},queryParams:{}}
  */
 constructor(exchangeId, uri, options)
 {
@@ -105,11 +111,16 @@ constructor(exchangeId, uri, options)
         if (undefined !== options.pingTimeout)
         {
             let value = parseInt(options.pingTimeout);
-            if (isNaN(value) || value < 1000)
+            // 0 mean disable PING
+            if (isNaN(value) || (value < 1000 && value != 0))
             {
-                throw new Error("Argument 'options.pingTimeout' should be an integer >= 1000");
+                throw new Error("Argument 'options.pingTimeout' should be an integer >= 1000 OR 0 to disable");
             }
             this._connectionOptions.pingTimeout = value;
+        }
+        if (undefined !== options.onPrepareRequest)
+        {
+            this._connectionOptions.onPrepareRequest = options.onPrepareRequest;
         }
     }
     // keep track of how many connections were performed
@@ -170,9 +181,14 @@ isConnecting()
     return this._connection.isConnecting()
 }
 
-_logError(e)
+_logError(e, method)
 {
-    Errors.logError(e, `${this._exchangeId}|streamClient`);
+    Errors.logError(e, `streamClient|${this._exchangeId}|${method}`);
+}
+
+_logNetworkError(e, method)
+{
+    Errors.logNetworkError(e, `streamClient|${this._exchangeId}|${method}`);
 }
 
 /**
@@ -222,7 +238,7 @@ _processQueue()
 /**
  * Send a list of objects over WS
  *
- * @param {object} list list of data to send (each entry will be serialized to JSON and sent individually)
+ * @param {object[]} list list of data to send (each entry will be serialized to JSON and sent individually)
  */
 send(list)
 {
@@ -284,57 +300,56 @@ reconnect(immediate)
  */
 _createConnection(delay)
 {
-    let self = this;
     let counter = ++this._connectionCounter;
     let connection = new WebSocketConnection(this._uri, this._connectionOptions);
 
     /*
      WS connection has been disconnected by exchange
      */
-    connection.on('disconnected', function(data){
+    connection.on('disconnected', (data) => {
         if (debug.enabled)
         {
-            debug("Connection (%s|%d|%s) disconnected (will try to reconnect in %dms) : code = %d, reason = '%s'", self._exchangeId, counter, self._uri, self._retryDelay, data.code, data.reason);
+            debug("Connection (%s|%d|%s) disconnected (will try to reconnect in %dms) : code = %d, reason = '%s'", this._exchangeId, counter, data.uri, this._retryDelay, data.code, data.reason);
         }
-        logger.warn("Connection (%s|%d|%s) disconnected (will try to reconnect in %dms) : code = %d, reason = '%s'", self._exchangeId, counter, self._uri, self._retryDelay, data.code, data.reason);
-        self.emit('disconnected', {connectionId:counter,code:data.code,reason:data.reason});
-        self._createConnection.call(self, self._retryDelay);
+        logger.warn("Connection (%s|%d|%s) disconnected (will try to reconnect in %dms) : code = %d, reason = '%s'", this._exchangeId, counter, data.uri, this._retryDelay, data.code, data.reason);
+        this.emit('disconnected', {connectionId:counter,code:data.code,reason:data.reason,uri:data.uri});
+        this._createConnection(this._retryDelay);
     });
 
-    connection.on('connectionError', function(err){
+    connection.on('connectionError', (err) => {
         // retry is possible
         if (err.retry)
         {
             if (debug.enabled)
             {
-                debug("Connection (%s|%d|%s) failed (will try to reconnect in %dms) : attempts = %d, error = '%s'", self._exchangeId, counter, self._uri, self._retryDelay, err.attempts, JSON.stringify(err.error));
+                debug("Connection (%s|%d|%s) failed (will try to reconnect in %dms) : attempts = %d, error = '%s'", this._exchangeId, counter, err.uri, this._retryDelay, err.attempts, JSON.stringify(err.error));
             }
-            logger.warn("Connection (%s|%d|%s) failed (will try to reconnect in %dms) : attempts = %d, error = '%s'", self._exchangeId, counter, self._uri, self._retryDelay, err.attempts, JSON.stringify(err.error));
-            self.emit('connectionError', {connectionId:counter,attempts:err.attempts,error:err.error});
+            logger.warn("Connection (%s|%d|%s) failed (will try to reconnect in %dms) : attempts = %d, error = '%s'", this._exchangeId, counter, err.uri, this._retryDelay, err.attempts, JSON.stringify(err.error));
+            this.emit('connectionError', {connectionId:counter,attempts:err.attempts,error:err.error,uri:err.uri});
             return;
         }
         // no more retry
         if (debug.enabled)
         {
-            debug("Connection (%s|%d|%s) failed (no more retry left) : attempts = %d, error = '%s'", self._exchangeId, counter, self._uri, err.attempts, JSON.stringify(err.error));
+            debug("Connection (%s|%d|%s) failed (no more retry left) : attempts = %d, error = '%s'", this._exchangeId, counter, err.uri, err.attempts, JSON.stringify(err.error));
         }
-        logger.error("Connection (%s|%d|%s) failed (no more retry left) : attempts = %d, error = '%s'", self._exchangeId, counter, self._uri, err.attempts, JSON.stringify(err.error));
-        self.emit('terminated', {connectionId:counter,attempts:err.attempts,error:err.error});
+        logger.error("Connection (%s|%d|%s) failed (no more retry left) : attempts = %d, error = '%s'", this._exchangeId, counter, err.uri, err.attempts, JSON.stringify(err.error));
+        this.emit('terminated', {connectionId:counter,attempts:err.attempts,error:err.error,uri:err.uri});
     });
 
-    connection.on('connected', function(){
+    connection.on('connected', (data) => {
         if (debug.enabled)
         {
-            debug("Connection (%s|%d|%s) connected", self._exchangeId, counter, self._uri);
+            debug("Connection (%s|%d|%s) connected", this._exchangeId, counter, data.uri);
         }
-        logger.info("Connection (%s|%d|%s) connected", self._exchangeId, counter, self._uri);
-        self._connectedTimestamp = new Date().getTime();
-        self._processQueue.call(self);
-        self.emit('connected', {connectionId:counter});
+        logger.info("Connection (%s|%d|%s) connected", this._exchangeId, counter, data.uri);
+        this._connectedTimestamp = new Date().getTime();
+        this._processQueue();
+        this.emit('connected', {connectionId:counter,uri:data.uri});
     });
 
-    connection.on('message', function(message){
-        self._processMessage.call(self, message);
+    connection.on('message', (message) => {
+        this._processMessage(message);
     });
 
     this._connection = connection;
@@ -347,9 +362,9 @@ _createConnection(delay)
         }
         else
         {
-            setTimeout(function(){
+            setTimeout(() => {
                 // disconnection probably requested by client
-                if (null === self._connection)
+                if (null === this._connection)
                 {
                     return;
                 }

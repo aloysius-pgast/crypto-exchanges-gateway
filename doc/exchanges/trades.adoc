@@ -47,7 +47,7 @@ Those routes require the feature _trades_ to be enabled for the requested exchan
 |Description
 
 |afterTradeId
-|integer
+|integer|string
 |
 |Only retrieve trades with an _id_ > _afterTradeId_
 
@@ -69,7 +69,7 @@ Result will be an array of trade object (*the first one being the newest*)
 |Description
 
 |id
-|integer
+|integer|string
 |Unique identifier of the trade (will be null if not supported by exchange)
 
 |quantity

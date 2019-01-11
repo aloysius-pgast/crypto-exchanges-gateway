@@ -334,7 +334,7 @@ static defineGetTradesRoute(app, exchange)
     const schema = Joi.object({
         pair: Joi.string().pair(),
         limit: Joi.number().integer().positive(),
-        afterTradeId: Joi.number().integer().positive(),
+        afterTradeId: Joi.string(),
         afterTimestamp: Joi.number().positive()
     });
 
@@ -342,7 +342,7 @@ static defineGetTradesRoute(app, exchange)
      * Returns last trades for a given pair
      *
      * @param {string} pair pair to retrieve last trades for
-     * @param {integer} afterTradeId only retrieve trade with an ID > 'afterTradeId' (optional)
+     * @param {interger|string} afterTradeId only retrieve trade with an ID > 'afterTradeId' (optional)
      * @param {float} afterTimestamp only retrieve trade with timestamp > 'afterTimestamp' (optional)
      */
     app.get(`/exchanges/${exchange.getId()}/trades/:pair`, (req, res) => {

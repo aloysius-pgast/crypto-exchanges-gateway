@@ -18,6 +18,10 @@ const defineForExchange = (exchangeId) => {
         }
         _.forEach(symbols, (pair) => {
             let minRate = pairs[pair].limits.rate.min;
+            if (0 == minRate)
+            {
+                minRate = 0.00000002;
+            }
             let invalidRate = parseFloat(minRate / 2);
             let minQuantity = pairs[pair].limits.quantity.min;
             let invalidQuantity = parseFloat(minQuantity / 2);

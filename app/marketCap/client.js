@@ -279,7 +279,8 @@ _getRawData()
         options.json = true;
         options.timeout = DEFAULT_SOCKETTIMEOUT;
         options.method = 'GET';
-        options.url = COINS_URL;
+        // use timestamp to bypass cache
+        options.url = COINS_URL + `?t=${Date.now()}`;
         if (debug.enabled)
         {
             debug('Retrieving data');

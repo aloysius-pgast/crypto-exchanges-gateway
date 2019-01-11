@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import restClient from '../../lib/RestClient';
+import wsClient from '../../lib/WsClient';
 import tradingViewHelper from '../../lib/TradingViewHelper';
 import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import PairChooser from '../../components/PairChooser';
@@ -98,40 +99,6 @@ const parseData = (data, interval) => {
     return arr;
 }
 
-const computeRefreshInterval = (klinesInterval) => {
-    // refresh interval in seconds
-    let interval = 30;
-    switch (klinesInterval)
-    {
-        case '1m':
-            interval = 20;
-            break;
-        case '15m':
-        case '30m':
-            interval = 60;
-            break;
-        case '1h':
-        case '2h':
-        case '4h':
-            interval = 300;
-            break;
-        case '6h':
-        case '8h':
-        case '12h':
-            interval = 600;
-            break;
-        case '1d':
-        case '3d':
-        case '1w':
-            interval = 1800;
-            break;
-        case '1M':
-            interval = 3600;
-            break;
-    }
-    return interval * 1000;
-}
-
 class Prices extends Component
 {
 
@@ -172,13 +139,19 @@ constructor(props) {
        data:null,
        pair:pair
    };
+
+   this._newKline = null;
+
    this._handleSelectPair = this._handleSelectPair.bind(this);
    this._handleLoadKlines = this._handleLoadKlines.bind(this);
+   this._handleGetNewKline = this._handleGetNewKline.bind(this);
    this._handleSelectKlinesInterval = this._handleSelectKlinesInterval.bind(this);
 }
 
 _handleSelectPair(pair)
 {
+    this._newKline = null;
+    wsClient.unsubscribe();
     this.setState((prevState, props) => {
       return {pair:pair};
     });
@@ -190,6 +163,8 @@ _handleSelectKlinesInterval(interval)
     {
         return;
     }
+    this._newKline = null;
+    wsClient.unsubscribe();
     this.setState({klinesInterval:interval});
 }
 
@@ -221,14 +196,28 @@ _loadData()
     });
 }
 
+_handleGetNewKline() {
+    return this._newKline;
+}
+
 _handleLoadKlines(interval) {
-    let self = this;
     let exchange = this.state.exchange;
     let pair = this.state.pair;
+    this._newKline = null;
+    wsClient.unsubscribe();
     return new Promise((resolve, reject) => {
-        restClient.getKlines(exchange, pair, interval).then(function(data){
+        restClient.getKlines(exchange, pair, interval).then((data) => {
             let klines = parseData(data, interval);
-            let result = {refreshPeriod:computeRefreshInterval(interval), data:klines}
+            let result = {data:klines}
+            wsClient.subscribe(exchange, 'klines', pair, interval);
+            wsClient.on('kline', (e) => {
+                if (!this._isMounted || this.state.exchange != e.exchange || this.state.pair != e.pair || interval != e.interval)
+                {
+                    return;
+                }
+                const arr = parseData([e.data], interval);
+                this._newKline = arr[0];
+            });
             return resolve(result);
         }).catch (function(err){
             return reject(err);
@@ -283,6 +272,7 @@ componentWillReceiveProps(nextProps)
 componentWillUnmount()
 {
     this._isMounted = false;
+    wsClient.unsubscribe();
 }
 
 componentDidMount()
@@ -325,7 +315,7 @@ render() {
                 <div className="dark animated fadeIn" style={{width:'92%', overflow:'hidden'}}>
                     <br/>
                     <h6>CHART</h6>
-                    <ReactStockChartsCandleSticks heightPercent={0.8} exchangeName={this.state.exchangeName} pair={this.state.pair} klinesInterval={this.state.klinesInterval} klinesIntervals={this.state.klinesIntervals} onLoadData={this._handleLoadKlines} onSelectKlinesInterval={this._handleSelectKlinesInterval}/>
+                    <ReactStockChartsCandleSticks heightPercent={0.8} exchangeName={this.state.exchangeName} pair={this.state.pair} klinesInterval={this.state.klinesInterval} klinesIntervals={this.state.klinesIntervals} onLoadData={this._handleLoadKlines} onGetNewKline={this._handleGetNewKline} onSelectKlinesInterval={this._handleSelectKlinesInterval}/>
                 </div>
             );
         }

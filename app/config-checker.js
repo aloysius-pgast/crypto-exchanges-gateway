@@ -41,9 +41,6 @@ constructor(defaultConfig)
         ui:{
            enabled:false
         },
-        coinmarketcap:{
-            enabled:false
-        },
         marketCap:{
             enabled:false
         },
@@ -107,10 +104,6 @@ _check()
     {
         valid = false;
     }
-    if (!this._checkCoinMarketCap())
-    {
-        valid = false;
-    }
     if (!this._checkMarketCap())
     {
         valid = false;
@@ -156,32 +149,6 @@ _checkUi()
         {
             this._finalConfig.ui.enabled = this._config.ui.enabled;
         }
-    }
-    return valid;
-}
-
-_checkCoinMarketCap()
-{
-    let valid = true;
-    const checkerClass = require('./coinmarketcap/config-checker');
-    let checker = new checkerClass();
-    let config = {};
-    if (undefined !== this._config.coinmarketcap)
-    {
-        config = this._config.coinmarketcap;
-    }
-    if (!checker.check(config))
-    {
-        // mark config as invalid
-        valid = false;
-        // copy errors
-        _.forEach(checker.getErrors(), (err) => {
-            this._err(err);
-        });
-    }
-    else
-    {
-        this._finalConfig.coinmarketcap = checker.getCfg();
     }
     return valid;
 }

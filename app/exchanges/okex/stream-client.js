@@ -179,7 +179,7 @@ _processMessage(message)
         }
         catch (e)
         {
-            this._logError(e);
+            this._logError(e, '_processMessage');
         }
     });
 }
@@ -194,7 +194,7 @@ _decodeData(d, cb)
     zlib.inflateRaw(d, (err, str) => {
         if (null !== err)
         {
-            this._logger.warn("Could not decompress Okex gzip data : %s", err);
+            logger.warn("Could not decompress Okex gzip data : %s", err);
             cb.call(this, undefined);
             return;
         }
@@ -302,7 +302,6 @@ _processTickerData(data)
         low: parseFloat(data.data.low),
         timestamp:data.data.createdDate / 1000.0
     }
-    if (isNaN)
     this.emit('ticker', {
         pair:pair,
         data:ticker

@@ -55,6 +55,9 @@ const fakeData = {
     }
 }
 
+// default currencies we want to include in balances
+const defaultCurrencies = ['USDT', 'BTC'];
+
 class Exchange
 {
 
@@ -291,7 +294,7 @@ async cancelOrder(orderNumber, pair)
 /**
  * Return balances for a list of currencies
  *
- * @param {string[]} currencies array of currencies to retrieve balances for. If undefined or empty, balances for all currencies will be retrieved
+ * @param {string[]} currencies array of currencies to retrieve balances for. If undefined or empty, balances for default currencies will be retrieved
  * @return {Promise} Promise which will resolve to a dictionary such as below
  */
 /*
@@ -315,22 +318,35 @@ Output example
 */
 async getBalances(currencies)
 {
-    let addDefaultCurrencies = false;
     if (undefined === currencies)
     {
-        addDefaultCurrencies = true;
         currencies = [];
+        _.forEach(defaultCurrencies, (c) => {
+            currencies.push(c);
+        });
     }
-    let _pairs;
+    const list = {};
     try
     {
-        _pairs = await this._realExchange.getPairsSymbols(true, {currencies:currencies});
+        // retrieve all pairs with matching currencies
+        let pairs = await this._realExchange.getPairsSymbols(true, {currencies:currencies});
+        _.forEach(pairs, (p) => {
+            let arr = p.split('-');
+            list[arr[1]] = true;
+        });
+        // retrieve all pairs with matching baseCurrency
+        pairs = await this._realExchange.getPairsSymbols(true, {baseCurrencies:currencies});
+        _.forEach(pairs, (p) => {
+            let arr = p.split('-');
+            list[arr[0]] = true;
+        });
     }
     catch (e)
     {
        throw e;
     }
-    return this._generateBalances(_pairs, addDefaultCurrencies);
+    const finalCurrencies = Object.keys(list);
+    return this._generateBalances(finalCurrencies);
 }
 
 _generateOpenOrders(pairs, opt)
@@ -425,16 +441,11 @@ _generateClosedOrders(pairs, opt)
     return list;
 }
 
-_generateBalances(pairs, addDefaultCurrencies)
+_generateBalances(currencies)
 {
-    let list = {};
-    let currencies = this._generateCurrencies(pairs, [fakeData.balances.minCount, fakeData.balances.maxCount]);
-    if (addDefaultCurrencies)
-    {
-        currencies.push('BTC');
-        currencies.push('USDT');
-    }
-    _.forEach(currencies, (c) => {
+    let finalCurrencies = this._generateCurrencies(currencies, [fakeData.balances.minCount, fakeData.balances.maxCount]);
+    const list = {};
+    _.forEach(finalCurrencies, (c) => {
         let available = this._generateBalance(c);
         let onOrders = this._generateBalance(c);
         let total = available + onOrders;
@@ -475,7 +486,7 @@ _generateOrderNumbers(count)
     return list;
 }
 
-_generateCurrencies(pairs, count)
+_generateCurrencies(currencies, count)
 {
     let c = count;
     if (Array.isArray(c))
@@ -483,17 +494,15 @@ _generateCurrencies(pairs, count)
         c = this._generateInteger(c[0], c[1]);
     }
     let list = {};
-    _.forEach(pairs, (pair) => {
-        let arr = pair.split('-');
-        let currency = arr[1];
+    _.forEach(currencies, (currency) => {
         if (undefined !== list[currency])
         {
             return;
         }
         list[currency] = true;
     });
-    let currencies = _.shuffle(Object.keys(list));
-    return _.slice(currencies, 0, c);
+    let finalCurrencies = _.shuffle(Object.keys(list));
+    return _.slice(finalCurrencies, 0, c);
 }
 
 _generatePair(pairs)

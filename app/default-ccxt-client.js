@@ -587,7 +587,7 @@ formatTicker(pair, ccxtData)
     let priceChangePercent = null;
     if (undefined !== ccxtData.percentage)
     {
-        priceChangePercent = 100 * ccxtData.percentage;
+        priceChangePercent = parseFloat((100 * ccxtData.percentage).toFixed(4));
     }
     return {
         pair:pair,
@@ -759,22 +759,33 @@ formatTrades(ccxtData)
     let result = [];
     // ccxt returns the oldest trade first
     _.forEach(ccxtData, (e) => {
-        let trade = {
-            id:e.id,
-            timestamp:e.timestamp / 1000.0,
-            orderType:e.side,
-            quantity:e.amount,
-            rate:e.price
-        };
-        trade.price = parseFloat(new Big(trade.quantity).times(trade.rate).toFixed(8));
-        // some exchanges do not assign any trade id (Kucoin for example)
-        if (undefined === trade.id)
-        {
-            trade.id = null;
-        }
-        result.unshift(trade);
+        result.unshift(this.formatTrade(e));
     });
     return result;
+}
+
+/**
+ * Format trades returned by ccxt
+ *
+ * @param {object} ccxtData single trade returned by ccxt fetchTrades
+ * @return {object}
+ */
+formatTrade(ccxtData)
+{
+    let trade = {
+        id:ccxtData.id,
+        timestamp:ccxtData.timestamp / 1000.0,
+        orderType:ccxtData.side,
+        quantity:ccxtData.amount,
+        rate:ccxtData.price
+    };
+    trade.price = parseFloat(new Big(trade.quantity).times(trade.rate).toFixed(8));
+    // some exchanges do not assign any trade id
+    if (undefined === trade.id)
+    {
+        trade.id = null;
+    }
+    return trade;
 }
 
 /**

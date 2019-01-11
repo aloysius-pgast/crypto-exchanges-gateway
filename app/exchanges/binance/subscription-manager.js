@@ -14,12 +14,11 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
  * Constructor
  *
  * @param {object} exchange exchange instance
- * @param {object} config full config object
  */
 constructor(exchange)
 {
     super(exchange, {globalTickersSubscription:false, marketsSubscription:false});
-    // Binance WS only provides access to oder books update through WS, we need to use REST API to retrieve full order book
+    // Binance WS only provides access to order books update through WS, we need to use REST API to retrieve full order book
     this._waitingForFullOrderBooks = {};
     // keep track of last emitted cseq id for order books
     this._orderBooksUpdates = {};
