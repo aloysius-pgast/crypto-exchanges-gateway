@@ -5,7 +5,7 @@
 * Support for Kucoin API 2.0 (*closedOrders* retrieval is limited to 3 days for now)
 * Fix `priceChangePercent` computation in tickers for ccxt exchanges
 * Ensure trades returned by ccxt are sorted newest first
-* Use ccxt version `1.18.270`
+* Use ccxt version `1.18.271`
 
 ## [v1.7.8]
 ### Gateway
