@@ -73,7 +73,8 @@
                 }
             },
             "key":"",
-            "secret":""
+            "secret":"",
+            "password":""
         },
         "okex":{
             "type":"okex",

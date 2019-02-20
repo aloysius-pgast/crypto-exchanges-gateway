@@ -4,7 +4,7 @@ const _ = require('lodash');
 const AbstractCcxtConfigCheckerClass = require('../../abstract-ccxt-config-checker');
 
 // maximum number of requests per seconds for api
-const GLOBAL_API_MAX_REQUESTS_PER_SECOND = 1;
+const GLOBAL_API_MAX_REQUESTS_PER_SECOND = 10;
 
 class ConfigChecker extends AbstractCcxtConfigCheckerClass
 {
@@ -19,21 +19,10 @@ constructor(exchangeId)
         requirePair:false,
         key:"",
         secret:"",
+        password:"",
         feesPercent:0.1,
         verbose:false,
         emulatedWs:{
-            wsTickers:{
-                enabled:true,
-                period:30
-            },
-            wsOrderBooks:{
-                enabled:true,
-                period:30
-            },
-            wsTrades:{
-                enabled:true,
-                period:30
-            },
             wsKlines:{
                 enabled:true
             }
@@ -45,6 +34,20 @@ constructor(exchangeId)
         }
     }
     super(exchangeId, cfg);
+}
+
+_check()
+{
+    let valid = super._check();
+    if ('' != this._finalConfig.key && '' != this._finalConfig.secret)
+    {
+        if ('' == this._finalConfig.password)
+        {
+            this._err(`Exchange type '${this._finalConfig.type}' requires 'password'`);
+            valid = false;
+        }
+    }
+    return valid;
 }
 
 }

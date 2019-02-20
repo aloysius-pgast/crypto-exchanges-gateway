@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.7.9] **NOT RELEASED YET**
+### Gateway
+* Support for Kucoin API 2.0 (*closedOrders* retrieval is limited to 3 days for now)
+* Fix `priceChangePercent` computation in tickers for ccxt exchanges
+* Ensure trades returned by ccxt are sorted newest first
+* Use ccxt version `1.18.270`
+
 ## [v1.7.8]
 ### Gateway
 * Use native WS for Kucoin exchange instead of emulated

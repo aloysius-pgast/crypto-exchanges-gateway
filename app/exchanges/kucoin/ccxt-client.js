@@ -23,11 +23,28 @@ constructor(ccxtExchangeId, ccxtExchangeOpt)
 formatTrade(ccxtData)
 {
     let trade = super.formatTrade(ccxtData);
-    if (null === trade.id && ccxtData.info.length > 5)
+    if (null === trade.id && undefined !== ccxtData.info['sequence'])
     {
-        trade.id = ccxtData.info[5];
+        trade.id = ccxtData.info['sequence'];
     }
     return trade;
+}
+
+/**
+ * Formats a single ticker entry returned by ccxt
+ *
+ * @param {string} pair pair in custom format
+ * @param {object} ccxtData ticker entry returned by ccxt fetchTickers
+ * @return {object}
+ */
+formatTicker(pair, ccxtData)
+{
+    let ticker = super.formatTicker(pair, ccxtData);
+    if (null === ticker.timestamp)
+    {
+        ticker.timestamp = Date.now() / 1000.0;
+    }
+    return ticker;
 }
 
 }

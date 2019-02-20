@@ -1274,7 +1274,7 @@ getDefaultTradesLimit()
  * Used to ensure we use a supported limit
  *
  * @param {integer} limit requested trades limit
- * @return {integer} supported limit (>= requested limit)
+ * @return {integer} supported limit (<= requested limit)
  */
 _fixTradesLimit(limit)
 {

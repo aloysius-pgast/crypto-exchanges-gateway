@@ -160,6 +160,30 @@ render()
         );
     }
 
+    const getBuyPrice = (item) => {
+        if (null === item.buy)
+        {
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
+        }
+        return (
+            <a href={item.orderBookUrl}>{item.buy.toFixed(8)}</a>
+        );
+    }
+
+    const getSellPrice = (item) => {
+        if (null === item.sell)
+        {
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
+        }
+        return (
+            <a href={item.orderBookUrl}>{item.sell.toFixed(8)}</a>
+        );
+    }
+
     return (
       <div className="animated fadeIn col-lg-6 p-0">
         <ComponentLoadedTimestamp timestamp={this.state.loadedTimestamp} err={this.state.err} onManualRefresh={this._handleManualRefresh}/>
@@ -185,8 +209,8 @@ render()
                     <td><a href={item.pricesUrl}>{item.pair}</a></td>
                     <td className="text-right">{getChange(item)}</td>
                     <td className="text-right"><a href={item.orderBookUrl}>{item.last.toFixed(8)}</a></td>
-                    <td className="text-right"><a href={item.orderBookUrl}>{item.buy.toFixed(8)}</a></td>
-                    <td className="text-right"><a href={item.orderBookUrl}>{item.sell.toFixed(8)}</a></td>
+                    <td className="text-right">{getBuyPrice(item)}</td>
+                    <td className="text-right">{getSellPrice(item)}</td>
                     <td className="text-right">{item.high.toFixed(8)}</td>
                     <td className="text-right">{item.low.toFixed(8)}</td>
                     <td className="text-right">{item.volume.toFixed(8)}</td>

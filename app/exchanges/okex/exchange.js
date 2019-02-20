@@ -9,8 +9,8 @@ const SubscriptionManagerClass = require('./subscription-manager');
 
 const exchangeType = 'okex';
 
-// default limit when retrieving trades (this is the maximum for OKEx)
-const TRADES_DEFAULT_LIMIT = 600;
+// limit when retrieving trades (OKex will always return the last 60 trades)
+const TRADES_LIMIT = 60;
 
 // default limit when retrieving order book (this is the maximum for OKEx)
 const ORDER_BOOK_DEFAULT_LIMIT = 200;
@@ -94,12 +94,29 @@ getDefaultOrderBookLimit()
 }
 
 /**
- * Returns the default value for trades limit
- * @return {integer}
+ * Returns last trades
+ *
+ * @param {string} pair pair to retrieve trades for
+ * @param {integer} opt.limit maximum number of entries (optional)
+ * @param {object} opt.custom exchange specific options (will always be defined)
+ * @return {Promise}
  */
-getDefaultTradesLimit()
+async _getTrades(pair, opt)
 {
-    return TRADES_DEFAULT_LIMIT;
+    // Okex will always return the same number of trades so no need to pass any limit
+    let data = await this._client.getTrades(pair, undefined, opt.custom);
+    return data.custom;
+}
+
+/**
+ * Used to ensure we use a supported limit
+ *
+ * @param {integer} limit requested trades limit
+ * @return {integer} supported limit (<= requested limit)
+ */
+_fixTradesLimit(limit)
+{
+    return TRADES_LIMIT;
 }
 
 /**
@@ -171,7 +188,7 @@ async _getOrder(orderNumber, pair)
     }
     // update cached orders
     let orderState = 'closed';
-    if (data.hasOwnProperty('remaining'))
+    if (data.hasOwnProperty('remainingQuantity:'))
     {
         orderState = 'open';
     }

@@ -1106,7 +1106,7 @@ async _getOrderPair(orderNumber)
     _.forEach(pairs, (pair) => {
         let symbol = this._toExchangePair(pair);
         let p = this._getOrdersForSymbol(symbol, {completeHistory:true});
-        arr.push({promise:p, context:{exchange:this._id,api:'_getOrdersForSymbol',symbol:symbol}});
+        arr.push({promise:p, context:{exchange:this.getId(),api:'_getOrdersForSymbol',symbol:symbol}});
     });
     let pair = null;
     let data = await PromiseHelper.all(arr);

@@ -89,11 +89,11 @@ Result will be a dictionary using pairs as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
-|Lowest sell price (can be _null_ for pairs with very low volume)
+|Lowest sell price (can be _null_ for pairs with very low volume) (will be null if not supported by exchange)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}buy
 |float
-|Highest buy price (can be _null_ for pairs with very low volume)
+|Highest buy price (can be _null_ for pairs with very low volume) (will be null if not supported by exchange)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}high
 |float

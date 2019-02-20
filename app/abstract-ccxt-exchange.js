@@ -53,6 +53,11 @@ static getCcxtOpt(exchangeId, config, opt)
     {
         defaultOpt.apiKey = config.exchanges[exchangeId].key;
         defaultOpt.secret = config.exchanges[exchangeId].secret;
+        // needed for Kucoin
+        if (undefined !== config.exchanges[exchangeId].password)
+        {
+            defaultOpt.password = config.exchanges[exchangeId].password;
+        }
     }
     let _opt = _.merge(defaultOpt, opt);
     return _opt;
