@@ -504,7 +504,7 @@ _processTradesData(data, customPair)
             rate:parseFloat(data.data.price),
             price:price,
             orderType:data.data.side,
-            timestamp:parseFloat(data.data.time / 1000.0)
+            timestamp:parseFloat(data.data.time / 1000000000.0)
         }]
     };
     this.emit('trades', evt);
