@@ -70,6 +70,14 @@ _check()
     {
         this._finalConfig.secret = this._config.secret;
     }
+    // we might need a password
+    if (this._finalConfig.hasOwnProperty('password'))
+    {
+        if (undefined !== this._config.password)
+        {
+            this._finalConfig.password = this._config.password;
+        }
+    }
 
     //-- check wether or not pair should be required
     if (this._finalConfig.hasOwnProperty('requirePair'))

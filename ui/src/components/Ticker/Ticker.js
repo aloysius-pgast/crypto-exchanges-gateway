@@ -279,6 +279,31 @@ render()
         );
     }
 
+    const getBuyPrice = (url) => {
+        if (null === this.state.data.buy)
+        {
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
+        }
+        let a = this.state.data.buy.toFixed(8);
+        return (
+            <a href={url}>{this.state.data.buy.toFixed(8)}</a>
+        );
+    }
+
+    const getSellPrice = (url) => {
+        if (null === this.state.data.sell)
+        {
+            return (
+                <span style={{color:'#e64400'}}>N/A</span>
+            );
+        }
+        return (
+            <a href={url}>{this.state.data.sell.toFixed(8)}</a>
+        );
+    }
+
     const TickerRow = () => {
         if (null !== this.state.err)
         {
@@ -288,11 +313,11 @@ render()
         return (
             <tr key="1">
               <td className="text-right"><a href={url}>{this.state.data.last.toFixed(8)}</a></td>
-              <td className="text-right"><a href={url}>{this.state.data.buy.toFixed(8)}</a></td>
-              <td className="text-right"><a href={url}>{this.state.data.sell.toFixed(8)}</a></td>
+              <td className="text-right">{getBuyPrice(url)}</td>
+              <td className="text-right">{getSellPrice(url)}</td>
               <td className="text-right">{this.state.data.high.toFixed(8)}</td>
               <td className="text-right">{this.state.data.low.toFixed(8)}</td>
-              <td className="text-right">{getChange(this.state.data)}</td>
+              <td className="text-right">{getChange()}</td>
               <td className="text-right">{this.state.data.volume.toFixed(8)}</td>
            </tr>
        )

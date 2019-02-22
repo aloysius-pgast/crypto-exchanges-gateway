@@ -78,12 +78,12 @@ _redefineCcxtErrorHandlers()
             });
         });
     };
-    // redefine parseJson
-    this.ccxt._parseJson = this.ccxt.parseJson;
-    this.ccxt.parseJson = (response, responseBody, url, method) => {
+    // redefine parseRestResponse
+    this.ccxt._parseRestResponse = this.ccxt.parseRestResponse;
+    this.ccxt.parseRestResponse = (response, responseBody, url, method) => {
         try
         {
-            return self.ccxt._parseJson.call(self.ccxt, response, responseBody, url, method);
+            return self.ccxt._parseRestResponse.call(self.ccxt, response, responseBody, url, method);
         }
         catch (e)
         {
@@ -587,7 +587,17 @@ formatTicker(pair, ccxtData)
     let priceChangePercent = null;
     if (undefined !== ccxtData.percentage)
     {
-        priceChangePercent = parseFloat((100 * ccxtData.percentage).toFixed(4));
+        priceChangePercent = parseFloat(ccxtData.percentage.toFixed(4));
+    }
+    // compute priceChangePercent
+    else if (undefined !== ccxtData.last && undefined !== ccxtData.open)
+    {
+        priceChangePercent = parseFloat(new Big(ccxtData.last).minus(ccxtData.open).div(ccxtData.open).times(100.0).toFixed(4))
+    }
+    let timestamp = null;
+    if (undefined !== ccxtData.timestamp)
+    {
+        timestamp = ccxtData.timestamp / 1000.0;
     }
     return {
         pair:pair,
@@ -598,7 +608,7 @@ formatTicker(pair, ccxtData)
         low:undefined === ccxtData.low ? null : ccxtData.low,
         volume:ccxtData.baseVolume,
         priceChangePercent:priceChangePercent,
-        timestamp:ccxtData.timestamp / 1000.0
+        timestamp:timestamp
     }
 }
 
@@ -757,10 +767,31 @@ async getTrades(pair, limit, ccxtParams)
 formatTrades(ccxtData)
 {
     let result = [];
-    // ccxt returns the oldest trade first
-    _.forEach(ccxtData, (e) => {
-        result.unshift(this.formatTrade(e));
-    });
+    if (ccxtData.length > 0)
+    {
+        if (1 == ccxtData.length)
+        {
+            result.push(this.formatTrade(e));
+        }
+        else
+        {
+            //-- check first 2 values to see in which order trades are sorted
+            // first trade is newer than second (keep order)
+            if (ccxtData[0].timestamp > ccxtData[1].timestamp)
+            {
+                _.forEach(ccxtData, (e) => {
+                    result.push(this.formatTrade(e));
+                });
+            }
+            // first trade is older than second (reverse order)
+            else
+            {
+                _.forEach(ccxtData, (e) => {
+                    result.unshift(this.formatTrade(e));
+                });
+            }
+        }
+    }
     return result;
 }
 
@@ -1221,7 +1252,12 @@ getActualRate(ccxtData)
  */
 getActualPrice(ccxtData)
 {
-    return ccxtData.cost;
+    if (undefined !== ccxtData.cost)
+    {
+        return ccxtData.cost;
+    }
+    let rate = this.getActualRate(ccxtData);
+    return parseFloat(new Big(ccxtData.filled).times(rate).toFixed(8));
 }
 
 

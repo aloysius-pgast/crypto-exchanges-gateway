@@ -6,7 +6,7 @@ const Big = require('big.js');
 const zlib = require('zlib');
 const request = require('request');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
-const LOGIN_URI = 'https://kitchen.kucoin.com/v1/bullet/usercenter/loginUser?protocol=websocket&encrypt=true';
+const LOGIN_URI = 'https://openapi-v2.kucoin.com/api/v1/bullet-public';
 const DEFAULT_SOCKETTIMEOUT = 60 * 1000;
 
 /*
@@ -48,7 +48,7 @@ async _prepareRequest()
         let options = {};
         options.json = true;
         options.timeout = DEFAULT_SOCKETTIMEOUT;
-        options.method = 'GET';
+        options.method = 'POST';
         options.url = LOGIN_URI;
         request(options, (error, response, body) => {
             if (null !== error)
@@ -61,38 +61,24 @@ async _prepareRequest()
                 this._logNetworkError(response, '_prepareRequest');
                 return resolve(null);
             }
-            if (undefined === body.success || false === body.success)
+            if (undefined === body.data.token)
             {
-                this._logNetworkError(JSON.stringify(body), '_prepareRequest');
+                logger.warn("Could not retrieve WS endpoint information for '%s' exchange : 'token' is missing", this.getExchangeId());
                 return resolve(null);
             }
-            if (undefined === body.data.bulletToken)
+            if (undefined === body.data || undefined === body.data.instanceServers || 0 == body.data.instanceServers.length)
             {
-                logger.warn("Could not retrieve WS endpoint information for '%s' exchange : 'bulletToken' is missing", this.getExchangeId());
-                return resolve(null);
-            }
-            if (undefined === body.data || undefined === body.data.instanceServers)
-            {
-                logger.warn("Could not retrieve WS endpoint information for '%s' exchange : 'data.instanceServers' is missing", this.getExchangeId());
+                logger.warn("Could not retrieve WS endpoint information for '%s' exchange : 'data.instanceServers' is missing or empty", this.getExchangeId());
                 return resolve(null);
             }
             const data = {
                 queryParams:{
-                    format:'json',
-                    resource:'api',
-                    bulletToken:body.data.bulletToken
+                    token:body.data.token
                 }
             };
-            for (let i = 0; i < body.data.instanceServers.length; ++i)
-            {
-                // find instance server with type = 'normal'
-                if ('normal' == body.data.instanceServers[i].userType)
-                {
-                    data.uri = `${body.data.instanceServers[i].endpoint}`;
-                    // NB : keepalive using Ping API is not needed since native WS ping will ensure connection stays open
-                    break;
-                }
-            }
+            // use first server
+            data.uri = body.data.instanceServers[0].endpoint;
+            // NB : keepalive using Ping API is not needed since native WS ping will ensure connection stays open
             if (undefined === data.uri)
             {
                 logger.warn("Could not retrieve WS endpoint information for '%s' exchange : no 'normal' endpoint defined", this.getExchangeId());
@@ -139,11 +125,11 @@ getSubscribeMessage(obj)
     switch (obj.type)
     {
         case 'ticker':
-            return {type:'subscribe',topic:`/market/${exchangePair}_TICK`};
+            return {type:'subscribe',topic:`/market/snapshot:${exchangePair}`,response:true,privateChannel:false};
         case 'orderBook':
-            return {type:'subscribe',topic:`/trade/${exchangePair}_TRADE`};
+            return {type:'subscribe',topic:`/market/level2:${exchangePair}`,response:true,privateChannel:false};
         case 'trades':
-            return {type:'subscribe',topic:`/trade/${exchangePair}_HISTORY`};
+            return {type:'subscribe',topic:`/market/match:${exchangePair}`,response:true,privateChannel:false};
     }
     logger.warn(`Unknown subscription type '${obj.type}' for exchange '${this.getExchangeId()}'`);
     return null;
@@ -162,11 +148,11 @@ getUnsubscribeMessage(obj)
     switch (obj.type)
     {
         case 'ticker':
-            return {type:'unsubscribe',topic:`/market/${exchangePair}_TICK`};
+            return {type:'unsubscribe',topic:`/market/snapshot:${exchangePair}`,response:true,privateChannel:false};
         case 'orderBook':
-            return {type:'unsubscribe',topic:`/trade/${exchangePair}_TRADE`};
+            return {type:'unsubscribe',topic:`/market/level2:${exchangePair}`,response:true,privateChannel:false};
         case 'trades':
-            return {type:'unsubscribe',topic:`/trade/${exchangePair}_HISTORY`};
+            return {type:'unsubscribe',topic:`/market/match:${exchangePair}`,response:true,privateChannel:false};
     }
     logger.warn(`Unknown subscription type '${obj.type}' for exchange '${this.getExchangeId()}'`);
     return null;
@@ -182,58 +168,81 @@ Example data
 
 {
     "data":{
-        "price":0.02866,
-        "count":0.0865062,
-        "oid":"5bfbb04b9dda1573e89a38c1",
-        "time":1543221323000,
-        "volValue":0.00247927,
-        "direction":"SELL"
+        "sequence":"1550467113084",
+        "symbol":"BTC-USDT",
+        "side":"sell",
+        "size":"0.025200670000000000000000000000000",
+        "price":"3928.46558801000000000000",
+        "takerOrderId":"5c6d1d515137b91f19490eae",
+        "time":"1550654801948521495",
+        "type":"match",
+        "makerOrderId":"5c6d1cf9c788c6111ba7b263",
+        "tradeId":"5c6d1d51ab93db711c206b69"
     },
-    "topic":"/trade/ETH-BTC_HISTORY",
-    "type":"message",
-    "seq":32751262911320
+    "subject":"trade.l3match",
+    "topic":"/market/match:BTC-USDT",
+    "id":"5c6d1d51ab93db711c206b69",
+    "sn":1550467113084,
+    "type":"message"
 }
 
 2) Order book update
 
 {
     "data":{
-        "volume":0.23614824,
-        "price":0.02951853,
-        "count":8.0,
-        "action":"CANCEL",
-        "time":1542877609922,
-        "type":"BUY"
+        "sequenceStart":1550467110959,
+        "symbol":"BTC-USDT",
+        "changes":{
+            "asks":[
+
+            ],
+            "bids":[
+                [
+                    "0", // price
+                    "0", // size
+                    "1550467110959" // sequence
+                ]
+            ]
+        },
+        "sequenceEnd":1550467110959
     },
-    "topic":"/trade/ETH-BTC_TRADE",
-    "type":"message",
-    "seq":32751078211243
+    "subject":"trade.l2update",
+    "topic":"/market/level2:BTC-USDT",
+    "type":"message"
 }
 
 3) Ticker
 
 {
     "data":{
-        "coinType":"ETH",
-        "trading":true,
-        "symbol":"ETH-BTC",
-        "lastDealPrice":0.02871161,
-        "buy":0.02868336,
-        "sell":0.02872164,
-        "change":0.00042203,
-        "coinTypePair":"BTC",
-        "sort":100,
-        "feeRate":0.001,
-        "volValue":283.35185445,
-        "high":0.029413,
-        "datetime":1543221464000,
-        "vol":9867.4494819,
-        "low":0.02787778,
-        "changeRate":0.0149
+        "sequence":"1550467108699",
+        "data":{
+            "trading":true,
+            "symbol":"BTC-USDT",
+            "buy":3907.96473101,
+            "sell":3910.59642466,
+            "sort":100,
+            "volValue":625464.43726646701675060000,
+            "baseCurrency":"BTC",
+            "market":"SC",
+            "quoteCurrency":"USDT",
+            "symbolCode":"BTC-USDT",
+            "datetime":1550649830150,
+            "high":3992.14813500000000000000,
+            "vol":159.44743710000000000000,
+            "low":3855.00000100000000000000,
+            "changePrice":10.59642467000000000000,
+            "changeRate":0.0027,
+            "close":3910.59642467,
+            "lastTradedPrice":3910.59642467,
+            "board":1,
+            "mark":0,
+            "open":3900.00000000000000000000
+        }
     },
-    "topic":"/market/ETH-BTC_TICK",
-    "type":"message",
-    "seq":32751262988174
+    "subject":"trade.snapshot",
+    "topic":"/market/snapshot:BTC-USDT",
+    "type":"message"
 }
 
 */
@@ -277,17 +286,16 @@ _processMessage(message)
     // decide what to do based on 'topic'
     try
     {
-        let [exchangePair, topic] = data.topic.split('/').pop().split('_');
+        let [topic, exchangePair] = data.topic.split(':');
         const customPair = this._toCustomPair(exchangePair);
         switch (topic)
         {
-            case 'TICK':
+            case '/market/snapshot':
                 return this._processTickerData(data, customPair);
-            case 'HISTORY':
-                return this._processTradesData(data, customPair);
-            // this is bad naming but topic = TRADE refers to orderbook updates
-            case 'TRADE':
+            case '/market/level2':
                 return this._processOrderBookData(data, customPair);
+            case '/market/match':
+                return this._processTradesData(data, customPair);
         }
     }
     catch (e)
@@ -303,26 +311,34 @@ Example data
 
 {
     "data":{
-        "coinType":"ETH",
-        "trading":true,
-        "symbol":"ETH-BTC",
-        "lastDealPrice":0.02871161,
-        "buy":0.02868336,
-        "sell":0.02872164,
-        "change":0.00042203,
-        "coinTypePair":"BTC",
-        "sort":100,
-        "feeRate":0.001,
-        "volValue":283.35185445,
-        "high":0.029413,
-        "datetime":1543221464000,
-        "vol":9867.4494819,
-        "low":0.02787778,
-        "changeRate":0.0149
+        "sequence":"1550467108699",
+        "data":{
+            "trading":true,
+            "symbol":"BTC-USDT",
+            "buy":3907.96473101,
+            "sell":3910.59642466,
+            "sort":100,
+            "volValue":625464.43726646701675060000,
+            "baseCurrency":"BTC",
+            "market":"SC",
+            "quoteCurrency":"USDT",
+            "symbolCode":"BTC-USDT",
+            "datetime":1550649830150,
+            "high":3992.14813500000000000000,
+            "vol":159.44743710000000000000,
+            "low":3855.00000100000000000000,
+            "changePrice":10.59642467000000000000,
+            "changeRate":0.0027,
+            "close":3910.59642467,
+            "lastTradedPrice":3910.59642467,
+            "board":1,
+            "mark":0,
+            "open":3900.00000000000000000000
+        }
     },
-    "topic":"/market/ETH-BTC_TICK",
-    "type":"message",
-    "seq":32751262988174
+    "subject":"trade.snapshot",
+    "topic":"/market/snapshot:BTC-USDT",
+    "type":"message"
 }
 
 */
@@ -336,14 +352,14 @@ _processTickerData(data, customPair)
         pair:customPair,
         data:{
             pair:customPair,
-            last:data.data.lastDealPrice,
-            priceChangePercent:data.data.changeRate,
-            sell:data.data.sell,
-            buy:data.data.buy,
-            high:data.data.high,
-            low:data.data.low,
-            volume:data.data.vol,
-            timestamp:parseFloat(data.data.datetime / 1000.0)
+            last:data.data.data.lastTradedPrice,
+            priceChangePercent:parseFloat((100 * data.data.data.changeRate).toFixed(4)),
+            sell:parseFloat(data.data.data.sell),
+            buy:parseFloat(data.data.data.buy),
+            high:parseFloat(data.data.data.high),
+            low:parseFloat(data.data.data.low),
+            volume:parseFloat(data.data.data.vol),
+            timestamp:parseFloat(data.data.data.datetime / 1000.0)
         }
     };
     this.emit('ticker', evt);
@@ -359,55 +375,93 @@ Example data
 
 {
     "data":{
-        "volume":0.23614824,
-        "price":0.02951853,
-        "count":8.0,
-        "action":"CANCEL",
-        "time":1542877609922,
-        "type":"BUY"
-    },
-    "topic":"/trade/ETH-BTC_TRADE",
-    "type":"message",
-    "seq":32751078211243
-}
+        "sequenceStart":1550467110959,
+        "symbol":"BTC-USDT",
+        "changes":{
+            "asks":[
 
-NB: date.action can be CANCEL|ADD
+            ],
+            "bids":[
+                [
+                    "0", // price
+                    "0", // size
+                    "1550467110959" // sequence
+                ]
+            ]
+        },
+        "sequenceEnd":1550467110959
+    },
+    "subject":"trade.l2update",
+    "topic":"/market/level2:BTC-USDT",
+    "type":"message"
+}
 
 */
 _processOrderBookData(data, customPair)
 {
     if (debug.enabled)
     {
-        debug(`Got order book update for pair '${customPair}': 1 change`);
+        debug(`Got order book update for pair '${customPair}': ${data.data.changes.asks.length + data.data.changes.bids.length} changes`);
     }
-    let action = 'update';
-    if ('CANCEL' == data.data.action)
-    {
-        action = 'remove';
-    }
-    const entry = {
-        quantity:data.data.count,
-        rate:data.data.price,
-        action:action
-    };
-    const evt = {
-        pair:customPair,
-        cseq:data.seq,
-        timestamp:data.data.time,
-        data:{
-            buy:[],
-            sell:[]
+
+    //-- build a list of all changes using sequence as key
+    const changes = {};
+    // process asks
+    _.forEach(data.data.changes.asks, (arr) => {
+        let action = 'update';
+        if ('0' == arr[1])
+        {
+            action = 'remove';
         }
-    };
-    if ('SELL' == data.data.type)
-    {
-        evt.data.sell.push(entry);
-    }
-    else
-    {
-        evt.data.buy.push(entry);
-    }
-    this.emit('orderBookUpdate', evt);
+        changes[arr[2]] = {
+            type:'sell',
+            data:{
+                action:action,
+                rate:parseFloat(arr[0]),
+                quantity:parseFloat(arr[1])
+            }
+        };
+    });
+    // process bids
+    _.forEach(data.data.changes.bids, (arr) => {
+        let action = 'update';
+        if ('0' == arr[1])
+        {
+            action = 'remove';
+        }
+        changes[arr[2]] = {
+            type:'buy',
+            data:{
+                action:action,
+                rate:parseFloat(arr[0]),
+                quantity:parseFloat(arr[1])
+            }
+        };
+    });
+
+    //-- emit events
+    const keys = Object.keys(changes).sort();
+    _.forEach(keys, (sequence) => {
+        const evt = {
+            pair:customPair,
+            cseq:sequence,
+        };
+        if ('buy' == changes[sequence].type)
+        {
+            evt.data = {
+                buy:[changes[sequence].data],
+                sell:[]
+            };
+        }
+        else
+        {
+            evt.data = {
+                buy:[],
+                sell:[changes[sequence].data]
+            };
+        }
+        this.emit('orderBookUpdate', evt);
+    });
 }
 
 /*
@@ -415,16 +469,22 @@ Process trades data and emit a 'trades' event
 
 {
     "data":{
-        "price":0.02866,
-        "count":0.0865062,
-        "oid":"5bfbb04b9dda1573e89a38c1",
-        "time":1543221323000,
-        "volValue":0.00247927,
-        "direction":"SELL"
+        "sequence":"1550467113084",
+        "symbol":"BTC-USDT",
+        "side":"sell",
+        "size":"0.025200670000000000000000000000000",
+        "price":"3928.46558801000000000000",
+        "takerOrderId":"5c6d1d515137b91f19490eae",
+        "time":"1550654801948521495",
+        "type":"match",
+        "makerOrderId":"5c6d1cf9c788c6111ba7b263",
+        "tradeId":"5c6d1d51ab93db711c206b69"
     },
-    "topic":"/trade/ETH-BTC_HISTORY",
-    "type":"message",
-    "seq":32751262911320
+    "subject":"trade.l3match",
+    "topic":"/market/match:BTC-USDT",
+    "id":"5c6d1d51ab93db711c206b69",
+    "sn":1550467113084,
+    "type":"message"
 }
 
 */
@@ -434,21 +494,17 @@ _processTradesData(data, customPair)
     {
         debug(`Got trades update for pair '${customPair}': 1 trade`);
     }
-    let price = parseFloat(new Big(data.data.count).times(data.data.price));
-    let orderType = 'sell';
-    if ('SELL' != data.data.direction)
-    {
-        orderType = 'buy';
-    }
+    let price = parseFloat(new Big(data.data.size).times(data.data.price));
     const evt = {
         pair:customPair,
         data:[{
-            id:data.data.oid,
-            quantity:data.data.count,
-            rate:data.data.price,
+            // use sequence as tradeId like we do in REST API
+            id:data.data.sequence,
+            quantity:parseFloat(data.data.size),
+            rate:parseFloat(data.data.price),
             price:price,
-            orderType:orderType,
-            timestamp:parseFloat(data.data.time / 1000.0)
+            orderType:data.data.side,
+            timestamp:parseFloat(data.data.time / 1000000000.0)
         }]
     };
     this.emit('trades', evt);

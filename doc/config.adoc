@@ -86,7 +86,8 @@ Below config will only give access to public API (since no key/secret combinatio
                 }
             },
             "key":"",
-            "secret":""
+            "secret":"",
+            "password":""
         },
         "okex":{
             "type":"okex",
@@ -317,12 +318,14 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by Kucoin */
             "secret":"EFGH",
+            /* Password defined on Kucoin */
+            "password":"IJKL",
             /* % fees [0,100] */
             "feesPercent":0.10,
             /* rate limiting to comply with Kucoin */
             "throttle":{
                 "global":{
-                    "maxRequestsPerSecond":1
+                    "maxRequestsPerSecond":10
                 }
             }
         },

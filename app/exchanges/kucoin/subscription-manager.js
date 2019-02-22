@@ -37,14 +37,14 @@ _waitForFullOrderBook(pair)
     let requestId = ++this._waitingForFullOrderBooks[pair].requestId;
     this._waitingForFullOrderBooks[pair].waiting = true;
     this._waitingForFullOrderBooks[pair].evt = null;
-    this._exchangeInstance.getOrderBook(pair, {custom:{includeTimestamp:true}}).then((data) => {
+    this._exchangeInstance.getOrderBook(pair, {custom:{includeSequence:true}}).then((data) => {
         // we have another pending request
         if (requestId != this._waitingForFullOrderBooks[pair].requestId)
         {
             return;
         }
         // if we already emitted an orderBookUpdate event which is newer, retrieve full order book again
-        if (undefined !== this._orderBooksUpdates[pair] && data.timestamp <= this._orderBooksUpdates[pair])
+        if (undefined !== this._orderBooksUpdates[pair] && data.sequence <= this._orderBooksUpdates[pair])
         {
             this._waitForFullOrderBook(pair);
             return;
@@ -52,12 +52,12 @@ _waitForFullOrderBook(pair)
         let evt = {
             exchange:this._exchangeId,
             pair:pair,
+            cseq:data.sequence,
             data:{
                 buy:data.buy,
                 sell:data.sell
             }
         }
-        this._waitingForFullOrderBooks[pair].timestamp = data.timestamp;
         this._waitingForFullOrderBooks[pair].waiting = false;
         this._waitingForFullOrderBooks[pair].evt = evt;
     }).catch ((err) => {
@@ -128,23 +128,21 @@ _registerClient(connect)
             {
                 return;
             }
-            // we're not interested in this update, it's too old
-            if (evt.timestamp <= this._waitingForFullOrderBooks[evt.pair].timestamp)
-            {
-                return;
-            }
             if (null !== this._waitingForFullOrderBooks[evt.pair].evt)
             {
+                // we're not interested in this update, it's too old
+                if (evt.cseq <= this._waitingForFullOrderBooks[evt.pair].evt.cseq)
+                {
+                    return;
+                }
                 emitFullOrderBook = true;
             }
         }
         evt.exchange = this._exchangeId;
-        this._orderBooksUpdates[evt.pair] = evt.timestamp;
-        delete evt.timestamp;
+        this._orderBooksUpdates[evt.pair] = evt.cseq;
         // check if we need to emit full orderbook first
         if (emitFullOrderBook)
         {
-            this._waitingForFullOrderBooks[evt.pair].evt.cseq = evt.cseq - 1;
             this.emit('orderBook', this._waitingForFullOrderBooks[evt.pair].evt);
             this._waitingForFullOrderBooks[evt.pair].evt = null;
         }
