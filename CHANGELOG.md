@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.10] **NOT RELEASED YET**
+### Gateway
+* Use ccxt version `1.18.288`
+
 ## [v1.7.9]
 ### Gateway
 * Support for Kucoin API 2.0 (*closedOrders* retrieval is limited to 3 days for now)
