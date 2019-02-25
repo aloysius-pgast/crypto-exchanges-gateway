@@ -16,7 +16,7 @@
     "bittrex-signalr-client": "git+https://github.com/aloysius-pgast/bittrex-signalr-client.git#master",
     "body-parser": "^1.17.2",
     "bottleneck": "^2.3.0",
-    "ccxt": "^1.18.288",
+    "ccxt": "^1.18.292",
     "chump": "^1.2.0",
     "compression": "^1.7.1",
     "css-select": "^2.0.0",

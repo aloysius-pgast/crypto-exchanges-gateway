@@ -2,7 +2,7 @@
 
 ## [v1.7.10] **NOT RELEASED YET**
 ### Gateway
-* Use ccxt version `1.18.288`
+* Use ccxt version `1.18.292`
 
 ## [v1.7.9]
 ### Gateway
