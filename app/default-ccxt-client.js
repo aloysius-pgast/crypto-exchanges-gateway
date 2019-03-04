@@ -363,11 +363,11 @@ formatPair(pair, ccxtData)
         {
             if (undefined !== ccxtData.limits.price.min)
             {
-                limits.rate.min = ccxtData.limits.price.min;
+                limits.rate.min = parseFloat(ccxtData.limits.price.min.toFixed(8));
             }
             if (undefined !== ccxtData.limits.price.max)
             {
-                limits.rate.max = ccxtData.limits.price.max;
+                limits.rate.max = parseFloat(ccxtData.limits.price.max.toFixed(8));
             }
         }
         // quantity
@@ -375,11 +375,11 @@ formatPair(pair, ccxtData)
         {
             if (undefined !== ccxtData.limits.amount.min)
             {
-                limits.quantity.min = ccxtData.limits.amount.min;
+                limits.quantity.min = parseFloat(ccxtData.limits.amount.min.toFixed(8));
             }
             if (undefined !== ccxtData.limits.amount.max)
             {
-                limits.quantity.max = ccxtData.limits.amount.max;
+                limits.quantity.max = parseFloat(ccxtData.limits.amount.max.toFixed(8));
             }
         }
         // price
@@ -396,7 +396,7 @@ formatPair(pair, ccxtData)
             }
             if (undefined !== ccxtData.limits.cost.max)
             {
-                limits.price.max = ccxtData.limits.cost.max;
+                limits.price.max = parseFloat(ccxtData.limits.cost.max.toFixed(8));
             }
         }
     }
