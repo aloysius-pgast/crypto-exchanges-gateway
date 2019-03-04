@@ -1759,7 +1759,7 @@ async testOrder(orderType, pair, targetRate, opt)
     {
         rate = new Big(_pair.limits.rate.min);
     }
-    else if (null !== _pair.limits.rate.max)
+    if (null !== _pair.limits.rate.max)
     {
         if (rate.gt(_pair.limits.rate.max))
         {
@@ -1803,7 +1803,7 @@ async testOrder(orderType, pair, targetRate, opt)
         targetPrice = new Big(_pair.limits.price.min);
     }
     // ensure targetPrice is <= max
-    else if (null !== _pair.limits.price.max)
+    if (null !== _pair.limits.price.max)
     {
         if (targetPrice.gt(_pair.limits.price.max))
         {
@@ -1818,7 +1818,7 @@ async testOrder(orderType, pair, targetRate, opt)
     {
         quantity = new Big(_pair.limits.quantity.min);
     }
-    else if (null !== _pair.limits.quantity.max)
+    if (null !== _pair.limits.quantity.max)
     {
         if (quantity.gt(_pair.limits.quantity.max))
         {
@@ -1828,11 +1828,38 @@ async testOrder(orderType, pair, targetRate, opt)
 
     // recompute targetPrice from quantity & targetRate
     targetPrice = quantity.times(rate);
-    if (targetPrice < _pair.limits.price.min)
+    if (targetPrice.lt(_pair.limits.price.min))
     {
         // increase quantity by 1 step
-        quantity = quantity.plus(_pair.limits.quantity.step);
-        targetPrice = quantity.times(rate);
+        let q = quantity.plus(_pair.limits.quantity.step);
+        let tp = q.times(rate);
+        // if target price is still < min, we need to increase rate to the minimum value which will ensure target price > min price
+        if (tp.lt(_pair.limits.price.min))
+        {
+            let minRate = new Big(_pair.limits.price.min).div(quantity);
+            if (null !== _pair.limits.rate.max)
+            {
+                if (minRate.gt(_pair.limits.rate.max))
+                {
+                    minRate = new Big(_pair.limits.rate.max);
+                }
+            }
+            minRate = this._getRoundedFloat(minRate, _pair.limits.rate.precision, _pair.limits.rate.step)
+            tp = quantity.times(minRate);
+            // if we're still not there p(obably because of rounding), increase rate by 1 step
+            if (tp.lt(_pair.limits.price.min))
+            {
+                minRate = new Big(minRate).plus(_pair.limits.rate.step);
+                minRate = this._getRoundedFloat(minRate, _pair.limits.rate.precision, _pair.limits.rate.step)
+            }
+            order.targetRate = parseFloat(minRate.toFixed(_pair.limits.rate.precision));
+            targetPrice = quantity.times(minRate);
+        }
+        else
+        {
+            quantity = q;
+            targetPrice = tp;
+        }
     }
 
     // now we have correct quantity & targetPrice
@@ -1854,7 +1881,6 @@ async testOrder(orderType, pair, targetRate, opt)
         finalPrice = new Big(targetPrice).minus(order.fees);
     }
     order.finalPrice = parseFloat(finalPrice.toFixed(8));
-
     return order;
 }
 
