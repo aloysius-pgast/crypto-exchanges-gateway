@@ -67,7 +67,6 @@
             "enabled":true,
             "verbose":false,
             "timeout":10000,
-            "requirePair":false,
             "emulatedWs":{
                 "wsKlines":{
                     "enabled":true

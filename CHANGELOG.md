@@ -1,5 +1,15 @@
 # Change Log
 
+## [v1.7.10]
+### Gateway
+* Fix `Kucoin` price limits
+* Update `Kucoin` exchange to allow retrieving *tickers*, *open orders* & *closed orders* without providing the *pair*
+* For `Kucoin`, *closed orders* retrieval is now limited to 7 days instead of 3 days
+* Update `/exchanges/xxx/testOrder` endpoint to ensure `rate` is increased in case we reach `max(quantity)` with current rate
+* Update `orderBooks` test to allow `rate = 0`
+* Use `status` property instead of `remaining` property to decide if a `ccxt` error is `closed`
+* Use ccxt version `1.18.311`
+
 ## [v1.7.9]
 ### Gateway
 * Support for Kucoin API 2.0 (*closedOrders* retrieval is limited to 3 days for now)

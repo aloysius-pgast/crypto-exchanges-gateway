@@ -76,8 +76,6 @@ Below config will only give access to public API (since no key/secret combinatio
         "kucoin":{
             "type":"kucoin",
             "enabled":true,
-            /* if true client will need to provide the pair when dealing with orders */
-            "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
             "emulatedWs":{
                 "wsKlines":{
@@ -305,8 +303,6 @@ Access will be restricted using the following :
             "verbose":false,
             /* timeout in ms for REST requests */
             "timeout":10000,
-            /* if true client will need to provide the pair when dealing with orders */
-            "requirePair":false,
             /* ws emulation since Kucoin does not support ws */
             "emulatedWs":{
                 "wsKlines":{

@@ -6,7 +6,7 @@ const MochaHelper = require('../../../lib/mocha-helper');
 const restClient = require('../../../lib/rest-client').getInstance();
 
 const orderBookEntrySchema = joi.object({
-    rate:joi.number().positive().required(),
+    rate:joi.number().positive().allow(0).required(),
     quantity:joi.number().positive().required()
 });
 const orderBookSchema = joi.object({
