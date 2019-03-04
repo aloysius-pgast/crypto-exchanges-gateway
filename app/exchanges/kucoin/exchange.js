@@ -19,7 +19,7 @@ const supportedOrderBooksLimits = [20, 50]
 const TRADES_LIMIT = 100;
 
 // maximum number of days to consider for closed orders
-const CLOSED_ORDERS_HISTORY = 3;
+const CLOSED_ORDERS_HISTORY = 7;
 
 // list of possible interval for klines
 const supportedKlinesIntervals = [
@@ -33,13 +33,13 @@ const defaultKlinesInterval = '5m';
 // list of all possible features (should be enabled by default if supported by class)
 const supportedFeatures = {
     'pairs':{enabled:true},
-    'tickers':{enabled:true, withoutPair:false}, 'wsTickers':{enabled:true,emulated:false},
+    'tickers':{enabled:true, withoutPair:true}, 'wsTickers':{enabled:true,emulated:false},
     'orderBooks':{enabled:true}, 'wsOrderBooks':{enabled:true,emulated:false},
     'trades':{enabled:true}, 'wsTrades':{enabled:true,emulated:false},
     'klines':{enabled:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval}, 'wsKlines':{enabled:true,emulated:true,intervals:supportedKlinesIntervals,defaultInterval:defaultKlinesInterval},
-    'orders':{enabled:true, withoutPair:false},
-    'openOrders':{enabled:true, withoutPair:false},
-    'closedOrders':{enabled:true, withoutPair:false, completeHistory:false},
+    'orders':{enabled:true, withoutPair:true},
+    'openOrders':{enabled:true, withoutPair:true},
+    'closedOrders':{enabled:true, withoutPair:true, completeHistory:false},
     'balances':{enabled:true, withoutCurrency:true}
 };
 
@@ -150,17 +150,15 @@ _fixTradesLimit(limit)
 }
 
 /**
- * Retrieve open orders for a single pair
-
- * @param {string} pair pair to retrieve open orders for
+ * Retrieve open orders for all pairs
  * @return {Promise}
  */
-async _getOpenOrdersForPair(pair)
+async _getOpenOrders()
 {
     let data;
     try
     {
-        data = await super._getOpenOrdersForPair(pair);
+        data = await super._getOpenOrders();
     }
     catch (e)
     {
@@ -174,13 +172,12 @@ async _getOpenOrdersForPair(pair)
 }
 
 /**
- * Retrieve closed orders for a single pair
+ * Retrieve closed orders for all pairs
  *
- * @param {string} pair pair to retrieve closed orders for
  * @param {boolean} completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
  * @return {Promise} Promise which will resolve to an object such as below
  */
-async _getClosedOrdersForPair(pair, completeHistory)
+async _getClosedOrders(completeHistory)
 {
     /*
      * completeHistory is not supported, by default we will retrieve last N days
@@ -196,13 +193,13 @@ async _getClosedOrdersForPair(pair, completeHistory)
     let arr = [];
     for (let i = 0; i < CLOSED_ORDERS_HISTORY; ++i)
     {
-        endAt = endAt - oneDay - 1;
         let params = {
             endAt:endAt,
             startAt:(endAt - oneDay)
         };
-        let p = this._client.getClosedOrdersForPair(pair, params, true);
-        arr.push({promise:p, context:{exchange:this.getId(),api:'_getClosedOrdersForPair',pair:pair}});
+        endAt = endAt - oneDay - 1;
+        let p = this._client.getClosedOrders(params, true);
+        arr.push({promise:p, context:{exchange:this.getId(),api:'_getClosedOrders'}});
     }
     let data = await PromiseHelper.all(arr);
     _.forEach(data, (entry) => {

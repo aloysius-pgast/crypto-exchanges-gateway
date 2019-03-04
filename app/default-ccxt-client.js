@@ -962,7 +962,6 @@ formatKlines(ccxtData)
 
 /**
  * Retrieve open orders for a single pair
-
  * @param {string} pair pair to retrieve open orders for
  * @param {object} ccxtParams custom parameters (optional, might not be defined)
  * @return {ccxt:object[],custom:object}
@@ -998,6 +997,53 @@ async getOpenOrdersForPair(pair, ccxtParams)
     try
     {
         data = await this.ccxt.fetchOpenOrders(ccxtPair, undefined, undefined, ccxtParams);
+    }
+    catch (e)
+    {
+        if (e instanceof ccxt.BaseError)
+        {
+            throw new CcxtErrors.BaseError(e, undefined, undefined, undefined);
+        }
+        throw e;
+    }
+    return {ccxt:data,custom:this.formatOpenOrders(data)};
+}
+
+/**
+ * Retrieve open orders for all pairs
+ * @param {object} ccxtParams custom parameters (optional, might not be defined)
+ * @return {ccxt:object[],custom:object}
+ */
+/*
+ccxt output for fetchOpenOrders
+
+[
+    {
+        "id":"5b043105f773770d72d28ea4",
+        "timestamp":1527001350000,
+        "datetime":"2018-05-22T15:02:30.000Z",
+        "symbol":"GAS/BTC",
+        "type":"limit",
+        "side":"sell",
+        "price":0.1,
+        "amount":0.1,
+        "cost":0.010000000000000002,
+        "filled":0,
+        "remaining":0.1,
+        "status":"open",
+        "fee":{
+            "currency":"BTC"
+        }
+    },...
+]
+
+*/
+async getOpenOrders(ccxtParams)
+{
+    let data;
+    try
+    {
+        data = await this.ccxt.fetchOpenOrders(undefined, undefined, undefined, ccxtParams);
     }
     catch (e)
     {
@@ -1050,7 +1096,6 @@ formatOpenOrder(ccxtData)
 
 /**
  * Retrieve closed orders for a single pair
-
  * @param {string} pair pair to retrieve closed orders for
  * @param {object} ccxtParams custom parameters (optional, might not be defined)
  * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
@@ -1080,7 +1125,6 @@ ccxt output for fetchClosedOrders
         }
     }
 ]
-
 */
 async getClosedOrdersForPair(pair, ccxtParams, mergeTrades)
 {
@@ -1089,6 +1133,55 @@ async getClosedOrdersForPair(pair, ccxtParams, mergeTrades)
     try
     {
         data = await this.ccxt.fetchClosedOrders(ccxtPair, undefined, undefined, ccxtParams);
+    }
+    catch (e)
+    {
+        if (e instanceof ccxt.BaseError)
+        {
+            throw new CcxtErrors.BaseError(e, undefined, undefined, undefined);
+        }
+        throw e;
+    }
+    return {ccxt:data,custom:this.formatClosedOrders(data, mergeTrades)};
+}
+
+/**
+ * Retrieve closed orders for all pairs
+ * @param {object} ccxtParams custom parameters (optional, might not be defined)
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
+ * @return {ccxt:object[],custom:object}
+ */
+/*
+ccxt output for fetchClosedOrders
+
+[
+    {
+        "id":"5b0430f0f773770f4aa46b3a",
+        "timestamp":1527001329000,
+        "datetime":"2018-05-22T15:02:09.000Z",
+        "symbol":"GAS/BTC",
+        "type":"limit",
+        "side":"sell",
+        "price":0.00268962,
+        "amount":0.1,
+        "cost":0.00026896,
+        "filled":0.1,
+        "remaining":0,
+        "status":"closed",
+        "fee":{
+            "cost":2.7e-7,
+            "rate":0.001,
+            "currency":"BTC"
+        }
+    }
+]
+*/
+async getClosedOrders(ccxtParams, mergeTrades)
+{
+    let data;
+    try
+    {
+        data = await this.ccxt.fetchClosedOrders(undefined, undefined, undefined, ccxtParams);
     }
     catch (e)
     {
@@ -1177,6 +1270,7 @@ formatClosedOrder(ccxtData, computeFinalRate)
     let order = {
         pair:`${splittedPair[1]}-${splittedPair[0]}`,
         orderNumber:ccxtData.id,
+        openTimestamp:null,
         closedTimestamp:ccxtData.timestamp / 1000.0,
         orderType:ccxtData.side,
         quantity:ccxtData.filled,
@@ -1422,8 +1516,20 @@ async getOrder(orderNumber, pair, ccxtParams)
         }
         throw e;
     }
+    let isClosed = true;
+    if (data.hasOwnProperty('status'))
+    {
+        if ('open' == data['status'])
+        {
+            isClosed = false;
+        }
+    }
     // order is still open
-    if (data.hasOwnProperty('remaining'))
+    else if (data.hasOwnProperty('remaining'))
+    {
+        isClosed = false;
+    }
+    if (!isClosed)
     {
         return {ccxt:data,custom:this.formatOpenOrder(data)};
     }

@@ -272,8 +272,17 @@ async _getOpenOrdersForPair(pair)
 }
 
 /**
- * Retrieve closed orders for a single pair
+ * Retrieve open orders for all pairs
+ * @return {Promise}
+ */
+async _getOpenOrders()
+{
+    let data = await this._client.getOpenOrders();
+    return data.custom;
+}
 
+/**
+ * Retrieve closed orders for a single pair
  * @param {string} pair pair to retrieve closed orders for
  * @param {boolean} completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
  * @return {Promise}
@@ -281,6 +290,17 @@ async _getOpenOrdersForPair(pair)
 async _getClosedOrdersForPair(pair, completeHistory)
 {
     let data = await this._client.getClosedOrdersForPair(pair);
+    return data.custom;
+}
+
+/**
+ * Retrieve closed orders for all pairs
+ * @param {boolean} completeHistory whether or not all orders should be retrieved (might not be supported on all exchanges)
+ * @return {Promise}
+ */
+async _getClosedOrders(completeHistory)
+{
+    let data = await this._client.getClosedOrders();
     return data.custom;
 }
 

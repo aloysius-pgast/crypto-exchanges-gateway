@@ -199,15 +199,11 @@ class MochaHelper
     */
     static getExchangeConfig(exchangeId)
     {
-        if (undefined === config.exchanges)
+        if (undefined === config[exchangeId])
         {
             return {};
         }
-        if (undefined === config.exchanges[exchangeId])
-        {
-            return {};
-        }
-        return _.cloneDeep(config.exchanges[exchangeId]);
+        return _.cloneDeep(config[exchangeId]);
     }
 
     /**
