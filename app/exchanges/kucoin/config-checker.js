@@ -16,7 +16,6 @@ constructor(exchangeId)
         enabled:true,
         type:"kucoin",
         name:"Kucoin",
-        requirePair:false,
         key:"",
         secret:"",
         password:"",
