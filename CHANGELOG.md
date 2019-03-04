@@ -2,7 +2,10 @@
 
 ## [v1.7.10] **NOT RELEASED YET**
 ### Gateway
-* Use ccxt version `1.18.292`
+* Fix `Kucoin` price limits
+* Update `/exchanges/xxx/testOrder` endpoint to ensure `rate` is increased in case we reach `max(quantity)` with current rate
+* Update `orderBooks` test to allow `rate = 0`
+* Use ccxt version `1.18.311`
 
 ## [v1.7.9]
 ### Gateway
