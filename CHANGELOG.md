@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.11] **NOT RELEASED YET**
+### UI
+* `index.html` was updated so that app does not open in *safari* when added to home screen
+
 ## [v1.7.10]
 ### Gateway
 * Fix `Kucoin` price limits
