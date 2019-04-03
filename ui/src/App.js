@@ -242,7 +242,7 @@ _loadRoutes()
         defautRoute.redirect = '/home';
         if (0 != starredPairs.size())
         {
-            defautRoute.redirect = '/marketOverview';
+            defautRoute.redirect = '/services/marketOverview';
         }
     }
     this._routes.push(defautRoute);
