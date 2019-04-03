@@ -9,6 +9,7 @@ import _ from 'lodash';
 import serviceRegistry from './lib/ServiceRegistry';
 import routeRegistry from './lib/RouteRegistry';
 import starredPairs from './lib/StarredPairs';
+import standaloneContext from './lib/StandaloneContext';
 
 //-- general views
 import Header from './views/Header/';
@@ -39,6 +40,7 @@ constructor(props)
 {
    super(props);
    this._routes = [];
+   this._standaloneRoute = standaloneContext.getRoute();
 }
 
 _addExchangeRoutes(obj)
@@ -232,6 +234,19 @@ _loadRoutes()
     });
 
     //-- default route (use marketOverview if user has starred pairs, otherwise home)
+    const defautRoute = {
+        redirect:this._standaloneRoute
+    }
+    if (undefined === defautRoute.redirect)
+    {
+        defautRoute.redirect = '/home';
+        if (0 != starredPairs.size())
+        {
+            defautRoute.redirect = '/services/marketOverview';
+        }
+    }
+    this._routes.push(defautRoute);
+    /*
     if (0 != starredPairs.size())
     {
         path = '/';
@@ -252,6 +267,7 @@ _loadRoutes()
             component:DashBoard
         });
     }
+    */
 }
 
 componentWillMount()
@@ -267,6 +283,14 @@ render()
 {
     const routes = this._routes;
     const route = (item, index) => {
+        if (undefined !== item.redirect)
+        {
+            return (
+                <Route key="default" exact={true} path="/">
+                    <Redirect to={item.redirect}/>
+                </Route>
+            );
+        }
         // no extra properties to path
         if (undefined === item.data)
         {

@@ -1,5 +1,11 @@
 # Change Log
 
+## [v1.7.11]
+### UI
+* `index.html` was updated so that app does not open in *safari* when added to home screen
+* let browser cache `bundle.js` & `css` files
+* store navigation context in `localStorage` to restore it when using *home screen* apps
+
 ## [v1.7.10]
 ### Gateway
 * Fix `Kucoin` price limits

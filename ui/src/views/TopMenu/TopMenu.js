@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 import classNames from 'classnames';
 import serviceRegistry from '../../lib/ServiceRegistry';
 import routeRegistry from '../../lib/RouteRegistry';
+import standaloneContext from '../../lib/StandaloneContext';
 import axios from 'axios';
 
 class TopMenu extends Component
@@ -113,6 +114,24 @@ _updateStateFromRoute(props)
         if (undefined !== route.hasHelp && route.hasHelp)
         {
             helpId = route.name;
+        }
+        // save route for standalone app on ios
+        if (standaloneContext.isSupported())
+        {
+            let opt = undefined;
+            if ('exchange' === route.type) {
+                opt = {exchange:route.exchange, supportsPair:false};
+                switch (route.name)
+                {
+                    case 'prices':
+                    case 'orderBooks':
+                    case 'newOrder':
+                    case 'myOrders':
+                        opt.supportsPair = true;
+                        break;
+                }
+            }
+            standaloneContext.setRoute(route.path, opt);
         }
         if ('exchange' === route.type)
         {
