@@ -20,7 +20,8 @@ import restClient from './lib/RestClient';
 import wsClient from './lib/WsClient';
 import serviceRegistry from './lib/ServiceRegistry';
 import starredPairs from './lib/StarredPairs';
-import dataStore from './lib/DataStore'
+import dataStore from './lib/DataStore';
+import standaloneContext from './lib/StandaloneContext';
 
 window.ctx = {
     hasLocalStorage:true,
@@ -66,6 +67,12 @@ if (window.ctx.hasLocalStorage)
     }
     // load starred pairs
     starredPairs.load();
+    // load standaloneContext
+    standaloneContext.load();
+    if (standaloneContext.isSupported())
+    {
+        dataStore.updateFromStandaloneContext();
+    }
 }
 
 // try to retrieve api key from session storage

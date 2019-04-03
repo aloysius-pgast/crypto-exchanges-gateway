@@ -232,6 +232,11 @@ componentWillUnmount()
 // nothing to do, we already know the pair
 componentWillReceiveProps(nextProps)
 {
+    let isNewPair = true;
+    if (nextProps.exchange === this.props.exchange && nextProps.pair === this.props.pair)
+    {
+        isNewPair = false;
+    }
     this.setState(function(prevState, props){
         return {
             exchange:nextProps.exchange,
@@ -239,7 +244,7 @@ componentWillReceiveProps(nextProps)
             pairs:nextProps.pairs
         };
     }, function(){
-        if (null !== this.state.pair)
+        if (null !== this.state.pair && isNewPair)
         {
             dataStore.setExchangeData(this.state.exchange, 'pair', this.state.pair);
         }
