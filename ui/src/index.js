@@ -127,7 +127,7 @@ config.load().then(function(result){
 
     }).catch (function(err){
         // invalid api key
-        if (undefined !== err.response && (401 == err.response.status || 403 == err.response.status))
+        if ('GatewayError.Forbidden' == err.extError.errorType)
         {
             ReactDOM.render((
               <Auth/>
