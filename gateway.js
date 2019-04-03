@@ -230,7 +230,7 @@ if (!hasCustomConfig)
 // ensure ui has been built
 if (config.ui.enabled)
 {
-    let uiBundleFile = path.join(__dirname, 'ui/dist/index.bundle.js');
+    let uiBundleFile = path.join(__dirname, 'ui/dist/build.timestamp');
     if (!fs.existsSync(uiBundleFile))
     {
         config.ui.enabled = false;
