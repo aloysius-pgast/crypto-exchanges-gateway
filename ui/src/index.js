@@ -71,6 +71,8 @@ if (window.ctx.hasLocalStorage)
     standaloneContext.load();
     if (standaloneContext.isSupported())
     {
+        // force route to '/' (it will be changed later based on localStorage)
+        window.location.hash = '/';
         dataStore.updateFromStandaloneContext();
     }
 }
