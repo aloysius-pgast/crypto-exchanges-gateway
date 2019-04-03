@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.11] **NOT RELEASED YET**
+## [v1.7.11]
 ### UI
 * `index.html` was updated so that app does not open in *safari* when added to home screen
 * let browser cache `bundle.js` & `css` files
