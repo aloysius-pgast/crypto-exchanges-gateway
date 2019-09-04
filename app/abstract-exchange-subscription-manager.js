@@ -46,6 +46,14 @@ const KLINES_LOOP_PERIODS = {
     '1M':3600 * 1000
 }
 
+/*
+    Increase max listeners per event. Since node 8.x, this defaults to 10
+    In case multiple non-RPC sessions are initiated (to listen for klines on multiples pair/interval combinations for example),
+    limit of 10 can be reached easily. While RPC session (which allow multiplexing) is a better alternative, limit has been
+    increased to support this use-case
+ */
+const MAX_LISTENERS = 100;
+
 class AbstractExchangeSubscriptionManager extends EventEmitter
 {
 
@@ -63,6 +71,7 @@ constructor(exchange, options)
         throw new Error("Parameter 'exchange' should be an 'AbstractExchange' instance")
     }
     super();
+    this.setMaxListeners(MAX_LISTENERS);
     this._globalTickersSubscription = true;
     this._marketsSubscription = true;
     // used to emulate ws by doing periodic REST requests
