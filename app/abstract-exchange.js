@@ -2590,7 +2590,7 @@ Output example for open order
     "remainingQuantity":2.06
 }
 
-Output example for open closed order
+Output example for closed order
 
 {
     "pair":"USDT-NEO",
