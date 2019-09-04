@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS tickerMonitor(
     data TEXT,
     PRIMARY KEY(id ASC)
 );
-CREATE INDEX IF NOT EXISTS name ON tickerMonitor ASC;
+CREATE INDEX IF NOT EXISTS name ON tickerMonitor(name ASC);
