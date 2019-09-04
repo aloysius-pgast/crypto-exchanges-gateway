@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.7.12]
+### Gateway
+* Maximum number of listeners in `AbstractExchangeSubscriptionManager` has been increased to `100` to ensure more *non-RPC ws connections* can be supported without warning
+* Various dependencies have been updated using `npm audit fix`
+
 ## [v1.7.11]
 ### UI
 * `index.html` was updated so that app does not open in *safari* when added to home screen
