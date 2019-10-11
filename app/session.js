@@ -19,8 +19,8 @@ const SUPPORTED_SUBSCRIPTIONS = ['tickers','orderBooks','trades','klines'];
 const PING_TIMEOUT = internalConfig.get('keepalive').clients;
 
 // how many seconds should we wait before destroying a session without WS connection (10 min)
-//const SESSION_TIMEOUT = 600;
-const SESSION_TIMEOUT = 30 ;
+const SESSION_TIMEOUT = 600;
+//const SESSION_TIMEOUT = 30 ;
 
 /**
  * Class which handles subscriptions related to multiple exchanges for a single session (same session id can be used by multiple WS client connections)
