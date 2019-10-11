@@ -215,11 +215,11 @@ app.get('/sessions/:sid', (req, res) => {
         // update expiry ?
         if (!params.value.expires)
         {
-            session.disableExpiry();
+            session.disableExpiry({store:true});
         }
         else
         {
-            session.enableExpiry(params.value.timeout);
+            session.enableExpiry({timeout:params.value.timeout,store:true});
         }
         return res.send({});
     });
@@ -268,7 +268,7 @@ app.get('/sessions/:sid', (req, res) => {
             session.disableExpiry();
             return res.send({});
         }
-        session.enableExpiry(params.value.timeout);
+        session.enableExpiry({timeout:params.value.timeout});
         return res.send({});
     });
 })();
@@ -387,7 +387,7 @@ app.post('/sessions/:sid/subscriptions/:exchange/tickers/:pair', (req, res) => {
         {
             // creates session
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-            session.disableExpiry();
+            session.disableExpiry({store:true});
         }
         if (!checkMaxSubscriptions(session, res))
         {
@@ -457,7 +457,7 @@ app.post('/sessions/:sid/subscriptions/:exchange/orderBooks/:pair', (req, res) =
         {
             // creates session
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-            session.disableExpiry();
+            session.disableExpiry({store:true});
         }
         if (!checkMaxSubscriptions(session, res))
         {
@@ -547,7 +547,7 @@ app.post('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => {
         {
             // creates session
             session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-            session.disableExpiry();
+            session.disableExpiry({store:true});
         }
         if (!checkMaxSubscriptions(session, res))
         {
@@ -644,7 +644,7 @@ app.delete('/sessions/:sid/subscriptions/:exchange/trades/:pair', (req, res) => 
             {
                 // creates session
                 session = sessionRegistry.registerRpcSession(req.params.sid, undefined, false);
-                session.disableExpiry();
+                session.disableExpiry({store:true});
             }
             if (!checkMaxSubscriptions(session, res))
             {

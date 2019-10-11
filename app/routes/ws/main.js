@@ -141,12 +141,16 @@ app.ws('/', function(ws, req) {
     {
         if (!opt.expires)
         {
-            session.disableExpiry();
+            session.disableExpiry({store:true});
         }
         else
         {
-            session.enableExpiry(opt.timeout);
+            session.enableExpiry({timeout:opt.timeout,store:true});
         }
+    }
+    else
+    {
+        session.enableExpiry({store:true});
     }
 });
 

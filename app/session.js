@@ -19,8 +19,8 @@ const SUPPORTED_SUBSCRIPTIONS = ['tickers','orderBooks','trades','klines'];
 const PING_TIMEOUT = internalConfig.get('keepalive').clients;
 
 // how many seconds should we wait before destroying a session without WS connection (10 min)
-const SESSION_TIMEOUT = 600;
-//const SESSION_TIMEOUT = 30 ;
+//const SESSION_TIMEOUT = 600;
+const SESSION_TIMEOUT = 30 ;
 
 /**
  * Class which handles subscriptions related to multiple exchanges for a single session (same session id can be used by multiple WS client connections)
@@ -176,6 +176,8 @@ _store()
         return;
     }
     let obj = this._toHash();
+    // expiryTimestamp does not make sense in db
+    delete obj.expiryTimestamp;
     obj.subscriptions = this.getSubscriptions();
     storage.storeSession(this._sid, obj);
 }
@@ -268,22 +270,28 @@ getSubscriptions()
 /**
  * Enable session expiry
  *
- * @param {integer} timeout, new session timeout (optional, current value will be used if not set)
- * @return {boolean} true if expiry was disabled, false otherwise
+ * @param {object} opt options
+ * @param {integer} opt.timeout, new session timeout (current value will be used if not set)
+ * @param {boolean} opt.store, if {true}, session will be stored even if session properties did not change (default = {false})
+ * @return {boolean} {true} if expiry was enabled, false otherwise
  */
-enableExpiry(timeout)
+enableExpiry(opt)
 {
     // expiry cannot be changed for non-rpc sessions
     if (!this._isRpc)
     {
         return false;
     }
+    if (undefined === opt)
+    {
+        opt = {};
+    }
+    let timeout = opt.timeout;
     if (undefined === timeout)
     {
         timeout = this._timeout;
     }
-    let store = false;
-    if (this._expires && timeout == this._timeout)
+    if (this._expires && timeout == this._timeout && true !== opt.store)
     {
         // nothing to do
         return true;
@@ -305,7 +313,9 @@ enableExpiry(timeout)
 /**
  * Disable session expiry
  *
- * @return {boolean} true if expiry was disabled, false otherwise
+ * @param {object} opt options
+ * @param {boolean} opt.store, if {true}, session will be stored even if session properties did not change (default = {false})
+ * @return {boolean} {true} if expiry was disabled, false otherwise
  */
 disableExpiry()
 {
@@ -314,7 +324,11 @@ disableExpiry()
     {
         return false;
     }
-    let store = false;
+    if (undefined === opt)
+    {
+        opt = {};
+    }
+    let store = (true === opt.store);
     if (this._expires)
     {
         store = true;
@@ -324,6 +338,7 @@ disableExpiry()
     if (null !== this._expiryTimer)
     {
         clearTimeout(this._expiryTimer);
+        this._expiryTimer = null;
     }
     if (store)
     {
@@ -506,6 +521,7 @@ registerSocket(ws, path)
         {
             this._expiresAt = null;
             clearTimeout(this._expiryTimer);
+            this._expiryTimer = null;
         }
 
         ws.on('message', function(msg) {
@@ -560,6 +576,7 @@ _unregisterSocket(ws)
             if (null !== this._expiryTimer)
             {
                 clearTimeout(this._expiryTimer);
+                this._expiryTimer = null;
             }
             let timestamp = (new Date().getTime()) / 1000.0;
             let self = this;
@@ -568,7 +585,7 @@ _unregisterSocket(ws)
                 debug(`Session '${this._sid}' will be destroyed in ${this._timeout}s`)
             }
             // start timer
-            this._expiryTimer = this._startExpiryTimer();
+            this._startExpiryTimer();
         }
     }
 }
@@ -579,6 +596,7 @@ _startExpiryTimer()
     if (null !== this._expiryTimer)
     {
         clearTimeout(this._expiryTimer);
+        this._expiryTimer = null;
     }
     // destroy session directly
     if (0 == this._timeout)
@@ -592,7 +610,7 @@ _startExpiryTimer()
         return;
     }
     let timestamp = (new Date().getTime()) / 1000.0;
-    this._expiresAt = timestamp + this._timeout * 1000;
+    this._expiresAt = timestamp + this._timeout;
     this._expiryTimer = setTimeout(function(){
         if (debug.enabled)
         {
