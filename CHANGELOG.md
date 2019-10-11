@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.13]
+### Gateway
+* Ensure RPC session are always stored into database
+
 ## [v1.7.12]
 ### Gateway
 * Maximum number of listeners in `AbstractExchangeSubscriptionManager` has been increased to `100` to ensure more *non-RPC ws connections* can be supported without warning
