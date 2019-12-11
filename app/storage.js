@@ -234,7 +234,7 @@ checkDatabase()
             let promises = [];
             _.forEach(tables, (content, name) => {
                 let p = new Promise((res, rej) => {
-                    self._db.run(content, function(err){
+                    self._db.exec(content, function(err){
                         if (null !== err)
                         {
                             logger.error("Could not create table '%s' : %s", name, err.message);
