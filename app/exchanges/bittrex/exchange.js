@@ -272,8 +272,10 @@ Raw output example for GET https://bittrex.com/api/v1.1/public/getmarketsummarie
 }
 
 */
-_getTickers()
+async _getTickers()
 {
+    // we retrieve pairs to be able to ignore invalid ones
+    const pairs = await this.getPairs(true);
     let self = this;
     return this._limiterGlobal.schedule(function(){
         return new Promise((resolve, reject) => {
@@ -294,6 +296,10 @@ _getTickers()
                 }
                 let list = {};
                 _.forEach(response.result, (entry) => {
+                    // ignore invalid pairs
+                    if (undefined === pairs[entry.MarketName]) {
+                        return;
+                    }
                     let last = parseFloat(entry.Last);
                     let previousDay = parseFloat(entry.PrevDay);
                     let percentChange = 0;

@@ -6,7 +6,7 @@ const Big = require('big.js');
 const zlib = require('zlib');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
 
-const WS_URI = 'wss://real.okex.com:10441/websocket';
+const WS_URI = 'wss://real.okex.com:8443/ws/v3';
 
 class StreamClient extends AbstractExchangeStreamClientClass
 {
@@ -21,20 +21,21 @@ constructor(exchangeId)
 }
 
 /**
- * @return {baseCurrency:string, currency:string}
+ * @return {string}
  */
-_toExchangePair(pair)
+_toExchangePair(customPair)
 {
-    let [ baseCurrency, currency ] = pair.split('-');
-    return {
-        baseCurrency:baseCurrency.toLowerCase(),
-        currency:currency.toLowerCase()
-    }
+    let [ baseCurrency, currency ] = customPair.split('-');
+    return `${currency}-${baseCurrency}`;
 }
 
-_toCustomPair(baseCurrency, currency)
+/**
+ * @return {string}
+ */
+_toCustomPair(exchangePair)
 {
-    return `${baseCurrency}-${currency}`.toUpperCase();
+    let [ currency, baseCurrency ] = exchangePair.split('-');
+    return `${baseCurrency}-${currency}`;
 }
 
 /**
@@ -46,11 +47,11 @@ _getExchangeChannelType(customType)
     switch (customType)
     {
         case 'ticker':
-            return customType;
+            return `spot/ticker`;
         case 'orderBook':
-            return 'depth';
+            return 'spot/depth';
         case 'trades':
-            return 'deal';
+            return 'spot/trade';
     }
     logger.warn(`Unknown channel customType '${customType}' for exchange '${this.getExchangeId()}'`);
     return null;
@@ -64,11 +65,11 @@ _getCustomChannelType(exchangeType)
 {
     switch (exchangeType)
     {
-        case 'ticker':
-            return exchangeType;
-        case 'depth':
+        case 'spot/ticker':
+            return 'ticker';
+        case 'spot/depth':
             return 'orderBook';
-        case 'deal':
+        case 'spot/trade':
             return 'trades';
     }
     logger.warn(`Unknown channel exchangeType '${exchangeType}' for exchange '${this.getExchangeId()}'`);
@@ -88,7 +89,7 @@ _getChannelParameters(type, pair)
         return null;
     }
     let p = this._toExchangePair(pair);
-    return {binary:0, product:'spot', type:exchangeType, base:p.currency, quote:p.baseCurrency};
+    return [`${exchangeType}:${p}`];
 }
 
 /**
@@ -105,7 +106,7 @@ getSubscribeMessage(channel)
     {
         return null;
     }
-    return {event:'addChannel',parameters:parameters};
+    return {op:'subscribe',args:parameters};
 }
 
 /**
@@ -122,7 +123,7 @@ getUnsubscribeMessage(channel)
     {
         return null;
     }
-    return {event:'removeChannel',parameters:parameters};
+    return {op:'unsubscribe',args:parameters};
 }
 
 /*
@@ -146,32 +147,23 @@ _processMessage(message)
         }
         try
         {
-            // convert result to an array if needed (for 'trades', an object is returned instead of an array of objects)
-            if (!Array.isArray(data))
+            // ignore since we won't be able to do anything with this
+            if (undefined === data.table && undefined === data.event)
             {
-                data = [data];
+                return;
             }
-            _.forEach(data, (e) => {
-                // ignore since we won't be able to do anything with this
-                if (undefined === e.type || undefined === e.data)
-                {
-                    return;
-                }
-                if (undefined !== e.data.result)
-                {
-                    return this._processResult(e);
-                }
-                let customType = this._getCustomChannelType(e.type);
-                if (null === customType)
-                {
-                    return;
-                }
+            // process suscribe/unsubscribe result
+            if (undefined !== data.event) {
+                return this._processResult(data);
+            }
+            const customType = this._getCustomChannelType(data.table);
+            _.forEach(data.data, (e) => {
                 switch (customType)
                 {
                     case 'ticker':
                         return this._processTickerData(e);
                     case 'orderBook':
-                        return this._processOrderBookData(e);
+                        return this._processOrderBookData(e, 'partial' === data.action);
                     case 'trades':
                         return this._processTradesData(e);
                 }
@@ -203,41 +195,27 @@ _decodeData(d, cb)
 }
 
 /*
-Process result after adding/removing a channel
+Process result after subscribe/unsubscribe
 
 Example data (success)
 
 {
-    "base":"btc",
-    "binary":0,
-    "channel":"addChannel",
-    "data":{
-        "result":true
-    },
-    "product":"spot",
-    "quote":"usdt",
-    "type":"ticker"
+   "event":"subscribe",
+   "channel":"spot/ticker:NEO-USDT"
 }
 
 Example data (error)
 
 {
-    "binary":0,
-    "channel":"addChannel",
-    "data":{
-        "result":false,
-        "error_msg":"The require parameters cannot be empty.",
-        "error_code":10000
-    },
-    "product":"spot",
-    "quote":"usdt",
-    "type":"ticker"
+   "event":"error",
+   "message":"Channel spot/tickerinvalid:NEO-USDT doesn't exist",
+   "errorCode":30040
 }
 
 */
 _processResult(data)
 {
-    if (data.data.result)
+    if ('error' !== data.event)
     {
         return;
     }
@@ -250,57 +228,44 @@ Process tickers data and emit a 'ticker' event
 Example data
 
 {
-    "base":"btc",
-    "binary":0,
-    "data":{
-        "symbol":"btc_usdt",
-        "last":"6749.4851",
-        "productId":20,
-        "buy":"6745.2065",
-        "change":"-2.2201",
-        "sell":"6748.8549",
-        "outflows":"69471168.36789888",
-        "dayLow":"6558.0000",
-        "volume":"21055.0872",
-        "high":"6774.4826",
-        "createdDate":1529509433300,
-        "inflows":"70899426.01477612",
-        "low":"6558.0000",
-        "marketFrom":118,
-        "changePercentage":"-0.03%",
-        "currencyId":20,
-        "close":"6749.4851",
-        "dayHigh":"6774.4826",
-        "open":"6751.7052"
-    },
-    "product":"spot",
-    "quote":"usdt",
-    "type":"ticker"
+   "instrument_id":"BTC-USDT",
+   "last":"7174.4",
+   "last_qty":"0.0016916",
+   "best_bid":"7174.4",
+   "best_bid_size":"0.06094569",
+   "best_ask":"7174.5",
+   "best_ask_size":"4.65278962",
+   "open_24h":"7237.2",
+   "high_24h":"7271",
+   "low_24h":"7132.3",
+   "base_volume_24h":"16545.6",
+   "quote_volume_24h":"119408171.4",
+   "timestamp":"2019-12-11T15:59:52.771Z"
 }
 
 */
 _processTickerData(data)
 {
-    let pair = this._toCustomPair(data.quote, data.base);
+    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
         debug(`Got ticker for pair '${pair}'`);
     }
-    let priceChangePercent = parseFloat(data.data.changePercentage);
+    let priceChangePercent = parseFloat(new Big(data.last).minus(data.open_24h).div(data.open_24h).times(100).toFixed(4));
     if (isNaN(priceChangePercent))
     {
         priceChangePercent = null;
     }
     let ticker = {
         pair:pair,
-        last: parseFloat(data.data.last),
-        sell: parseFloat(data.data.sell),
-        buy: parseFloat(data.data.buy),
-        priceChangePercent: priceChangePercent,
-        volume: parseFloat(data.data.volume),
-        high: parseFloat(data.data.high),
-        low: parseFloat(data.data.low),
-        timestamp:data.data.createdDate / 1000.0
+        last: parseFloat(data.last),
+        priceChangePercent:priceChangePercent,
+        sell: parseFloat(data.best_ask),
+        buy: parseFloat(data.best_bid),
+        volume: parseFloat(data.base_volume_24h),
+        high: parseFloat(data.high_24h),
+        low: parseFloat(data.low_24h),
+        timestamp:parseFloat(new Date(data.timestamp).getTime() / 1000.0)
     }
     this.emit('ticker', {
         pair:pair,
@@ -314,96 +279,93 @@ Process order books and emit 'orderBook'/'orderBookUpdate'
 Data example for full order book
 
 {
-    "base":"btc",
-    "binary":0,
-    "data":{
-        "init":true,
-        "asks":[
-            {
-                "totalSize":"8.477",
-                "price":"6745.65"
-            },
-            {
-                "totalSize":"1",
-                "price":"6747.0824"
-            },
-            {
-                "totalSize":"1",
-                "price":"6747.87"
-            }
-        ],
-        "bids":[
-            {
-                "totalSize":"0.02",
-                "price":"6743.8001"
-            },
-            {
-                "totalSize":"0.15",
-                "price":"6743.5845"
-            },
-            {
-                "totalSize":"1",
-                "price":"6742.6083"
-            },
-            {
-                "totalSize":"1",
-                "price":"6742.5099"
-            }
-        ]
-    },
-    "product":"spot",
-    "quote":"usdt",
-    "type":"depth"
+   "instrument_id":"BTC-USDT",
+   "asks":[
+      [
+         "7185.2",
+         "0.06",
+         "2"
+      ],
+      [
+         "7185.7",
+         "0.001",
+         "1"
+      ],
+      [
+         "7186.1",
+         "0.01",
+         "1"
+      ]
+   ],
+   "bids":[
+      [
+         "7185.1",
+         "3.90247387",
+         "19"
+      ],
+      [
+         "7185",
+         "0.56557922",
+         "5"
+      ],
+      [
+         "7184.9",
+         "2.12499199",
+         "4"
+      ]
+   ],
+   "timestamp":"2019-12-11T16:22:51.107Z",
+   "checksum":768871585
 }
 
 Data example for order book update (totalSize == 0 => removed from order book)
 
 {
-    "base":"btc",
-    "binary":0,
-    "data":{
-        "asks":[
-            {
-                "totalSize":"0",
-                "price":"7243.7302"
-            },
-            {
-                "totalSize":"0",
-                "price":"6793.27"
-            },
-            {
-                "totalSize":"0",
-                "price":"6791.14"
-            },
-            {
-                "totalSize":"0.11",
-                "price":"6762.154"
-            }
-        ],
-        "bids":[
-            {
-                "totalSize":"0",
-                "price":"6743.8001"
-            },
-            {
-                "totalSize":"0",
-                "price":"6741.4351"
-            },
-            {
-                "totalSize":"0.27652928",
-                "price":"6740.849"
-            }
-        ]
-    },
-    "product":"spot",
-    "quote":"usdt",
-    "type":"depth"
+   "instrument_id":"BTC-USDT",
+   "asks":[
+      [
+         "7207.1",
+         "0.3",
+         "1"
+      ]
+   ],
+   "bids":[
+      [
+         "7184",
+         "1.271",
+         "3"
+      ],
+      [
+         "7183.8",
+         "0",
+         "0"
+      ],
+      [
+         "7176",
+         "0.05924333",
+         "1"
+      ],
+      [
+         "7171.1",
+         "0",
+         "0"
+      ],
+      [
+         "7108.1",
+         "0.00101",
+         "1"
+      ]
+   ],
+   "timestamp":"2019-12-11T16:22:51.251Z",
+   "checksum":1303704781
 }
 
+bids and asks value example: In ["411.8","10","8"], 411.8 is price depth, 10 is the amount at the price, 8 is the number of orders at the price.
+
 */
-_processOrderBookData(data)
+_processOrderBookData(data, isFull)
 {
-    if (true === data.data.init)
+    if (isFull)
     {
         return this._processFullOrderBook(data);
     }
@@ -417,10 +379,10 @@ _processOrderBookData(data)
  */
 _processFullOrderBook(data)
 {
-    let pair = this._toCustomPair(data.quote, data.base);
+    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
-        debug(`Got full order book for pair '${pair}': ${data.data.asks.length} asks, ${data.data.bids.length} bids`);
+        debug(`Got full order book for pair '${pair}': ${data.asks.length} asks, ${data.bids.length} bids`);
     }
     // cseq will be computed by subscription manager
     let evt = {
@@ -430,11 +392,11 @@ _processFullOrderBook(data)
             sell:[]
         }
     };
-    _.forEach(data.data.asks, (e) => {
-        evt.data.sell.push({quantity:parseFloat(e.totalSize),rate:parseFloat(e.price)});
+    _.forEach(data.asks, (e) => {
+        evt.data.sell.push({quantity:parseFloat(e[1]),rate:parseFloat(e[0])});
     });
-    _.forEach(data.data.bids, (e) => {
-        evt.data.buy.push({quantity:parseFloat(e.totalSize),rate:parseFloat(e.price)});
+    _.forEach(data.bids, (e) => {
+        evt.data.buy.push({quantity:parseFloat(e[1]),rate:parseFloat(e[0])});
     });
     this.emit('orderBook', evt);
     return true;
@@ -447,10 +409,10 @@ _processFullOrderBook(data)
  */
 _processOrderBookUpdates(data)
 {
-    let pair = this._toCustomPair(data.quote, data.base);
+    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
-        debug(`Got order book update for pair '${pair}': ${data.data.asks.length + data.data.bids.length} changes`);
+        debug(`Got order book update for pair '${pair}': ${data.asks.length + data.bids.length} changes`);
     }
     // cseq will be computed by subscription manager
     let evt = {
@@ -460,11 +422,11 @@ _processOrderBookUpdates(data)
             sell:[]
         }
     };
-    _.forEach(data.data.asks, (e) => {
+    _.forEach(data.asks, (e) => {
         let obj = {
             action: 'update',
-            quantity:parseFloat(e.totalSize),
-            rate:parseFloat(e.price)
+            quantity:parseFloat(e[1]),
+            rate:parseFloat(e[0])
         }
         // this is a removal
         if (0 == obj.quantity)
@@ -473,11 +435,11 @@ _processOrderBookUpdates(data)
         }
         evt.data.sell.push(obj);
     });
-    _.forEach(data.data.bids, (e) => {
+    _.forEach(data.bids, (e) => {
         let obj = {
             action: 'update',
-            quantity:parseFloat(e.totalSize),
-            rate:parseFloat(e.price)
+            quantity:parseFloat(e[1]),
+            rate:parseFloat(e[0])
         }
         // this is a removal
         if (0 == obj.quantity)
@@ -493,53 +455,42 @@ _processOrderBookUpdates(data)
 /*
 Process trades data and emit a 'trades' event
 
-Example data (side == 1 => buy, side == 2 => sell)
-
 {
-    "base":"btc",
-    "binary":0,
-    "data":[
-        {
-            "amount":"0.00100707",
-            "side":1,
-            "createdDate":1529509927173,
-            "price":"6742.92",
-            "id":407168620
-        },
-        {
-            "amount":"0.00408789",
-            "side":1,
-            "createdDate":1529509927247,
-            "price":"6742.92",
-            "id":407168625
-        }
-    ],
-    "product":"spot",
-    "quote":"usdt",
-    "type":"deal"
+   "instrument_id":"BTC-USDT",
+   "price":"7200.7",
+   "side":"sell",
+   "size":"0.00127736",
+   "timestamp":"2019-12-11T16:44:56.768Z",
+   "trade_id":"2750455009"
 }
+
 */
 _processTradesData(data)
 {
-    let pair = this._toCustomPair(data.quote, data.base);
+    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
-        debug(`Got trades update for pair '${pair}': ${data.data.length} trades`);
+        debug(`Got trade update for pair '${pair}'`);
     }
     let evt = {
         pair:pair,
         data:[]
     };
-    _.forEach(data.data, (trade) => {
-        let obj = {
-            id: trade.id,
-            quantity:parseFloat(trade.amount),
-            rate:parseFloat(trade.price),
-            timestamp:trade.createdDate / 1000.0
-        }
-        obj.price = parseFloat(new Big(obj.quantity).times(obj.rate));
-        evt.data.unshift(obj);
-    });
+    let orderType = 'sell';
+    // seems to be reversed and when 'm' is true, entry is displayed in RED on Binance website
+    if ('buy' === data.side)
+    {
+        orderType = 'buy';
+    }
+    let obj = {
+        id: data.trade_id,
+        quantity:parseFloat(data.size),
+        rate:parseFloat(data.price),
+        orderType:orderType,
+        timestamp:parseFloat(new Date(data.timestamp).getTime() / 1000.0)
+    }
+    obj.price = parseFloat(new Big(obj.quantity).times(obj.rate));
+    evt.data.unshift(obj);
     this.emit('trades', evt);
     return true;
 }

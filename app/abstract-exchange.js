@@ -842,7 +842,7 @@ async getTickers(pairs)
     }
     else
     {
-        // ensure we're allowed to retrieve all open orders by looping through all pairs
+        // ensure we're allowed to retrieve all tickers by looping through all pairs
         if (0 == pairs.length)
         {
             if (this.__requirePair)
