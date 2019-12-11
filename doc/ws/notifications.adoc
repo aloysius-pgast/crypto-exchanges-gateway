@@ -47,7 +47,7 @@ Following notifications can be sent
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}priceChangePercent
 |float
-|% Change of price in last 24H (0-100)
+|% Change of price in last 24H (0-100) (will be null if not supported by exchange)
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}sell
 |float
