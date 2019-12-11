@@ -1,8 +1,14 @@
 # Change Log
 
+## [v1.7.14] **NOT RELEASED YET**
+### Gateway
+* Implement *OKex* WS API v3
+* Filter unsupported pairs when returning *tickers* for *Bittrex* (REST)
+* Fix disabling expiry of sessions
+
 ## [v1.7.13]
 ### Gateway
-* Ensure RPC session are always stored into database
+* Ensure RPC sessions are always stored into database
 
 ## [v1.7.12]
 ### Gateway
