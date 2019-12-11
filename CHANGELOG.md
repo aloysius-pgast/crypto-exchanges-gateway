@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.7.14] **NOT RELEASED YET**
+## [v1.7.14]
 ### Gateway
 * Implement *OKex* WS API v3
 * Filter unsupported pairs when returning *tickers* for *Bittrex* (REST)
