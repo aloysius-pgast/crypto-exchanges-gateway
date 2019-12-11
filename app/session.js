@@ -317,7 +317,7 @@ enableExpiry(opt)
  * @param {boolean} opt.store, if {true}, session will be stored even if session properties did not change (default = {false})
  * @return {boolean} {true} if expiry was disabled, false otherwise
  */
-disableExpiry()
+disableExpiry(opt)
 {
     // expiry cannot be disabled for non-rpc sessions
     if (!this._isRpc)
