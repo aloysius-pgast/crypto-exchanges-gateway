@@ -709,6 +709,10 @@ async getTickers(opt)
             {
                 return;
             }
+            if (undefined === this.__cache.data.bySymbol[symbol])
+            {
+                return;
+            }
             let ticker = _.clone(this.__cache.data.bySymbol[symbol].data);
             ticker.symbol = s;
             list.push(ticker);
