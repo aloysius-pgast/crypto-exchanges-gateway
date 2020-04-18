@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.15]
+### Gateway
+* Fix `getTickers` (*marketCap*) in case alias symbol is not found on *CoinCodex*
+
 ## [v1.7.14]
 ### Gateway
 * Implement *OKex* WS API v3
