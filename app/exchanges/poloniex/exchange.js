@@ -1488,7 +1488,7 @@ async _getOrder(orderNumber, pair)
         order.fees.amount = order.fees.amount.plus(trade.fees.amount);
     });
     // format quantity, actualPrice, finalPrice & fees amount + compute actualRate
-    if (0 != order.quantity) {
+    if (order.quantity > 0) {
         order.actualRate = parseFloat(order.actualPrice.div(order.quantity).toFixed(8));
         order.finalRate = parseFloat(order.finalPrice.div(order.quantity).toFixed(8));
     }
