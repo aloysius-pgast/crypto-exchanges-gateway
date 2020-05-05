@@ -710,7 +710,7 @@ _updateClosedOrder(order)
     }
     order.actualPrice = parseFloat(actualPrice.toFixed(8));
     order.finalPrice = parseFloat(finalPrice.toFixed(8));
-    if (0 != order.quantity) {
+    if (order.quantity > 0) {
         order.finalRate = parseFloat(finalPrice.div(order.quantity).toFixed(8));
     }
 }
