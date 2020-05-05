@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.7.16] **NOT RELEASED YET**
+### Gateway
+* Fix a division by zero error for *Bittrex* & *Poloniex* when checking closed orders (see https://github.com/aloysius-pgast/crypto-exchanges-gateway/pull/89)
+
 ## [v1.7.15]
 ### Gateway
 * Fix `getTickers` (*marketCap*) in case alias symbol is not found on *CoinCodex*
