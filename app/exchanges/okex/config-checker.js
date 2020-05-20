@@ -19,6 +19,7 @@ constructor(exchangeId)
         requirePair:false,
         key:"",
         secret:"",
+        password:"",
         feesPercent:0.2,
         emulatedWs:{
             wsKlines:{
@@ -33,6 +34,20 @@ constructor(exchangeId)
         }
     }
     super(exchangeId, cfg);
+}
+
+_check()
+{
+    let valid = super._check();
+    if ('' != this._finalConfig.key && '' != this._finalConfig.secret)
+    {
+        if ('' == this._finalConfig.password)
+        {
+            this._err(`Exchange type '${this._finalConfig.type}' requires 'password'`);
+            valid = false;
+        }
+    }
+    return valid;
 }
 
 }
