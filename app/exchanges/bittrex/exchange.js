@@ -57,6 +57,7 @@ class Exchange extends AbstractExchangeClass
         cleartext:false
     };
     this._client = createApiInstance(opt);
+    this._ignoreRestrictedPairs = (true === config.exchanges[exchangeId].ignoreRestrictedPairs);
     this._limiterGlobal = this._getRateLimiter(config.exchanges[exchangeId].throttle.global.maxRequestsPerSecond);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
@@ -126,6 +127,7 @@ Raw output example for GET https://bittrex.com/api/v1.1/public/getmarkets
             "MinTradeSize":0.01385042,
             "MarketName":"BTC-LTC",
             "IsActive":true,
+            "IsRestricted": false,
             "Created":"2014-02-13T00:00:00",
             "Notice":null,
             "IsSponsored":null,
@@ -139,6 +141,7 @@ Raw output example for GET https://bittrex.com/api/v1.1/public/getmarkets
             "MinTradeSize":625.00000000,
             "MarketName":"BTC-DOGE",
             "IsActive":true,
+            "IsRestricted": false,
             "Created":"2014-02-13T00:00:00",
             "Notice":null,
             "IsSponsored":null,
@@ -174,6 +177,14 @@ _getPairs()
                 _.forEach(response.result, (entry) => {
                     // ignore if inactive
                     if (!entry.IsActive)
+                    {
+                        return;
+                    }
+                    /*
+                        Ignore restricted pairs if enabled in config
+                        See https://github.com/Bittrex/bittrex.github.io/issues/78
+                     */
+                    if (entry.IsRestricted && self._ignoreRestrictedPairs)
                     {
                         return;
                     }
