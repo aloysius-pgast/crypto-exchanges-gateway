@@ -58,7 +58,7 @@ constructor(exchangeId, exchangeName, config)
     let opt = AbstractCcxtExchangeClass.getCcxtOpt(exchangeId, config, {
         fetchOrderBookWarning:false
     });
-    let client = new CcxtClient('kucoin2', opt);
+    let client = new CcxtClient('kucoin', opt);
     super(exchangeId, exchangeType, exchangeName, supportedFeatures, config, client);
     let subscriptionManager = new SubscriptionManagerClass(this, config);
     this._setSubscriptionManager(subscriptionManager);
@@ -96,8 +96,16 @@ async _getOrderBook(pair, opt)
     // sequence will be requested by subscription manager to sort full orderbook & order book updates
     if (true === opt.custom.includeSequence)
     {
-        // the timestamp provided by ccxt is the 'sequence' number returned by Kucoin
-        data.custom.sequence = data.ccxt.timestamp;
+        // use 'nonce' if available
+        if (undefined !== data.ccxt.nonce)
+        {
+            data.custom.sequence = data.ccxt.nonce;
+        }
+        // otherwise use 'timestamp' as older version of ccxt used to set the timestamp as the 'sequence' number returned by Kucoin
+        else
+        {
+            data.custom.sequence = data.ccxt.sequence;
+        }
     }
     return data.custom;
 }

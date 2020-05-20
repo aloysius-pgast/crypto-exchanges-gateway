@@ -22,6 +22,7 @@ constructor(exchangeId)
         key:"",
         secret:"",
         feesPercent:0.25,
+        ignoreRestrictedPairs:false,
         emulatedWs:{
             wsKlines:{
                 enabled:true
@@ -123,6 +124,12 @@ _check()
         {
             this._finalConfig.feesPercent = value;
         }
+    }
+
+    //-- check whether or not restricted pairs (ie: restricted markets should be ignored)
+    if (true === this._config.ignoreRestrictedPairs)
+    {
+        this._finalConfig.ignoreRestrictedPairs = true;
     }
 
     //-- update throttle config

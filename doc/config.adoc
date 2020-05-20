@@ -55,6 +55,8 @@ Below config will only give access to public API (since no key/secret combinatio
         "bittrex":{
             "type":"bittrex",
             "enabled":true,
+            /* whether or not restricted pairs should be ignored */
+            "ignoreRestrictedPairs":false,
             /* ws emulation for Bittrex klines */
             "emulatedWs":{
                 "wsKlines":{
@@ -100,7 +102,8 @@ Below config will only give access to public API (since no key/secret combinatio
             /* if true client will need to provide the pair when dealing with orders */
             "requirePair":false,
             "key":"",
-            "secret":""
+            "secret":"",
+            "password":""
         }
     }
 }
@@ -230,6 +233,8 @@ Access will be restricted using the following :
         },
         "bittrex":{
             "enabled":true,
+            /* whether or not restricted pairs should be ignored */
+            "ignoreRestrictedPairs":false,
             "type":"bittrex",
             "name":"bittrex",
             /* ws emulation for Bittrex klines */
@@ -346,6 +351,8 @@ Access will be restricted using the following :
             "key":"ABCD",
             /* Secret provided by OKEx */
             "secret":"EFGH",
+            /* Password defined on OKex */
+            "password":"IJKL",
             /* % fees [0,100] */
             "feesPercent":0.20,
             /* rate limiting to comply with OKEx */

@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.8.0]
+### Gateway
+* Fix a division by zero error for *Bittrex* & *Poloniex* when checking closed orders (see https://github.com/aloysius-pgast/crypto-exchanges-gateway/pull/89)
+* *OKex* exchange now requires an extra config parameter (`password`)
+* *Bittrex* exchange now supports an extra *optional* parameter (`ignoreRestrictedPairs`, default = `false`)
+* Upgrade *ccxt* to version `1.28.5`
+
 ## [v1.7.15]
 ### Gateway
 * Fix `getTickers` (*marketCap*) in case alias symbol is not found on *CoinCodex*
