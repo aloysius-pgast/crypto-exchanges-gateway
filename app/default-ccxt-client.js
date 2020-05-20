@@ -78,18 +78,6 @@ _redefineCcxtErrorHandlers()
             });
         });
     };
-    // redefine parseRestResponse
-    this.ccxt._parseRestResponse = this.ccxt.parseRestResponse;
-    this.ccxt.parseRestResponse = (response, responseBody, url, method) => {
-        try
-        {
-            return self.ccxt._parseRestResponse.call(self.ccxt, response, responseBody, url, method);
-        }
-        catch (e)
-        {
-            throw new CcxtErrors.BaseError(e, {method:method,url:url}, {statusCode:response.status,statusMessage:response.statusText,body:responseBody}, undefined);
-        }
-    };
     // redefine default error handler
     this.ccxt._defaultErrorHandler = this.ccxt.defaultErrorHandler;
     this.ccxt.defaultErrorHandler = (response, responseBody, url, method) => {
@@ -165,6 +153,21 @@ _precisionToStep(value)
     return step;
 }
 
+// borrowed from ccxt
+_stepToPrecision(value)
+{
+    let split;
+    if ('string' == typeof(value))
+    {
+        split = value.replace(/0+$/g, '').split('.');
+    }
+    else
+    {
+        split = value.toFixed(10).replace(/0+$/g, '').split('.');
+    }
+    return (split.length > 1) ? (split[1].length) : 0;
+}
+
 /**
  * Returns the duration (in sec) of a given klines interval
  * @param {string} interval klines interval
@@ -179,11 +182,15 @@ _getKlinesIntervalDuration(interval)
  * Convert pair from ccxt format Y/X to custom format X-Y
  *
  * @param {string} pair pair in ccxt format (Y/X)
- * @return {string} pair in custom format (X-Y)
+ * @return {string|undefined} pair in custom format (X-Y) or 'undefined' if pair could not be converted
  */
 _toCustomPair(pair)
 {
     let arr = pair.split('/');
+    // return 'undefined' if pair could not be splitted using '/' (can occur for 'okex' since we have pairs such as 'BTC-USD-200529-14000-P')
+    if (1 == arr.length) {
+        return undefined;
+    }
     return arr[1] + '-' + arr[0];
 }
 
@@ -324,6 +331,9 @@ formatPairs(ccxtData)
             return;
         }
         let pair = this._toCustomPair(e.symbol);
+        if (undefined === pair) {
+            return;
+        }
         result[pair] = this.formatPair(pair, e);
     });
     return result;
@@ -346,12 +356,22 @@ formatPair(pair, ccxtData)
         if (undefined !== ccxtData.precision.price)
         {
             limits.rate.precision = ccxtData.precision.price;
+            // just in case precision is provided directly as a real value instead of an integer (Okex bug for example in ccxt 1.28.5)
+            if (limits.rate.precision < 1)
+            {
+                limits.rate.precision = this._stepToPrecision(limits.rate.precision);
+            }
             limits.rate.step = this._precisionToStep(limits.rate.precision);
         }
         // quantity
         if (undefined !== ccxtData.precision.amount)
         {
             limits.quantity.precision = ccxtData.precision.amount;
+            // just in case precision is provided directly as a real value instead of an integer (Okex bug for example in ccxt 1.28.5)
+            if (limits.quantity.precision < 1)
+            {
+                limits.quantity.precision = this._stepToPrecision(limits.quantity.precision);
+            }
             limits.quantity.step = this._precisionToStep(limits.quantity.precision);
         }
     }
