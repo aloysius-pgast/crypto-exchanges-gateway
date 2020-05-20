@@ -45,6 +45,7 @@
             "type":"bittrex",
             "name":"Bittrex",
             "enabled":true,
+            "ignoreRestrictedPairs":false,
             "emulatedWs":{
                 "wsKlines":{
                     "enabled":true
@@ -89,7 +90,8 @@
             "timeout":10000,
             "requirePair":false,
             "key":"",
-            "secret":""
+            "secret":"",
+            "password":""
         }
     }
 }
