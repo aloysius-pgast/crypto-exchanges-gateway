@@ -356,9 +356,11 @@ formatPair(pair, ccxtData)
         if (undefined !== ccxtData.precision.price)
         {
             limits.rate.precision = ccxtData.precision.price;
-            // just in case precision is provided directly as a real value instead of an integer (Okex bug for example in ccxt 1.28.5)
-            if (limits.rate.precision < 1)
-            {
+            /*
+                Check if precisionMode is TICK_SIZE (OKex for example)
+                See https://github.com/ccxt/ccxt/wiki/Manual#market-structure
+             */
+            if (this.ccxt.TICK_SIZE == this.ccxt.precisionMode) {
                 limits.rate.precision = this._stepToPrecision(limits.rate.precision);
             }
             limits.rate.step = this._precisionToStep(limits.rate.precision);
@@ -367,9 +369,11 @@ formatPair(pair, ccxtData)
         if (undefined !== ccxtData.precision.amount)
         {
             limits.quantity.precision = ccxtData.precision.amount;
-            // just in case precision is provided directly as a real value instead of an integer (Okex bug for example in ccxt 1.28.5)
-            if (limits.quantity.precision < 1)
-            {
+            /*
+                Check if precisionMode is TICK_SIZE (OKex for example)
+                See https://github.com/ccxt/ccxt/wiki/Manual#market-structure
+             */
+            if (this.ccxt.TICK_SIZE == this.ccxt.precisionMode) {
                 limits.quantity.precision = this._stepToPrecision(limits.quantity.precision);
             }
             limits.quantity.step = this._precisionToStep(limits.quantity.precision);
