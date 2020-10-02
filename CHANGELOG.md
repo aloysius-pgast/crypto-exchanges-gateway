@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.8.1]
+### Gateway
+* Update dependencies
+* Fix sorting in `marketCap` endpoint
+### UI
+* Return TOP 30 currencies instead of TOP 20 in `marketCap` view
+
 ## [v1.8.0]
 ### Gateway
 * Fix a division by zero error for *Bittrex* & *Poloniex* when checking closed orders (see https://github.com/aloysius-pgast/crypto-exchanges-gateway/pull/89)
