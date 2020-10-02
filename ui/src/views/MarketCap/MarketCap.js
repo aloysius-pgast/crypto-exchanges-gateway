@@ -7,7 +7,7 @@ import ComponentLoadingSpinner from '../../components/ComponentLoadingSpinner';
 import MarketCapTickers from '../../components/MarketCapTickers';
 import MarketCapSymbolChooser from '../../components/MarketCapSymbolChooser';
 
-const limit = 20;
+const limit = 30;
 
 class MarketCap extends Component
 {
