@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-    Implemented using Coin Codex https://coincodex.com/
+    Implemented using Coin Codex https://coincodex.com/page/api/ API Beta v0.2
  */
 
 const _ = require('lodash');
@@ -23,8 +23,7 @@ const COINS_URL = 'https://coincodex.com/apps/coincodex/cache/all_coins_packed.j
 
 // in case some symbols are not handled by Coin Codex
 const DEFAULT_ALIASES = {
-    'IOTA':'IOT',
-    'MIOTA':'IOT'
+    'MIOTA':'IOTA'
 }
 
 const serviceId = 'marketCap';
@@ -101,6 +100,7 @@ _updateCache(rawData)
     const columns = {
         'symbol':-1,
         'display_symbol':-1,
+        'display':-1,
         'name':-1,
         'last_price_usd':-1,
         'price_change_1H_percent':-1,
@@ -108,6 +108,8 @@ _updateCache(rawData)
         'price_change_7D_percent':-1,
         'volume_24_usd':-1,
         'supply':-1,
+        'market_cap_rank':-1,
+        'market_cap_usd':-1,
         'last_update':-1
     };
     rawData.columns.forEach((name, index) => {
@@ -130,8 +132,10 @@ _updateCache(rawData)
     rawData.data.forEach((e) => {
         let price = e[columns['last_price_usd']];
         let supply = e[columns['supply']];
-        // just ignore coins without price or supply
-        if (null === price || null === supply || 0 == supply)
+        let market_cap_rank = e[columns['market_cap_rank']];
+        let shouldDisplay = (true === e[columns['display']]) || ('true' === e[columns['display']]);
+        // just ignore coins without price, supply, market_cap_rank or which are not trading
+        if (null === price || null === supply || 0 == supply || null === market_cap_rank || !shouldDisplay)
         {
             return;
         }
@@ -143,7 +147,9 @@ _updateCache(rawData)
             percent_change_1h:e[columns['price_change_1H_percent']],
             percent_change_1d:e[columns['price_change_1H_percent']],
             percent_change_7d:e[columns['price_change_1D_percent']],
-            volume_24h_usd:e[columns['volume_24_usd']]
+            volume_24h_usd:e[columns['volume_24_usd']],
+            market_cap_usd:e[columns['market_cap_usd']],
+            rank:market_cap_rank
         }
         let lastUpdated = parseInt(e[columns['last_update']]);
         if (isNaN(lastUpdated))
@@ -152,33 +158,35 @@ _updateCache(rawData)
             return;
         }
         data.last_updated = lastUpdated;
-        data.market_cap_usd = parseFloat(new Big(price).times(supply).toFixed(4));
-        bySymbol[data.symbol] = {internalName:data.name.toLowerCase(), data:data};
-        byMarketCap.push({
-            symbol:data.symbol,
-            market_cap_usd:data.market_cap_usd
-        });
-        // check if we have an alias
-        if (data.symbol != e[columns['symbol']])
+        // symbol already exists, ignore if existing one has a lower market cap rank
+        if (undefined !== bySymbol[data.symbol])
         {
-            aliases[e[columns['symbol']]] = data.symbol;
+            if (bySymbol[data.symbol].rank < data.rank) {
+                return;
+            }
         }
+        bySymbol[data.symbol] = {internalName:data.name.toLowerCase(), data:data};
     });
-    // add default aliases
-    _.forEach(DEFAULT_ALIASES, (symbol, alias) => {
-        aliases[alias] = symbol;
+    _.forEach(bySymbol, (c, symbol) => {
+        byMarketCap.push({
+            symbol:symbol,
+            rank:c.data.rank
+        });
     });
-    // sort by market cap
     byMarketCap.sort((a,b) => {
-        if (a.market_cap_usd > b.market_cap_usd)
+        if (a.rank < b.rank)
         {
             return -1;
         }
         return 1;
     });
-    // update data with rank
+    // recompute rank
     byMarketCap.forEach((c, index) => {
         bySymbol[c.symbol].data.rank = index + 1;
+    });
+    // add default aliases
+    _.forEach(DEFAULT_ALIASES, (symbol, alias) => {
+        aliases[alias] = symbol;
     });
     // compute price in btc
     if (undefined !== bySymbol['BTC'])
@@ -206,8 +214,11 @@ Example output
         "symbol",
         "display_symbol",
         "name",
+        "aliases",
         "shortname",
         "last_price_usd",
+        "market_cap_rank",
+        "volume_rank",
         "price_change_1H_percent",
         "price_change_1D_percent",
         "price_change_7D_percent",
@@ -218,59 +229,71 @@ Example output
         "price_change_YTD_percent",
         "volume_24_usd",
         "display",
+        "trading_since",
         "supply",
-        "flags",
         "last_update",
         "ico_end",
-        "include_supply"
+        "include_supply",
+        "use_volume",
+        "market_cap_usd"
     ],
     "data":[
         [
             "BTC",
             "BTC",
             "Bitcoin",
+            "",
             "bitcoin",
-            6474.672014242,
-            -0.1,
-            -0.88,
-            1.54,
-            -2.13,
-            0.65,
-            -26.5,
-            -11.47,
-            -52.91,
-            3849580304.7763,
+            10515,
+            1,
+            2,
+            0.63,
+            -2.79,
+            -1.32,
+            -10.26,
+            14.95,
+            55.6,
+            28.8,
+            43.58,
+            30497084669,
             "true",
-            17366225,
-            "0",
-            "1541705806",
+            "2010-08-16 00:00:00",
+            18505343,
+            "1601621176",
             null,
-            "true"
+            "true",
+            "true",
+            194578495887
         ],
         [
-            "VEN",
-            "VET",
-            "VeChain",
-            "vechain",
-            0.828365203,
-            -39.33,
-            34.25,
-            -38.26,
-            552.75,
-            -44.78,
-            -82.75,
-            262.63,
-            -61.51,
-            12256.246040375,
-            "true",
-            0,
+            "ETH",
+            "ETH",
+            "Ethereum",
             "",
-            "1541705786",
-            null,
-            "true"
-        ]
+            "ethereum",
+            344.59,
+            2,
+            3,
+            0.21,
+            -5.02,
+            0.81,
+            -20.07,
+            51.27,
+            144.6,
+            98.13,
+            164.17,
+            16369210220,
+            "true",
+            "2015-08-07 14:55:00",
+            112834401,
+            "1601621176",
+            "2014-08-31 23:59:00",
+            "true",
+            "true",
+            38881634698
+        ],...
     ]
-},...
+}
 */
 _getRawData()
 {
@@ -473,6 +496,9 @@ async listCoins(opt)
                 }
             }
             let coin = this.__cache.data.bySymbol[symbol];
+            if (undefined === coin) {
+                return;
+            }
             // filter by name
             if (undefined !== nameFilter)
             {
@@ -604,7 +630,7 @@ async isValidSymbol(symbol)
 /*
 Example output
 
-NB: if both symbol & alias are defined in opt.symbols, they will be both in result. This means that {rank} can be != than {array_index + 1}
+NB: if both symbol & alias are defined in opt.symbols, they will be both in result. This means that {rank} can be != {array_index + 1}
 
 [
     {
@@ -719,7 +745,7 @@ async getTickers(opt)
         });
         // sort by market cap
         list.sort((a, b) => {
-            if (a.market_cap_usd > b.market_cap_usd)
+            if (a.rank < b.rank)
             {
                 return -1;
             }
