@@ -1,6 +1,6 @@
 {
   "name": "crypto-exchanges-gateway",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Your gateway to the crypto world",
   "main": "gateway.js",
   "scripts": {},
@@ -26,7 +26,7 @@
     "express-ws": "^4.0.0",
     "htmlparser2": "^3.9.2",
     "joi": "^13.1.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.20",
     "node-bittrex-api": "^0.8.3",
     "poloniex-api-node": "^1.9.0",
     "request": "^2.83.0",
