@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.8.2]
+### Gateway
+* Update dependencies
+
 ## [v1.8.1]
 ### Gateway
 * Update dependencies
