@@ -44,7 +44,7 @@ MochaHelper.prepare(() => {
 
         MochaHelper.describe('GET', '/marketCap/coins', function(method, path, params){
             it("it should return the list of coins", (done) => {
-                const schema = joi.object().pattern(/^[A-Za-z0-9$]+$/, coinSchema);
+                const schema = joi.object().pattern(/^[A-Za-z0-9$\-+]+$/, coinSchema);
                 restClient.makeRequest(method, path, params).then((result) => {
                     Assert.validateResult(result, schema);
                     done();
