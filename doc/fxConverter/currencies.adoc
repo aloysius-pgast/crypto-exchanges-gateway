@@ -1,6 +1,6 @@
 = Currencies
 
-Uses https://exchangeratesapi.io/[Foreign exchange rates] API
+Uses https://ratesapi.io/[Foreign exchange rates] API
 
 [NOTE]
 ====

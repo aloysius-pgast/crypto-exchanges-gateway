@@ -1,7 +1,7 @@
 "use strict";
 
 /*
-    Implemented using Foreign exchange rates API https://api.exchangeratesapi.io/
+    Implemented using https://api.ratesapi.io
  */
 
 const _ = require('lodash');
@@ -21,7 +21,7 @@ const REFRESH_PERIOD = 3600 * 12;
 const DEFAULT_BASE_CURRENCY = 'USD';
 
 // this single url provides everything we need to do conversion between currencies
-const DATA_URL = `https://api.exchangeratesapi.io/latest?base=${DEFAULT_BASE_CURRENCY}`;
+const DATA_URL = `https://api.ratesapi.io/api/latest?base=${DEFAULT_BASE_CURRENCY}`;
 
 const serviceId = 'fxConverter';
 const serviceName = 'Fx Converter';
