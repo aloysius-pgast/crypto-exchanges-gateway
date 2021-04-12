@@ -11,6 +11,8 @@ User interface provides following access to :
 * Balances
 * Market Overview (an overview of all your favourite pairs)
 * MarketCap (top 20 currencies)
+* Custom WS streams creation
+* Custom alerts creation
 
 .Prices
 [caption="",link=img/tickers.png]
@@ -39,6 +41,14 @@ image::img/marketOverview.png[Market Overview,400]
 .MarketCap
 [caption="",link=img/marketCap.png]
 image::img/marketCap.png[MarketCap,400]
+
+.My Streams
+[caption="",link=img/myStreams.png]
+image::img/myStreams.png[My Streams,400]
+
+.My Alerts
+[caption="",link=img/myAlerts.png]
+image::img/myAlerts.png[My Alerts,400]
 
 == Installation
 
