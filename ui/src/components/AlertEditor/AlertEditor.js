@@ -172,7 +172,7 @@ _handleEnablePushover(e) {
 }
 
 _handleChangeName(e) {
-    const name = e.target.value.trim();
+    const name = e.target.value;
     this.setState((prevState, props) => {
         let state = prevState.alert;
         state.newName = name;
@@ -362,7 +362,7 @@ render()
     }
 
     let canSave = true;
-    if (this.state.isEditing || this.state.isSaving || 0 == this.state.alert.data.conditions.length || '' == this.state.alert.newName) {
+    if (this.state.isEditing || this.state.isSaving || 0 == this.state.alert.data.conditions.length || '' == this.state.alert.newName.trim()) {
         canSave = false;
     }
 
