@@ -218,17 +218,13 @@ setPushOver(flag, priority, minDelay)
     this._shouldStore = true;
     if (flag)
     {
-        this._pushover = {
-            enabled:true,
-            priority:priority,
-            minDelay:minDelay
-        }
+        this._pushover.enabled = true;
+        this._pushover.priority = priority;
+        this._pushover.minDelay = minDelay;
     }
     else
     {
-        this._pushover = {
-            enabled:false
-        }
+        this._pushover.enabled = false;
     }
     return this;
 }
@@ -499,7 +495,7 @@ sendPushOverAlert(pushOverInstance)
     let timestamp = new Date().getTime() / 1000.0;
     // we're not allowed to send notification yet, keep info in queue
     let obj = {timestamp:timestamp};
-    if (timestamp - this._pushover.timestamp < this._pushover.minDelay)
+    if (timestamp - this._pushover.lastTimestamp < this._pushover.minDelay)
     {
         this._pushover.queue.push(obj);
         return this;
@@ -525,15 +521,14 @@ _sendPushOverAlert(pushOverInstance, list)
     // only add supplementary url if we know the uiEndpoint
     if (null !== uiEndpoint)
     {
-        // TODO : change url once we have support in UI
-        opt.url = `${uiEndpoint}`;
+        opt.url = `${uiEndpoint}/#services/myAlerts/${this._id}`;
         opt.urlTitle = 'See alert';
     }
     // send notification
     let self = this;
     pushOverInstance.notify(opt).then(function(){
         // update timestamp of last sent notification
-        self._pushover.timestamp = new Date().getTime() / 1000.0;
+        self._pushover.lastTimestamp = new Date().getTime() / 1000.0;
         if (debug.enabled)
         {
             debug(`Successfully sent PushOver notification for tickerMonitor entry '${self._name}'`);

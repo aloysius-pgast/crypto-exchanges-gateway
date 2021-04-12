@@ -275,7 +275,7 @@ start()
             }
             if (STATUS_UNKNOWN == previousStatus)
             {
-                // if entry is marked as new, consider it has updated and disable flag after
+                // if entry is marked as new, consider it has been updated and disable flag after
                 if (entry.isNew())
                 {
                     entry.setNew(false);
