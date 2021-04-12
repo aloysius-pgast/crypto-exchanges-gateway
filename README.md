@@ -107,11 +107,14 @@ Have you ever wanted to receive an alert in case ALL of the following conditions
 
 Probably not ;) Anyway, you will now be able to define this kind of custom alerts. See [documentation in _doc_ directory](doc/tickerMonitor/index.adoc)
 
+It comes with built-in for [PushOver](https://pushover.net/) but any other notification system can be easily implemented since all alerts
+are emitted over a websocket endpoint
+
 ## Limitations
 
 * Margin trading is not supported (and is unlikely to be)
 * Withdrawal is not supported (and is unlikely to be)
-* _Stop loss_ & _trailing stop loss_ are not supported for the moment (although you can expect support in the future !)
+* _Stop loss_ & _trailing stop loss_ are not supported for the moment (although it might be supported at some point)
 
 ## Other services
 
