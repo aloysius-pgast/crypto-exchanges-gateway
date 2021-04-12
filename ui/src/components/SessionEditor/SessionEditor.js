@@ -157,7 +157,7 @@ render()
             </button>
         );
     }
-    let streamUri = wsClient.getStreamUri(this.state.isEditing.session.sid);
+    let streamUri = wsClient.getStreamUri(this.state.isEditing.session.sid, true);
     let wsInspectorUri = `wsInspector/#${this.state.isEditing.session.name}`;
     return (
         <div className="col-lg-4 p-0">

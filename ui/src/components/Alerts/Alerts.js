@@ -24,7 +24,7 @@ constructor(props) {
    };
    this._waitRefreshTimer = null;
    this._waitDeleteTimer = null;
-   this._wsUri = wsClient.getTickerMonitorUri();
+   this._wsUri = wsClient.getTickerMonitorUri(true);
 }
 
 _handleDelete(id)
