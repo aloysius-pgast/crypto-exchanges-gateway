@@ -21,7 +21,8 @@ load()
             // disable tickerMonitor for now
             if (undefined !== self._services.others.tickerMonitor)
             {
-                delete self._services.others.tickerMonitor;
+                // TODO: disable ticker monitor
+                //delete self._services.others.tickerMonitor;
             }
             resolve(true);
         }).catch(function(err){

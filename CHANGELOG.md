@@ -3,6 +3,8 @@
 ## [v1.9.0] **NOT RELEASED YET**
 ### Gateway
 * Replace https://api.exchangeratesapi.io with https://api.ratesapi.io for `/fxConverter` endpoint (previous one requires an API key)
+### UI
+* Possibility to create custom alerts
 
 ## [v1.8.2]
 ### Gateway

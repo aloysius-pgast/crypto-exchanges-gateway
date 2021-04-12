@@ -133,7 +133,7 @@ render()
             label = 'NEW STREAM';
         }
         return (
-            <h6>
+            <h6 style={{marginBottom:'15px'}}>
                 <span style={{marginRight:'5px'}}>{label} {this.state.isEditing.session.name}</span>
                 <button type="button" disabled={this.state.isDisabled} className="btn btn-link p-0" onClick={this._handleClose.bind(this)}>
                     <i className="fa fa-times-circle" style={{fontSize:'1.2rem'}}></i>

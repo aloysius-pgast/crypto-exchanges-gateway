@@ -104,11 +104,11 @@ _defineMyStreamsEntry(obj)
     );
 }
 
-_defineAlertsEntry(obj)
+_defineMyAlertsEntry(obj)
 {
     this._menu.push(
         {
-            name: 'Alerts',
+            name: 'My Alerts',
             url: obj.path,
             icon: 'fa fa-bell'
         }
@@ -152,10 +152,10 @@ _defineMenuEntries()
     let marketOverviewRoute = routeRegistry.getRoute('/services/marketOverview');
     let portfolioRoute = routeRegistry.getRoute('/services/portfolio');
     let settingsRoute = routeRegistry.getRoute('/services/settings');
-    let alertsRoute = routeRegistry.getRoute('/services/alerts');
+    let myAlertsRoute = routeRegistry.getRoute('/services/myAlerts');
     let myStreamsRoute = routeRegistry.getRoute('/services/myStreams');
     // do we have services ?
-    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== settingsRoute || undefined !== alertsRoute || 0 != Object.keys(servicesRoutes))
+    if (undefined !== marketOverviewRoute || undefined !== portfolioRoute || undefined !== settingsRoute || undefined !== myAlertsRoute || 0 != Object.keys(servicesRoutes))
     {
         this._menu.push(
             {
@@ -176,16 +176,16 @@ _defineMenuEntries()
         {
             self._definePortfolioEntry(portfolioRoute);
         }
-        if (undefined !== alertsRoute)
-        {
-            self._defineAlertsEntry(alertsRoute);
-        }
         _.forEach(servicesRoutes, function(obj, id){
             self._defineServiceEntry(obj, id);
         });
         if (undefined !== myStreamsRoute)
         {
             self._defineMyStreamsEntry(myStreamsRoute);
+        }
+        if (undefined !== myAlertsRoute)
+        {
+            self._defineMyAlertsEntry(myAlertsRoute);
         }
         if (undefined !== settingsRoute)
         {
@@ -194,19 +194,14 @@ _defineMenuEntries()
     }
 }
 
-  _handleClick(e) {
-    e.preventDefault();
-    e.target.parentElement.classList.toggle('open');
-  }
+_handleClick(e) {
+e.preventDefault();
+e.target.parentElement.classList.toggle('open');
+}
 
-  _activeRoute(routeName, props) {
-      return props.location.pathname.indexOf(routeName) > -1 ? 'nav-item nav-dropdown open' : 'nav-item nav-dropdown';
-  }
-
-  // todo Sidebar nav secondLevel
-  // secondLevelActive(routeName) {
-  //   return this.props.location.pathname.indexOf(routeName) > -1 ? "nav nav-second-level collapse in" : "nav nav-second-level collapse";
-  // }
+_activeRoute(routeName, props) {
+  return props.location.pathname.indexOf(routeName) > -1 ? 'nav-item nav-dropdown open' : 'nav-item nav-dropdown';
+}
 
 
 render()

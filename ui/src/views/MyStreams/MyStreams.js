@@ -349,6 +349,17 @@ render()
         </div>);
     }
 
+    const loadErrMessage = () => {
+        if (null === this.state.sessions.err) {
+            return null;
+        }
+        let errMessage = this.state.sessions.err.message;
+        if (undefined !== this.state.sessions.err.error) {
+            errMessage = this.state.sessions.err.error;
+        }
+        return (<span className="text-danger"><strong>Error: {errMessage}</strong></span>)
+    }
+
     return (
       <div className="animated fadeIn" style={{marginBottom:'150px'}}>
         <Warnings/>
@@ -362,6 +373,7 @@ render()
             onEdit={this._handleStartEditingSession}
             onCreate={this._handleCreateSession}
         />
+        {loadErrMessage()}
         <SessionEditor
             isDisabled={isDisabled}
             isEditing={this.state.editingSession}

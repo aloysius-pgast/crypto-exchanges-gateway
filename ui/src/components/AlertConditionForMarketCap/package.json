@@ -1,0 +1,6 @@
+{
+  "name": "AlertConditionForMarketCap",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./AlertConditionForMarketCap.js"
+}

@@ -374,7 +374,7 @@ enable(flag)
  */
 check(timestamp)
 {
-    if (!this._enabled || STATUS_INVALID == this._status.value)
+    if (!this._enabled)
     {
         return false;
     }
@@ -853,6 +853,9 @@ _subscribe(force)
  */
 _subscribeForExchange(c)
 {
+    if (c.invalid) {
+        return false;
+    }
     return tickerCache.subscribeToExchangeTicker(this._subscribeId, c.origin.id, c.condition.pair);
 }
 
@@ -864,6 +867,9 @@ _subscribeForService(c)
     switch (c.origin.id)
     {
         case 'marketCap':
+            if (c.invalid) {
+                return false;
+            }
             return tickerCache.subscribeToMarketCapTicker(this._subscribeId, c.condition.symbol);
         // this should not happen
         default:
