@@ -59,7 +59,9 @@ constructor()
         // timestamp of last notification
         lastTimestamp:0,
         queue:[]
-    }
+    };
+    // timestamp of next notification
+    this._pushover.nextTimestamp = this._pushover.lastTimestamp + this._pushover.minDelay;
     this._conditions = [];
 
     // whether or not object should be stored
@@ -466,11 +468,18 @@ destroy()
 /**
  * Whether or not entry has pending pushover alerts (which were not sent to avoid spam)
  *
+ * @param {integer|float} now (current timestamp)
+ *
  * @return {boolean}
  */
-hasPendingPushOverAlerts()
-{
-    return 0 != this._pushover.queue.length;
+hasPendingPushOverAlerts(now) {
+    if (0 == this._pushover.queue.length) {
+        return false;
+    }
+    if (now < this._pushover.nextTimestamp) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -492,11 +501,10 @@ sendPushOverAlert(pushOverInstance)
             return this;
         }
     }
-    let timestamp = new Date().getTime() / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     // we're not allowed to send notification yet, keep info in queue
     let obj = {timestamp:timestamp};
-    if (timestamp - this._pushover.lastTimestamp < this._pushover.minDelay)
-    {
+    if (timestamp < this._pushover.nextTimestamp) {
         this._pushover.queue.push(obj);
         return this;
     }
@@ -528,7 +536,8 @@ _sendPushOverAlert(pushOverInstance, list)
     let self = this;
     pushOverInstance.notify(opt).then(function(){
         // update timestamp of last sent notification
-        self._pushover.lastTimestamp = new Date().getTime() / 1000.0;
+        self._pushover.lastTimestamp = Date.now() / 1000.0;
+        self._pushover.nextTimestamp = self._pushover.lastTimestamp + self._pushover.minDelay;
         if (debug.enabled)
         {
             debug(`Successfully sent PushOver notification for tickerMonitor entry '${self._name}'`);

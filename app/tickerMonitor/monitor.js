@@ -256,6 +256,7 @@ start()
         }
         let updatedEntries = [];
         let pushoverEntries = {};
+        const now = Date.now() / 1000.0;
         _.forEach(self._entries, (entry, id) => {
             let previousStatus = entry.getStatus();
             entry.check();
@@ -263,6 +264,9 @@ start()
             // no change
             if (previousStatus == newStatus)
             {
+                if (entry.hasPendingPushOverAlerts(now)) {
+                    pushoverEntries[id] = entry;
+                }
                 return;
             }
             if (STATUS_INVALID == newStatus || STATUS_UNKNOWN == newStatus)
@@ -281,7 +285,7 @@ start()
                     entry.setNew(false);
                     updatedEntries.push(entry);
                 }
-                else if (entry.hasPendingPushOverAlerts())
+                else if (entry.hasPendingPushOverAlerts(now))
                 {
                     pushoverEntries[id] = entry;
                 }
