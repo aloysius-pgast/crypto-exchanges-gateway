@@ -138,10 +138,10 @@ render()
         return null;
     }
 
-    if (null !== this.state.alert.err) {
-        let errMessage = this.state.alert.err.message;
-        if (undefined !== this.state.alert.err.error) {
-            errMessage = this.state.alert.err.error;
+    if (null !== this.state.alert.loadErr) {
+        let errMessage = this.state.alert.loadErr.message;
+        if (undefined !== this.state.alert.loadErr.error) {
+            errMessage = this.state.alert.loadErr.error;
         }
         return (<span className="text-danger"><strong>Error: {errMessage}</strong></span>)
     }
