@@ -25,7 +25,7 @@ const checkMaxSubscriptions = (session, res) => {
         return true;
     }
     let size = session.size();
-    if (size < config.sessions.maxSubscriptions)
+    if (size <= config.sessions.maxSubscriptions)
     {
         return true;
     }

@@ -152,7 +152,7 @@ Access will be restricted using the following :
     "sessions":{
         /* maximum number of subscriptions per session (0 means no maximum) */
         "maxSubscriptions":0,
-        /* maximum session duration in second (0 means no maximum) */
+        /* maximum session duration in seconds (0 means no maximum) */
         "maxDuration":0
     },
     "ui":{
@@ -200,7 +200,11 @@ Access will be restricted using the following :
     "tickerMonitor":{
         "enabled":true
         /* How often (in seconds) gateway should check if conditions are met (default = 30)*/
-        "delay":30
+        "delay":30,
+        /* maximum number of conditions per alert (0 means no maximum) */
+        "maxConditions":0,
+        /* maximum alert duration in seconds (0 means no maximum) */
+        "maxDuration":0
     },
     /* exchanges configuration */
     "exchanges":{

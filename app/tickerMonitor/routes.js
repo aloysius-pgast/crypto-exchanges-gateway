@@ -41,6 +41,23 @@ if (null !== pushover)
     pushover = pushover.instance;
 }
 
+const checkMaxConditions = (alert, res) => {
+    if (0 == config.tickerMonitor.maxConditions)
+    {
+        return true;
+    }
+    if (alert.conditions.length <= config.tickerMonitor.maxConditions)
+    {
+        return true;
+    }
+    let id = alert.id;
+    if (undefined === id) {
+        id = 0;
+    }
+    let err = new Errors.GatewayError.InvalidRequest.UnknownError(`Maximum number of conditions reached for alert '${alert.name}' (${id})`);
+    return sendError(serviceId, res, err);
+}
+
 /*
 List existing entries
 */
@@ -284,6 +301,9 @@ app.post(`/tickerMonitor/`, bodyParsers.json, (req, res) => {
                 }
             }
         }
+        if (!checkMaxConditions(opt, res)) {
+            return;
+        }
         monitor.createEntry(opt).then(function(id){
             statistics.increaseStatistic(serviceId, 'createEntry', true);
             return res.send({id:id});
@@ -370,6 +390,9 @@ app.patch(`/tickerMonitor/:id`, bodyParsers.json, (req, res) => {
         if (0 != conditions.length)
         {
             opt.conditions = conditions;
+        }
+        if (!checkMaxConditions(opt, res)) {
+            return;
         }
         monitor.updateEntry(req.params.id, opt).then(function(){
             statistics.increaseStatistic(serviceId, 'updateEntry', true);

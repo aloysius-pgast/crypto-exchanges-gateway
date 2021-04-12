@@ -95,7 +95,6 @@ if (fs.existsSync(configFile))
     config = checker.getCfg();
 }
 
-
 //-- update config based on environment (used when using docker container)
 
 //-- check Market Cap
@@ -280,6 +279,25 @@ if (!hasCustomConfig)
         else if (false === enableTickerMonitor || '0' == enableTickerMonitor)
         {
             config.tickerMonitor.enabled = false;
+        }
+    }
+    if (config.tickerMonitor.enabled)
+    {
+        if (undefined !== process.env['cfg.tickerMonitor.maxConditions'] && '' != process.env['cfg.tickerMonitor.maxConditions'])
+        {
+            let value = parseInt(process.env['cfg.tickerMonitor.maxConditions']);
+            if (!isNaN(value) && value >= 0)
+            {
+                config.tickerMonitor.maxConditions = process.env['cfg.tickerMonitor.maxConditions'];
+            }
+        }
+        if (undefined !== process.env['cfg.tickerMonitor.maxDuration'] && '' != process.env['cfg.tickerMonitor.maxDuration'])
+        {
+            let value = parseInt(process.env['cfg.tickerMonitor.maxDuration']);
+            if (!isNaN(value) && value >= 0)
+            {
+                config.tickerMonitor.maxDuration = process.env['cfg.tickerMonitor.maxDuration'];
+            }
         }
     }
 }
