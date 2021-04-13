@@ -168,7 +168,6 @@ _loadTickerMonitorEntries(config)
                 tickerMonitor.restoreEntry(r.id, r.name, 1 == r.enabled, obj);
             });
             logger.info('%d TickerMonitor entries loaded', count);
-            tickerMonitor.setDelay(config.tickerMonitor.delay);
             tickerMonitor.start();
             resolve(true);
         });

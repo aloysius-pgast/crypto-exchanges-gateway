@@ -69,6 +69,9 @@ constructor()
 
     // whether or not we have subscribed
     this._subscribed = false;
+
+    // unix timestamp when entry will expire (0 means no expiry)
+    this._expiryTimestamp = 0;
 }
 
 /**
@@ -107,6 +110,27 @@ setId(id)
 {
     this._id = id;
     return this;
+}
+
+setExpiryTimestamp(timestamp)
+{
+    this._expiryTimestamp = timestamp;
+}
+
+/**
+ * Indicates whether or not entry is expired
+ *
+ * @param {integer} now current timestamp
+ *
+ * @return {boolean}
+ */
+isExpired(now)
+{
+    if (0 == this._expiryTimestamp)
+    {
+        return false;
+    }
+    return (now >= this._expiryTimestamp);
 }
 
 getStatus()

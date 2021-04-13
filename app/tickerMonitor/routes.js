@@ -32,8 +32,16 @@ if (!config.tickerMonitor.enabled)
 
 // register service
 const serviceId = 'tickerMonitor';
-let cfg = {delay:parseInt(monitor.getDelay() / 1000)};
+const cfg = {
+    delay:config.tickerMonitor.delay,
+    maxConditions:config.tickerMonitor.maxConditions,
+    maxDuration:config.tickerMonitor.maxDuration
+};
 serviceRegistry.registerService(serviceId, 'Ticker Monitor', monitor, {}, false, cfg);
+
+// update monitor instance
+monitor.setDelay(cfg.delay);
+monitor.setMaxDuration(cfg.maxDuration);
 
 let pushover = serviceRegistry.getService('pushover');
 if (null !== pushover)
