@@ -11,7 +11,9 @@ constructor()
     // default config
     let cfg = {
         enabled:true,
-        delay:30
+        delay:30,
+        maxConditions:0,
+        maxDuration:0
     }
     super(cfg, 'tickerMonitor');
 }
@@ -52,6 +54,35 @@ _check()
             this._finalConfig.delay = value;
         }
     }
+
+    //-- check max conditions & maxDuration
+    if (undefined !== this._config.maxConditions)
+    {
+        let value = parseInt(this._config.maxConditions);
+        if (isNaN(value) || value < 0)
+        {
+            this._invalid({name:'tickerMonitor.maxConditions',value:this._config.maxConditions});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.maxConditions = value;
+        }
+    }
+    if (undefined !== this._config.maxDuration)
+    {
+        let value = parseInt(this._config.maxDuration);
+        if (isNaN(value) || value < 0)
+        {
+            this._invalid({name:'tickerMonitor.maxDuration',value:this._config.maxDuration});
+            valid = false;
+        }
+        else
+        {
+            this._finalConfig.maxDuration = value;
+        }
+    }
+
     return valid;
 }
 

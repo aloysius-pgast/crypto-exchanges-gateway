@@ -186,9 +186,9 @@ _updateStateFromRoute(props)
                     title = 'My Streams';
                     helpId = 'myStreams';
                     break;
-                case 'alerts':
-                    title = 'Alerts';
-                    helpId = 'alerts';
+                case 'myAlerts':
+                    title = 'My Alerts';
+                    helpId = 'myAlerts';
                     break;
             }
         }

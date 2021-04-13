@@ -118,7 +118,9 @@ componentWillUnmount()
 }
 
 // Nothing to do, we already know the symbol
-componentWillReceiveProps(nextProps) {}
+componentWillReceiveProps(nextProps) {
+    this.setState({symbol:nextProps.symbol});
+}
 
 render()
 {

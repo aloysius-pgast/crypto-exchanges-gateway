@@ -383,13 +383,6 @@ render()
         return (<span className="text-danger"><strong>Error: {this.state.pairs.err.message}</strong></span>)
     }
 
-    const LoadingError = () => {
-        <InputGroup style={{display:null !== this.state.pairs.err || this.state.pairs.loading ? '' : 'none'}}>
-          <span className="text-danger"><strong>Error: {this.state.err.message}</strong></span>
-          <span className="text-danger"><strong>Error: {this.state.err.message}</strong></span>
-        </InputGroup>
-    }
-
     const errorMessage = () => {
         if (this.state.isValid && null === this.state.isAdding.err)
         {

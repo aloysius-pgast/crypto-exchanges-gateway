@@ -32,7 +32,7 @@ import Portfolio from './views/Portfolio';
 import MarketCap from './views/MarketCap/';
 import Settings from './views/Settings';
 import MyStreams from './views/MyStreams';
-import Alerts from './views/Alerts/';
+import MyAlerts from './views/MyAlerts/';
 
 class App extends Component {
 
@@ -158,6 +158,7 @@ _loadRoutes()
     {
         let path = '/services/marketCap';
         routeRegistry.registerServiceRoute(path, 'marketCap');
+        path += '/:symbol?';
         this._routes.push({
             path:path,
             exact:true,
@@ -215,12 +216,13 @@ _loadRoutes()
     // alerts route
     if (undefined !== services['tickerMonitor'])
     {
-        let path = '/services/alerts';
-        routeRegistry.registerRoute(path, 'alerts', true);
+        let path = '/services/myAlerts';
+        routeRegistry.registerRoute(path, 'myAlerts', true);
+        path += '/:alertId?';
         this._routes.push({
             path:path,
             exact:true,
-            component:Alerts
+            component:MyAlerts
         });
     }
 

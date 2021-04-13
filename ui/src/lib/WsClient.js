@@ -65,12 +65,43 @@ _getUri()
     return uri;
 }
 
-getStreamUri(sid)
+/**
+ * @param {string} sid session id
+ * @param {boolean} hideApiKey if {true}, api key will be hidden in the returned url (default = true)
+ *
+ * @return {string}
+ */
+getStreamUri(sid, hideApiKey)
 {
     let uri = `${this._wsEndpoint}?sid=${sid}`;
     if (null !== this._apiKey)
     {
-        uri += `&apiKey=${this._apiKey}`;
+        if (false === hideApiKey) {
+            uri += `&apiKey=${this._apiKey}`;
+        }
+        else {
+            uri += `&apiKey=gateway-api-key`;
+        }
+    }
+    return uri;
+}
+
+/**
+ * @param {boolean} hideApiKey if {true}, api key will be hidden in the returned url (default = true)
+ *
+ * @return {string}
+ */
+getTickerMonitorUri(hideApiKey)
+{
+    let uri = `${this._wsEndpoint}tickerMonitor`;
+    if (null !== this._apiKey)
+    {
+        if (false === hideApiKey) {
+            uri += `&apiKey=${this._apiKey}`;
+        }
+        else {
+            uri += `&apiKey=gateway-api-key`;
+        }
     }
     return uri;
 }

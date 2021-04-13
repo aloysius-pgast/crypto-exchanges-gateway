@@ -18,11 +18,6 @@ load()
     return new Promise((resolve, reject) => {
         restClient.getServices().then(function(data){
             self._services = data;
-            // disable tickerMonitor for now
-            if (undefined !== self._services.others.tickerMonitor)
-            {
-                delete self._services.others.tickerMonitor;
-            }
             resolve(true);
         }).catch(function(err){
             resolve(false);

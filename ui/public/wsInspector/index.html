@@ -12,6 +12,26 @@
     <script src="lib/vendor/jsonFormatter.js"></script>
     <script language="javascript">
 Zepto(function($){
+
+    // try to fech api key from local storage
+    let apiKey = null;
+    if (undefined !== window.localStorage) {
+        try {
+            const value = window.localStorage.getItem('apiKey');
+            try {
+                const obj = JSON.parse(value);
+                apiKey = obj.key;
+            }
+            catch (e){
+                // remove previous key
+                window.localStorage.removeItem('apiKey');
+            }
+        }
+        catch (e) {
+            // no local storage
+        }
+    }
+
     var streamName = window.location.hash.substr(1);
     if ('' == streamName)
     {
@@ -280,6 +300,9 @@ Zepto(function($){
         success: function(data){
             console.log(data);
             uri = sprintf('%s/?sid=%s', data.wsEndpoint, sid);
+            if (null !== apiKey) {
+                uri += `&apiKey=${apiKey}`;
+            }
             init(uri);
         },
         error: function(xhr, type){

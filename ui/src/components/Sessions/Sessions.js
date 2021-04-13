@@ -259,7 +259,7 @@ render()
               <tr>
                 <th>NAME</th>
                 <th>CREATED</th>
-                <th>SIZE</th>
+                <th style={{textAlign:'center'}}>SIZE</th>
                 <th/>
                 <th style={{width:'1.2rem'}}>
                     <button type="button" disabled={this.state.isDisabled || this.state.sessions.isRefreshing} className="btn btn-link p-0" onClick={this._handleOpenModal.bind(this)}>
@@ -275,7 +275,7 @@ render()
                   return <tr key={sid}>
                       <td>{item.name}</td>
                       <td>{dateTimeHelper.formatDateTime(item.creationTimestamp * 1000)}</td>
-                      <td>{item.subscriptions.length}</td>
+                      <td style={{textAlign:'center'}}>{item.subscriptions.length}</td>
                       <td style={{width:'1.2rem'}}>{deleteButton(item.sid)}</td>
                       <td style={{width:'1.2rem'}}>{editButton(item.sid)}</td>
                   </tr>

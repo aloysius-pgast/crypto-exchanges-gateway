@@ -59,7 +59,9 @@ constructor()
         // timestamp of last notification
         lastTimestamp:0,
         queue:[]
-    }
+    };
+    // timestamp of next notification
+    this._pushover.nextTimestamp = this._pushover.lastTimestamp + this._pushover.minDelay;
     this._conditions = [];
 
     // whether or not object should be stored
@@ -67,6 +69,9 @@ constructor()
 
     // whether or not we have subscribed
     this._subscribed = false;
+
+    // unix timestamp when entry will expire (0 means no expiry)
+    this._expiryTimestamp = 0;
 }
 
 /**
@@ -105,6 +110,27 @@ setId(id)
 {
     this._id = id;
     return this;
+}
+
+setExpiryTimestamp(timestamp)
+{
+    this._expiryTimestamp = timestamp;
+}
+
+/**
+ * Indicates whether or not entry is expired
+ *
+ * @param {integer} now current timestamp
+ *
+ * @return {boolean}
+ */
+isExpired(now)
+{
+    if (0 == this._expiryTimestamp)
+    {
+        return false;
+    }
+    return (now >= this._expiryTimestamp);
 }
 
 getStatus()
@@ -218,17 +244,13 @@ setPushOver(flag, priority, minDelay)
     this._shouldStore = true;
     if (flag)
     {
-        this._pushover = {
-            enabled:true,
-            priority:priority,
-            minDelay:minDelay
-        }
+        this._pushover.enabled = true;
+        this._pushover.priority = priority;
+        this._pushover.minDelay = minDelay;
     }
     else
     {
-        this._pushover = {
-            enabled:false
-        }
+        this._pushover.enabled = false;
     }
     return this;
 }
@@ -374,7 +396,7 @@ enable(flag)
  */
 check(timestamp)
 {
-    if (!this._enabled || STATUS_INVALID == this._status.value)
+    if (!this._enabled)
     {
         return false;
     }
@@ -470,11 +492,18 @@ destroy()
 /**
  * Whether or not entry has pending pushover alerts (which were not sent to avoid spam)
  *
+ * @param {integer|float} now (current timestamp)
+ *
  * @return {boolean}
  */
-hasPendingPushOverAlerts()
-{
-    return 0 != this._pushover.queue.length;
+hasPendingPushOverAlerts(now) {
+    if (0 == this._pushover.queue.length) {
+        return false;
+    }
+    if (now < this._pushover.nextTimestamp) {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -496,11 +525,10 @@ sendPushOverAlert(pushOverInstance)
             return this;
         }
     }
-    let timestamp = new Date().getTime() / 1000.0;
+    let timestamp = Date.now() / 1000.0;
     // we're not allowed to send notification yet, keep info in queue
     let obj = {timestamp:timestamp};
-    if (timestamp - this._pushover.timestamp < this._pushover.minDelay)
-    {
+    if (timestamp < this._pushover.nextTimestamp) {
         this._pushover.queue.push(obj);
         return this;
     }
@@ -525,15 +553,15 @@ _sendPushOverAlert(pushOverInstance, list)
     // only add supplementary url if we know the uiEndpoint
     if (null !== uiEndpoint)
     {
-        // TODO : change url once we have support in UI
-        opt.url = `${uiEndpoint}`;
+        opt.url = `${uiEndpoint}/#services/myAlerts/${this._id}`;
         opt.urlTitle = 'See alert';
     }
     // send notification
     let self = this;
     pushOverInstance.notify(opt).then(function(){
         // update timestamp of last sent notification
-        self._pushover.timestamp = new Date().getTime() / 1000.0;
+        self._pushover.lastTimestamp = Date.now() / 1000.0;
+        self._pushover.nextTimestamp = self._pushover.lastTimestamp + self._pushover.minDelay;
         if (debug.enabled)
         {
             debug(`Successfully sent PushOver notification for tickerMonitor entry '${self._name}'`);
@@ -853,6 +881,9 @@ _subscribe(force)
  */
 _subscribeForExchange(c)
 {
+    if (c.invalid) {
+        return false;
+    }
     return tickerCache.subscribeToExchangeTicker(this._subscribeId, c.origin.id, c.condition.pair);
 }
 
@@ -864,6 +895,9 @@ _subscribeForService(c)
     switch (c.origin.id)
     {
         case 'marketCap':
+            if (c.invalid) {
+                return false;
+            }
             return tickerCache.subscribeToMarketCapTicker(this._subscribeId, c.condition.symbol);
         // this should not happen
         default:

@@ -27,6 +27,11 @@ constructor()
     this._delay = DEFAULT_DELAY;
     this._started = false;
     this._pushoverInstance = null;
+    /*
+        Maximum duration of an alert in seconds. It will be automatically removed after expiry
+        If {0}, max duration will be ignored
+     */
+    this._maxDuration = 0;
 }
 
 initializePushOverInstance()
@@ -38,14 +43,14 @@ initializePushOverInstance()
     }
 }
 
-getDelay()
-{
-    return this._delay;
-}
-
 setDelay(delay)
 {
     this._delay = delay * 1000;
+}
+
+setMaxDuration(delay)
+{
+    this._maxDuration = delay * 1000;
 }
 
 /**
@@ -114,7 +119,6 @@ hasEntry(id)
  */
 deleteEntry(id)
 {
-    // first disable entry
     let entry = this._entries[id];
     delete this._entries[id];
     entry.destroy();
@@ -140,6 +144,11 @@ createEntry(opt)
             {
                 // entry should now be considered as new
                 entry.setNew(true);
+            }
+            // set expiry
+            if (0 != this._maxDuration) {
+                const ts = Date.now() + this._maxDuration;
+                entry.setExpiryTimestamp(parseInt(ts / 1000.0));
             }
         }
         catch (e)
@@ -232,6 +241,11 @@ restoreEntry(id, name, enabled, obj)
         entry.enable(enabled);
         // we don't want to consider this entry as new
         entry.setNew(false);
+        // set expiry
+        if (0 != this._maxDuration) {
+            const ts = Date.now() + this._maxDuration;
+            entry.setExpiryTimestamp(parseInt(ts / 1000.0));
+        }
         // after restoring an entry, no need to store it unless it changes
         entry._disableStorage();
         this._entries[id] = entry;
@@ -248,21 +262,31 @@ start()
     {
         return;
     }
-    let self = this;
-    const check = function(){
+    const check = () => {
         if (debug.enabled)
         {
-            debug(`Checking ${Object.keys(self._entries).length} entries`);
+            debug(`Checking ${Object.keys(this._entries).length} entries`);
         }
         let updatedEntries = [];
+        let expiredEntries = [];
         let pushoverEntries = {};
-        _.forEach(self._entries, (entry, id) => {
+        const now = parseInt(Date.now() / 1000.0);
+        _.forEach(this._entries, (entry, id) => {
+            // check if entry is expired
+            if (0 != this._maxDuration) {
+                if (entry.isExpired(now)) {
+                    expiredEntries.push(id);
+                }
+            }
             let previousStatus = entry.getStatus();
             entry.check();
             let newStatus = entry.getStatus();
             // no change
             if (previousStatus == newStatus)
             {
+                if (entry.hasPendingPushOverAlerts(now)) {
+                    pushoverEntries[id] = entry;
+                }
                 return;
             }
             if (STATUS_INVALID == newStatus || STATUS_UNKNOWN == newStatus)
@@ -275,13 +299,13 @@ start()
             }
             if (STATUS_UNKNOWN == previousStatus)
             {
-                // if entry is marked as new, consider it has updated and disable flag after
+                // if entry is marked as new, consider it has been updated and disable flag after
                 if (entry.isNew())
                 {
                     entry.setNew(false);
                     updatedEntries.push(entry);
                 }
-                else if (entry.hasPendingPushOverAlerts())
+                else if (entry.hasPendingPushOverAlerts(now))
                 {
                     pushoverEntries[id] = entry;
                 }
@@ -291,29 +315,38 @@ start()
         });
         if (debug.enabled)
         {
-            debug(`Found ${updatedEntries.length}/${Object.keys(self._entries).length} updated entries`);
+            debug(`Found ${updatedEntries.length}/${Object.keys(this._entries).length} updated entries`);
         }
         if (0 != updatedEntries.length)
         {
             _.forEach(updatedEntries, (entry) => {
                 let evt = entry.toHash();
-                self.emit('tickerMonitor', evt);
+                this.emit('tickerMonitor', evt);
             });
         }
         _.forEach(updatedEntries, (entry) => {
             pushoverEntries[entry.getId()] = entry;
         });
         // only if pushover is enabled in config
-        if (null !== self._pushoverInstance)
+        if (null !== this._pushoverInstance)
         {
             _.forEach(pushoverEntries, (entry) => {
-                entry.sendPushOverAlert(self._pushoverInstance);
+                entry.sendPushOverAlert(this._pushoverInstance);
+            });
+        }
+        // remove expired entries
+        if (0 != expiredEntries.length) {
+            if (debug.enabled) {
+                debug(`Found ${expiredEntries.length}/${Object.keys(this._entries).length} expired entries`);
+            }
+            _.forEach(expiredEntries, (id) => {
+                this.deleteEntry(id);
             });
         }
         // schedule new check
         setTimeout(function(){
             check();
-        }, self._delay);
+        }, this._delay);
     }
     check();
 }

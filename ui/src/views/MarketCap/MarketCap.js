@@ -18,6 +18,9 @@ constructor(props) {
        symbol:null,
        symbols:{loaded:false, err:null, data: null}
    }
+   if (undefined !== props.match.params.symbol) {
+       this.state.symbol = props.match.params.symbol;
+   }
    this._handleSelectSymbol = this._handleSelectSymbol.bind(this);
 }
 
@@ -25,11 +28,20 @@ _handleSelectSymbol(symbol)
 {
     this.setState((prevState, props) => {
         return {symbol:symbol};
-        return newState;
     });
 }
 
-componentWillReceiveProps(nextProps) {}
+componentWillReceiveProps(nextProps) {
+    if (undefined !== nextProps.match.params.symbol) {
+        let symbol = nextProps.match.params.symbol;
+        if (this.state.symbols.loaded) {
+            if (-1 == this.state.symbols.data.indexOf(symbol)) {
+                symbol = '';
+            }
+        }
+        this.setState({symbol:symbol});
+    }
+}
 
 componentDidMount()
 {
@@ -45,15 +57,20 @@ _loadSymbols()
         {
             return;
         }
+        let symbol = self.state.symbol;
+        if (null !== symbol) {
+            if (-1 == data.indexOf(symbol)) {
+                symbol = '';
+            }
+        }
         self.setState((prevState, props) => {
-            return {symbols:{loaded:true, err:null, data: data}};
+            return {symbols:{loaded:true, err:null, data: data}, symbol:symbol};
         });
     }).catch (function(err){
         if (!self._isMounted)
         {
             return;
         }
-        alert(err);
         self.setState((prevState, props) => {
             return {symbols:{loaded:false, err:err, data: null}};
         });

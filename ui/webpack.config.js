@@ -129,7 +129,7 @@ module.exports = function(env){
               console.log("Generating cache.manifest");
 
               // write marker so that gateway can know that ui was built
-              fs.writeFileSync(`${BUILD_DIR}/build.timestamp`, timestamp);
+              fs.writeFileSync(`${BUILD_DIR}/build.timestamp`, `${timestamp}`);
 
               // write cache.manifest
               let manifest = `

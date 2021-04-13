@@ -1,0 +1,6 @@
+{
+  "name": "AlertConditionEditor",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./AlertConditionEditor.js"
+}
