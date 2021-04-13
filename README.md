@@ -107,8 +107,7 @@ Have you ever wanted to receive an alert in case ALL of the following conditions
 
 Probably not ;) Anyway, you will now be able to define this kind of custom alerts. See [documentation in _doc_ directory](doc/tickerMonitor/index.adoc)
 
-It comes with built-in for [PushOver](https://pushover.net/) but any other notification system can be easily implemented since all alerts
-are emitted over a websocket endpoint
+It comes with built-in support for [PushOver](https://pushover.net/) but any other notification system can be easily implemented (through third party applications) since all alert changes are emitted over a websocket endpoint (see [documentation in _doc_ directory](doc/ws/notifications.adoc#tickermonitor-notifications))
 
 ## Limitations
 
