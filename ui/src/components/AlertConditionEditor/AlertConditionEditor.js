@@ -67,6 +67,7 @@ constructor(props) {
    });
    this._condition = null;
    this._handleCondition = this._handleCondition.bind(this);
+   this._timestamp = props.timestamp;
 }
 
 _handleCondition(condition) {
@@ -143,15 +144,19 @@ _handleAdd(event)
 
 componentWillReceiveProps(nextProps)
 {
-    this.setState((prevState, props) => {
-        let state = {
-            isVisible:nextProps.isVisible,
-            condition:null,
-            canAdd:false,
-            err:null
-        }
-        return state;
-    });
+    let timestamp = this._timestamp;
+    this._timestamp = nextProps.timestamp;
+
+    const state = {
+        isVisible:nextProps.isVisible
+    }
+
+    if (timestamp != this._timestamp) {
+        state.conditon = null,
+        state.err = null,
+        state.origin = {type:'', id:''};
+    }
+    this.setState(state);
 }
 
 componentWillUnmount()

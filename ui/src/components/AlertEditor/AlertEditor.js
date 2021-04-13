@@ -56,12 +56,16 @@ constructor(props) {
            saveErr:null,
            isWaiting:false
        },
+       timestamp:Date.now(),
        isEditing:false,
        isSaving:false
    }
+
    if (0 == this.state.id) {
        this.state.alert = {loaded:true, loadErr:null, saveErr:null, isWaiting:false, data:getEmptyAlert(this._hasPushover)};
    }
+
+   this._timestamp = props.timestamp;
 
    this._timer = null;
    this._handleClose = this._handleClose.bind(this);
@@ -181,7 +185,7 @@ _handleChangeName(e) {
 }
 
 _handleStartEditingCondition(e) {
-    this.setState({isEditing:true})
+    this.setState({isEditing:true, timestamp:Date.now()});
 }
 
 _handleStopEditingCondition(e) {
@@ -279,8 +283,13 @@ _handleSaveAlert() {
 
 componentWillReceiveProps(nextProps)
 {
-    const state = {isVisible:nextProps.isVisible, id:nextProps.id, isEditing:false, isSaving:false};
-    if (0 == state.id) {
+    const state = {isVisible:nextProps.isVisible, id:nextProps.id, isSaving:false};
+
+    const timestamp = this._timestamp;
+    this._timestamp = nextProps.timestamp;
+
+    if (0 == state.id && timestamp != this._timestamp) {
+        state.isEditing = false;
         state.alert = {loaded:true, loadErr:null, saveErr:null, isWaiting:false, data:getEmptyAlert(this._hasPushover), newName:''};
     }
     this.setState(state, () => {
@@ -455,6 +464,7 @@ render()
             </div>
             <AlertConditionEditor
                 isVisible={this.state.isEditing}
+                timestamp={this.state.timestamp}
                 onCancel={this._handleStopEditingCondition}
                 onCondition={this._handleAddCondition}
             />

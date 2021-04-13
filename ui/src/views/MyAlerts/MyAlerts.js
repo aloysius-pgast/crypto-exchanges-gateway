@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import restClient from '../../lib/RestClient';
+import serviceRegistry from '../../lib/ServiceRegistry';
 
 // components
 import Alerts from '../../components/Alerts';
@@ -15,9 +16,10 @@ constructor(props) {
    if (isNaN(alertId)) {
        alertId = 0;
    }
+
    this.state = {
        alerts:{loaded:false, isRefreshing:false, list:null, err:null},
-       isEditing:{state:false, action:undefined, id:alertId},
+       isEditing:{state:false, action:undefined, id:alertId, timestamp:Date.now()},
        isDeleting:{state:false, id:0}
    }
    if (0 != alertId) {
@@ -29,6 +31,17 @@ constructor(props) {
    this._handleStartDeleting = this._handleStartDeleting.bind(this);
    this._handleStopDeleting = this._handleStopDeleting.bind(this);
    this._handleRefresh = this._handleRefresh.bind(this);
+
+   const service = serviceRegistry.getService('tickerMonitor');
+   this._cfg = service.cfg;
+
+   // auto refresh timer
+   this._autoRefreshTimer = setInterval(() => {
+       if (!this.state.alerts.loaded) {
+           return;
+       }
+       this._loadAlerts(true);
+   }, this._cfg.delay * 1000);
 }
 
 _handleRefresh(cb) {
@@ -41,7 +54,7 @@ _handleRefresh(cb) {
 
 _handleStartEditing(action, id, cb)
 {
-    this.setState({isEditing:{state:true, action:action, id:id}}, () => {
+    this.setState({isEditing:{state:true, action:action, id:id, timestamp:Date.now()}}, () => {
         if (undefined !== cb) {
             cb();
         }
@@ -102,7 +115,7 @@ _loadAlerts(isRefreshing, cb)
             this.setState((prevState, props) => {
                 const alerts = {loaded:true, isRefreshing:false, loadedTimestamp:timestamp, list:list, err:null};
                 const state = {alerts:alerts};
-                if (0 == list.length) {
+                if (0 == list.length && prevState.isEditing.state && 0 != prevState.isEditing.id) {
                     state.isEditing = {state:false, action:undefined, id:0};
                 }
                 return state;
@@ -121,6 +134,9 @@ _loadAlerts(isRefreshing, cb)
             this.setState((prevState, props) => {
                 const alerts = {loaded:true, isRefreshing:false, loadedTimestamp:timestamp, list:null, err:err};
                 const state = {alerts:alerts, isEditing:{state:false, action:undefined, id:0}};
+                if (prevState.isEditing.state && 0 != prevState.isEditing.id) {
+                    state.isEditing = {state:false, action:undefined, id:0};
+                }
                 return state;
             }, () => {
                 if (undefined !== cb)
@@ -148,6 +164,7 @@ componentWillReceiveProps(nextProps) {
 componentWillUnmount()
 {
     this._isMounted = false;
+    clearInterval(this._autoRefreshTimer);
 }
 
 componentDidMount()
@@ -173,6 +190,49 @@ render()
         }
     }
 
+    const maxConditionsWarning = (cfg) => {
+        if (0 == cfg.maxConditions)
+        {
+            return null;
+        }
+        return (
+            <div>Maximum number of conditions per alert is {cfg.maxConditions}<br/></div>
+        );
+    }
+
+    const maxDurationWarning = (cfg) => {
+        if (0 == cfg.maxDuration)
+        {
+            return null;
+        }
+        let durationUnit = 'seconds';
+        let duration = cfg.maxDuration;
+        if (duration >= 3600)
+        {
+            duration = Math.floor(duration / 60.0);
+            durationUnit = 'minutes';
+            if (duration >= 14400)
+            {
+                duration = math.floor(duration / 60.0);
+                durationUnit = 'hours';
+            }
+        }
+        return (
+            <div>Alerts will be automatically destroyed after {duration} {durationUnit}<br/></div>
+        );
+    }
+
+    const Warnings = () => {
+        if (0 == this._cfg.maxConditions && 0 == this._cfg.maxDuration)
+        {
+            return null;
+        }
+        return (<div style={{marginTop:'10px',color:'#e64400'}}>
+            {maxConditionsWarning(this._cfg)}
+            {maxDurationWarning(this._cfg)}
+        </div>);
+    }
+
     const loadErrMessage = () => {
         if (null === this.state.alerts.err) {
             return null;
@@ -186,6 +246,7 @@ render()
 
     return (
       <div className="animated fadeIn" style={{marginBottom:'150px'}}>
+          <Warnings/>
           <Alerts
               alerts={this.state.alerts}
               isEditing={this.state.isEditing}
@@ -200,6 +261,7 @@ render()
           <AlertEditor
             isVisible={showEditor}
             id={this.state.isEditing.id}
+            timestamp={this.state.isEditing.timestamp}
             onStopEditing={this._handleStopEditing}
           />
           <AlertDetails
