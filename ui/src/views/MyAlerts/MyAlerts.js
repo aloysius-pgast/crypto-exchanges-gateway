@@ -101,7 +101,11 @@ _loadAlerts(isRefreshing, cb)
             const timestamp = Date.now();
             this.setState((prevState, props) => {
                 const alerts = {loaded:true, isRefreshing:false, loadedTimestamp:timestamp, list:list, err:null};
-                return {alerts:alerts};
+                const state = {alerts:alerts};
+                if (0 == list.length) {
+                    state.isEditing = {state:false, action:undefined, id:0};
+                }
+                return state;
             }, () => {
                 if (undefined !== cb)
                 {
@@ -115,8 +119,9 @@ _loadAlerts(isRefreshing, cb)
             }
             const timestmap = Date.now();
             this.setState((prevState, props) => {
-                let state = {loaded:true, isRefreshing:false, loadedTimestamp:timestamp, list:null, err:err};
-                return {alerts:state};
+                const alerts = {loaded:true, isRefreshing:false, loadedTimestamp:timestamp, list:null, err:err};
+                const state = {alerts:alerts, isEditing:{state:false, action:undefined, id:0}};
+                return state;
             }, () => {
                 if (undefined !== cb)
                 {
