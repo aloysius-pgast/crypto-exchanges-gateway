@@ -4,7 +4,7 @@
 ### Gateway
 * Replace https://api.exchangeratesapi.io with https://api.ratesapi.io for `/fxConverter` endpoint (previous one requires an API key)
 ### UI
-* Possibility to create custom alerts
+* Possibility to create custom alerts (see *My Alerts* menu entry)
 
 ## [v1.8.2]
 ### Gateway

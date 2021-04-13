@@ -135,7 +135,9 @@ MochaHelper.prepare(() => {
                             demo:joi.boolean().required(),
                             features:joi.object().required(),
                             cfg:joi.object({
-                                delay:joi.number().integer().positive()
+                                delay:joi.number().integer().positive(),
+                                maxConditions:joi.number().integer().min(0),
+                                maxDuration:joi.number().integer().min(0)
                             })
                         }),
                     }).required()
