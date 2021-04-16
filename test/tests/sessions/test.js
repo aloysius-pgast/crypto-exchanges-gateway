@@ -55,7 +55,7 @@ const getSessionSchema = (exchanges) => {
     const connectionSchema = joi.object({
         id:joi.string(),
         openTimestamp:joi.number().positive().required(),
-        ipaddr:joi.string().ip({version: ['ipv4']}).required()
+        ipaddr:joi.string().ip({version: ['ipv4']})
     });
 
     //-- schema for a single session

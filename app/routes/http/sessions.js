@@ -148,6 +148,13 @@ const checkExchangeAndPair = (req, res, features) => {
         let list = {};
         _.forEach(sessions, (session, sid) => {
             list[sid] = session.toHash()
+            // hide ip address if needed
+            if (config.sessions.hideIpaddr)
+            {
+                list[sid].connections.forEach((c, i) => {
+                    delete c.ipaddr;
+                });
+            }
         });
         return res.send(list);
     });
@@ -168,6 +175,13 @@ app.get('/sessions/:sid', (req, res) => {
         return;
     }
     list[req.params.sid] = session.toHash();
+    // hide ip address if needed
+    if (config.sessions.hideIpaddr)
+    {
+        list[req.params.sid].connections.forEach((c, i) => {
+            delete c.ipaddr;
+        });
+    }
     return res.send(list);
 });
 
@@ -338,6 +352,13 @@ app.get('/sessions/:sid/connections', (req, res) => {
     }
     let hash = session.toHash();
     result[req.params.sid] = hash.connections;
+    // hide ip address if needed
+    if (config.sessions.hideIpaddr)
+    {
+        result[req.params.sid].forEach((c, i) => {
+            delete c.ipaddr;
+        });
+    }
     return res.send(result);
 });
 

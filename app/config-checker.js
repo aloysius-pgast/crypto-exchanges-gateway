@@ -57,7 +57,10 @@ constructor(defaultConfig)
             // maximum number of subscriptions in a session
             maxSubscriptions:0,
             // maximum duration of a session in seconds (it will be automatically removed after)
-            maxDuration:0
+            maxDuration:0,
+            // whether or not ip address should be hidden when listing sessions
+            hideIpaddr:false
+
         },
         exchanges:{}
     }
@@ -289,6 +292,10 @@ _checkSessions()
         {
             this._finalConfig.sessions.maxDuration = value;
         }
+    }
+    if (true === this._config.sessions.hideIpaddr)
+    {
+        this._finalConfig.sessions.hideIpaddr = true;
     }
     return valid;
 }

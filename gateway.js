@@ -104,11 +104,11 @@ if (!hasCustomConfig)
     let enableMarketCap = process.env['cfg.marketCap.enabled'];
     if (undefined !== enableMarketCap && '' !== enableMarketCap)
     {
-        if (true === enableMarketCap || '1' == enableMarketCap)
+        if ('true' == enableMarketCap || '1' == enableMarketCap)
         {
             config.marketCap.enabled = true;
         }
-        else if (false === enableMarketCap || '0' == enableMarketCap)
+        else if ('false' == enableMarketCap || '0' == enableMarketCap)
         {
             config.marketCap.enabled = false;
         }
@@ -127,11 +127,11 @@ if (!hasCustomConfig)
     let enableFxConverter = process.env['cfg.fxConverter.enabled'];
     if (undefined !== enableFxConverter && '' !== enableFxConverter)
     {
-        if (true === enableFxConverter || '1' == enableFxConverter)
+        if ('true' == enableFxConverter || '1' == enableFxConverter)
         {
             config.fxConverter.enabled = true;
         }
-        else if (false === enableFxConverter || '0' == enableFxConverter)
+        else if ('false' == enableFxConverter || '0' == enableFxConverter)
         {
             config.fxConverter.enabled = false;
         }
@@ -150,11 +150,11 @@ if (!hasCustomConfig)
         let enableExchange = process.env[util.format('cfg.exchanges.%s.enabled', exchange)];
         if (undefined !== enableExchange && '' !== enableExchange)
         {
-            if (true === enableExchange || '1' == enableExchange)
+            if ('true' == enableExchange || '1' == enableExchange)
             {
                 config.exchanges[exchange]['enabled'] = true;
             }
-            else if (false === enableExchange || '0' == enableExchange)
+            else if ('false' == enableExchange || '0' == enableExchange)
             {
                 config.exchanges[exchange]['enabled'] = false;
             }
@@ -174,11 +174,11 @@ if (!hasCustomConfig)
                 let requirePair = process.env[util.format('cfg.exchanges.%s.requirePair', exchange)];
                 if (undefined !== requirePair && '' !== requirePair)
                 {
-                    if (true === requirePair || '1' == requirePair)
+                    if ('true' == requirePair || '1' == requirePair)
                     {
                         config.exchanges[exchange]['requirePair'] = true;
                     }
-                    else if (false === requirePair || '0' == requirePair)
+                    else if ('false' == requirePair || '0' == requirePair)
                     {
                         config.exchanges[exchange]['requirePair'] = false;
                     }
@@ -216,11 +216,11 @@ if (!hasCustomConfig)
     let enableUi = process.env['cfg.ui.enabled'];
     if (undefined !== enableUi && '' !== enableUi)
     {
-        if (true === enableUi || '1' == enableUi)
+        if ('true' == enableUi || '1' == enableUi)
         {
             config.ui.enabled = true;
         }
-        else if (false === enableUi || '0' == enableUi)
+        else if ('false' == enableUi || '0' == enableUi)
         {
             config.ui.enabled = false;
         }
@@ -272,11 +272,11 @@ if (!hasCustomConfig)
     let enableTickerMonitor = process.env['cfg.tickerMonitor.enabled'];
     if (undefined !== enableTickerMonitor && '' !== enableTickerMonitor)
     {
-        if (true === enableTickerMonitor || '1' == enableTickerMonitor)
+        if ('true' == enableTickerMonitor || '1' == enableTickerMonitor)
         {
             config.tickerMonitor.enabled = true;
         }
-        else if (false === enableTickerMonitor || '0' == enableTickerMonitor)
+        else if ('false' == enableTickerMonitor || '0' == enableTickerMonitor)
         {
             config.tickerMonitor.enabled = false;
         }
@@ -375,6 +375,18 @@ if (!hasCustomConfig)
         if (!isNaN(value) && value >= 0)
         {
             config.sessions.maxDuration = process.env['cfg.sessions.maxDuration'];
+        }
+    }
+    let hideIpaddr = process.env['cfg.sessions.hideIpaddr'];
+    if (undefined !== hideIpaddr && '' !== hideIpaddr)
+    {
+        if ('true' == hideIpaddr || '1' == hideIpaddr)
+        {
+            config.sessions.hideIpaddr = true;
+        }
+        else if ('false' == hideIpaddr || '0' == hideIpaddr)
+        {
+            config.sessions.hideIpaddr = false;
         }
     }
 }

@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.9.1]
+### Gateway
+* New optional config parameter `sessions.hideIpaddr` to hide ip addresses when listing sessions
+* Accept _true_ & _false_ for boolean environment variables
+
 ## [v1.9.0]
 ### Gateway
 * Replace https://api.exchangeratesapi.io with https://api.ratesapi.io for `/fxConverter` endpoint (previous one requires an API key)
