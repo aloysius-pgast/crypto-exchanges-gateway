@@ -4,6 +4,8 @@
 ### Gateway
 * New optional config parameter `sessions.hideIpaddr` to hide ip addresses when listing sessions
 * Accept _true_ & _false_ for boolean environment variables
+### UI
+* Fix alerts refreshing when an alert is being edited (*My Alerts*)
 
 ## [v1.9.0]
 ### Gateway
