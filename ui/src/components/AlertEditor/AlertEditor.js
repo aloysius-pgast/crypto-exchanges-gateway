@@ -293,7 +293,7 @@ componentWillReceiveProps(nextProps)
         state.alert = {loaded:true, loadErr:null, saveErr:null, isWaiting:false, data:getEmptyAlert(this._hasPushover), newName:''};
     }
     this.setState(state, () => {
-        if (this.state.isVisible && 0 != this.state.id) {
+        if (this.state.isVisible && 0 != this.state.id && timestamp != this._timestamp) {
             this._loadAlert(this.state.id);
         }
     });

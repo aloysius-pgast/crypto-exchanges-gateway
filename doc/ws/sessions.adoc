@@ -359,7 +359,7 @@ Result will be a dictionary using _session id_ as keys
 
 |{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}{nbsp}ipaddr
 |string
-|Client ip address
+|Client ip address (will only be defined if _sessions.hideIpaddr_ is _false_ in config)
 
 |===
 
