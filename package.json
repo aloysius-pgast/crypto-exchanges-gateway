@@ -26,7 +26,7 @@
     "express-ws": "^4.0.0",
     "htmlparser2": "^3.9.2",
     "joi": "^13.1.2",
-    "lodash": "^4.17.20",
+    "lodash": "^4.17.21",
     "node-bittrex-api": "^0.8.3",
     "poloniex-api-node": "^1.9.0",
     "request": "^2.83.0",
