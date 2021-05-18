@@ -49,13 +49,12 @@ constructor(ccxtExchangeId, ccxtExchangeOpt)
 
 _redefineCcxtErrorHandlers()
 {
-    let self = this;
     // redefine market
     this.ccxt._market = this.ccxt.market;
     this.ccxt.market = (symbol) => {
         try
         {
-            return self.ccxt._market.call(self.ccxt, symbol);
+            return this.ccxt._market(symbol);
         }
         catch (e)
         {
@@ -67,7 +66,7 @@ _redefineCcxtErrorHandlers()
     this.ccxt._executeRestRequest = this.ccxt.executeRestRequest;
     this.ccxt.executeRestRequest = (url, method = 'GET', headers = undefined, body = undefined) => {
         return new Promise((resolve, reject) => {
-            self.ccxt._executeRestRequest.call(self.ccxt, url, method, headers, body).then((data) => {
+            this.ccxt._executeRestRequest(url, method, headers, body).then((data) => {
                 return resolve(data);
             }).catch ((e) => {
                 if (e instanceof CcxtErrors.BaseError)
@@ -80,26 +79,26 @@ _redefineCcxtErrorHandlers()
     };
     // redefine default error handler
     this.ccxt._defaultErrorHandler = this.ccxt.defaultErrorHandler;
-    this.ccxt.defaultErrorHandler = (response, responseBody, url, method) => {
+    this.ccxt.defaultErrorHandler = (code, reason, url, method, body) => {
         try
         {
-            return self.ccxt._defaultErrorHandler.call(self.ccxt, response, responseBody, url, method);
+            return this.ccxt._defaultErrorHandler(code, reason, url, method, body);
         }
         catch (e)
         {
-            throw new CcxtErrors.BaseError(e, {method:method,url:url}, {statusCode:response.status,statusMessage:response.statusText,body:responseBody}, self.ccxt.last_json_response);
+            throw new CcxtErrors.BaseError(e, {method:method,url:url}, {statusCode:code,statusMessage:reason,body:body}, this.ccxt.last_json_response);
         }
     };
     // redefine custom error handler
     this.ccxt._handleErrors = this.ccxt.handleErrors;
-    this.ccxt.handleErrors = (statusCode, statusMessage, url, method, requestHeaders, responseBody, json) => {
+    this.ccxt.handleErrors = (statusCode, statusText, url, method, responseHeaders, responseBody, response, requestHeaders, requestBody) => {
         try
         {
-            return self.ccxt._handleErrors.call(self.ccxt, statusCode, statusMessage, url, method, requestHeaders, responseBody, json);
+            return this.ccxt._handleErrors(statusCode, statusText, url, method, responseHeaders, responseBody, response, requestHeaders, requestBody);
         }
         catch (e)
         {
-            throw new CcxtErrors.BaseError(e, {method:method,url:url}, {statusCode:statusCode,statusMessage:statusMessage,body:responseBody}, json);
+            throw new CcxtErrors.BaseError(e, {method:method,url:url}, {statusCode:statusCode,statusMessage:statusText,body:responseBody}, response);
         }
     };
 }
@@ -1122,7 +1121,7 @@ formatOpenOrder(ccxtData)
  * Retrieve closed orders for a single pair
  * @param {string} pair pair to retrieve closed orders for
  * @param {object} ccxtParams custom parameters (optional, might not be defined)
- * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order (default = false)
  * @return {ccxt:object[],custom:object}
  */
 /*
@@ -1152,6 +1151,10 @@ ccxt output for fetchClosedOrders
 */
 async getClosedOrdersForPair(pair, ccxtParams, mergeTrades)
 {
+    if (undefined === mergeTrades)
+    {
+        mergeTrades = false;
+    }
     let ccxtPair = this._toCcxtPair(pair);
     let data;
     try
@@ -1172,7 +1175,7 @@ async getClosedOrdersForPair(pair, ccxtParams, mergeTrades)
 /**
  * Retrieve closed orders for all pairs
  * @param {object} ccxtParams custom parameters (optional, might not be defined)
- * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order (default = false)
  * @return {ccxt:object[],custom:object}
  */
 /*
@@ -1202,6 +1205,10 @@ ccxt output for fetchClosedOrders
 */
 async getClosedOrders(ccxtParams, mergeTrades)
 {
+    if (undefined === mergeTrades)
+    {
+        mergeTrades = false;
+    }
     let data;
     try
     {
@@ -1224,11 +1231,15 @@ async getClosedOrders(ccxtParams, mergeTrades)
  * NB: in case mergeTrades is true, following properties will be Big objects (quantity, actualPrice, fees.amount)
  *
  * @param {object[]} ccxtData list of open orders returned by ccxt fetchClosedOrders
- * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order
+ * @param {boolean} mergeTrades if true, indicates that exchange API does not return orders but multiple trades for the same order (default = false)
  * @return {object}
  */
 formatClosedOrders(ccxtData, mergeTrades)
 {
+    if (undefined === mergeTrades)
+    {
+        mergeTrades = false;
+    }
     let result = {};
     _.forEach(ccxtData, (e) => {
         let order = this.formatClosedOrder(e, !mergeTrades);
@@ -1285,11 +1296,15 @@ _mergeOrder(order, into)
  * Formats a single open order returned by ccxt
  *
  * @param {object} ccxtData single order entry returned by ccxt fetchClosedOrders
- * @param {boolean} computeFinalRate whether or not final rate should be computed (will be false if exchange API does not return orders but multiple trades for the same order)
+ * @param {boolean} computeFinalRate whether or not final rate should be computed (default = true, will be false if exchange API does not return orders but multiple trades for the same order)
  * @return {object}
  */
 formatClosedOrder(ccxtData, computeFinalRate)
 {
+    if (undefined === computeFinalRate)
+    {
+        computeFinalRate = true;
+    }
     let splittedPair = ccxtData.symbol.split('/');
     let order = {
         pair:`${splittedPair[1]}-${splittedPair[0]}`,
@@ -1549,7 +1564,7 @@ async getOrder(orderNumber, pair, ccxtParams)
         }
     }
     // order is still open
-    else if (data.hasOwnProperty('remaining'))
+    else if (data.hasOwnProperty('remaining') && remaining > 0)
     {
         isClosed = false;
     }

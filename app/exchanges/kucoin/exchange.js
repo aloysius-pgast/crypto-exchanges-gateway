@@ -91,7 +91,10 @@ async _getOrderBook(pair, opt)
         customOpt = _.clone(opt.custom);
         delete customOpt.includeSequence;
     }
-    customOpt.level = `2_${opt.limit}`;
+    if (undefined === customOpt.level)
+    {
+        customOpt.level = '2';
+    }
     const data = await this._client.getOrderBook(pair, opt.limit, customOpt);
     // sequence will be requested by subscription manager to sort full orderbook & order book updates
     if (true === opt.custom.includeSequence)
@@ -272,34 +275,6 @@ async _getClosedOrders(completeHistory)
 }
 
 /**
- * Merges one order into another
- *
- * @param {object} order order to merge
- * @param {object} into destination order
- */
-_mergeOrder(order, into)
-{
-    // update closedTimestamp
-    if (order.closedTimestamp > into.closedTimestamp)
-    {
-        into.closedTimestamp = order.closedTimestamp;
-    }
-    // update quantity & actualPrice
-    into.quantity = into.quantity.plus(order.quantity);
-    into.actualPrice = into.actualPrice.plus(order.actualPrice);
-    // update fees
-    if (null !== order.fees)
-    {
-        // initialize fees if needed
-        if (null === into.fees)
-        {
-            into.fees = {amount:new Big(0), currency:order.fees.currency};
-        }
-        into.fees.amount = into.fees.amount.plus(order.fees.amount);
-    }
-}
-
-/**
  * Retrieves a single order (open or closed)
  *
  * @param {string} orderNumber
@@ -311,6 +286,7 @@ async _getOrder(orderNumber, pair)
     let data;
     try
     {
+        // trades don't need to be merge, so we can use default method
         data = await super._getOrder(orderNumber, pair);
     }
     catch (e)

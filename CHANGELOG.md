@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.10.0] **NOT RELEASED**
+### Gateway
+* Update ccxt to version `1.50.8`
+
 ## [v1.9.1]
 ### Gateway
 * New optional config parameter `sessions.hideIpaddr` to hide ip addresses when listing sessions
