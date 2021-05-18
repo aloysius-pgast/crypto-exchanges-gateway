@@ -49,7 +49,6 @@ const defineForExchange = (exchangeId) => {
                     });
                 });
             });
-
             // try first pair with limited result
             let limit = 5;
             MochaHelper.describe('GET' ,`/exchanges/${exchangeId}/trades/${symbols[0]}`, function(method, path, params){
@@ -76,7 +75,7 @@ const defineForExchange = (exchangeId) => {
                         Assert.validateResult(result, schema);
                         if (result.body.length >= 1)
                         {
-                            // if we search all trades with an id > (id(last) - 1) we should have an entry with id = id(last)
+                            // search all trades with an id >= (id(last) - 1)
                             let lastTrade = result.body[0];
                             if (null === lastTrade.id)
                             {
@@ -90,17 +89,17 @@ const defineForExchange = (exchangeId) => {
                             let afterTradeId = lastTrade.id - 1;
                             restClient.makeRequest(method, path, {afterTradeId:afterTradeId}).then((result) => {
                                 Assert.validateResult(result, schema);
-                                let found = false;
+                                let invalid = false;
                                 _.forEach(result.body, (e) => {
-                                    if (e.id == lastTrade.id)
+                                    if (e.id <= afterTradeId)
                                     {
-                                        found = true;
+                                        invalid = true;
                                         return false;
                                     }
                                 });
-                                if (!found)
+                                if (invalid)
                                 {
-                                    Assert.fail(`Result should contain an entry with id = ${lastTrade.id} (id > ${afterTradeId})`, result.body);
+                                    Assert.fail(`Result should only contain entries with an id > ${afterTradeId}`, result.body);
                                 }
                                 done();
                             }).catch((e) => {
@@ -125,22 +124,22 @@ const defineForExchange = (exchangeId) => {
                         Assert.validateResult(result, schema);
                         if (result.body.length >= 2)
                         {
-                            // if we search all trades with a timestamp > (timestamp(last) - 1) we should have an entry with id = id(last)
+                            // search all trades with a timestamp >= (timestamp(last) - 1)
                             let lastTrade = result.body[0];
                             let afterTimestamp = lastTrade.timestamp - 1;
                             restClient.makeRequest(method, path, {afterTimestamp:afterTimestamp}).then((result) => {
                                 Assert.validateResult(result, schema);
-                                let found = false;
+                                let invalid = false;
                                 _.forEach(result.body, (e) => {
-                                    if (e.id == lastTrade.id)
+                                    if (e.timestamp <= afterTimestamp)
                                     {
-                                        found = true;
+                                        invalid = true;
                                         return false;
                                     }
                                 });
-                                if (!found)
+                                if (invalid)
                                 {
-                                    Assert.fail(`Result should contain an entry with id = ${lastTrade.id} (timestamp > ${afterTimestamp})`, result.body);
+                                    Assert.fail(`Result should only contain entries with a timestamp > ${afterTimestamp}`, result.body);
                                 }
                                 done();
                             }).catch((e) => {
