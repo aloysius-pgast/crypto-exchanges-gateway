@@ -47,7 +47,7 @@ Those routes require the feature _trades_ to be enabled for the requested exchan
 |Description
 
 |afterTradeId
-|integer|string
+|integer,string
 |
 |Only retrieve trades with an _id_ > _afterTradeId_
 
