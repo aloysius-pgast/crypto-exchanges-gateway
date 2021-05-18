@@ -30,6 +30,9 @@ const defineForExchange = (exchangeId) => {
 
     MochaHelper.createExchangeSuite(exchangeId, `/exchanges/${exchangeId}/closedOrders`, (services, pairs) => {
 
+        let staticSymbols = MochaHelper.getSupportedPairSymbols(pairs, {count:2});
+        let symbols = MochaHelper.getRandomPairsSymbols(pairs, {count:3, include:staticSymbols});
+
         // we are supposed to have closed orders
         let closedOrdersPairs = MochaHelper.getClosedOrdersPairs(exchangeId);
         if (0 != closedOrdersPairs.length && !services.exchanges[exchangeId].demo)
@@ -133,8 +136,6 @@ const defineForExchange = (exchangeId) => {
             }
         }
 
-        let staticSymbols = MochaHelper.getSupportedPairSymbols(pairs, {count:2});
-        let symbols = MochaHelper.getRandomPairsSymbols(pairs, {count:3, include:staticSymbols});
         if (0 !== symbols.length)
         {
             // multiple pairs
