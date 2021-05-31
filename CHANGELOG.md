@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.10.0] **NOT RELEASED**
+## [v1.10.0]
 ### Gateway
 * Update ccxt to version `1.50.8`
 
