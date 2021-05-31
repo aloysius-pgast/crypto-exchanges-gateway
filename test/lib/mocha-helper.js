@@ -38,7 +38,7 @@ if (fs.existsSync(configFile))
     }
     catch (e)
     {
-        logger.error("Config file '%s' is not a valid JSON file", configPath);
+        console.log("Config file '%s' is not a valid JSON file", configPath);
         process.exit(1);
     }
 }
