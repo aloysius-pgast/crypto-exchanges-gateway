@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.10.1]
+### Gateway
+* Replace https://api.ratesapi.io with https://api.exchangerate.host for `/fxConverter` endpoint (previous one requires an API key)
+
 ## [v1.10.0]
 ### Gateway
 * Update ccxt to version `1.50.8`
