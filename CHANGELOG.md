@@ -1,6 +1,6 @@
 # Change Log
 
-## [v1.10.2] **NOT RELEASED**
+## [v1.10.2]
 ### Gateway
 * feat: support for environment variable `cfg.exchanges.kucoin.password` (Kucoin)
 * feat: support for environment variable `cfg.exchanges.okex.password` (OKEx)
