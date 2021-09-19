@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.10.2]
+### Gateway
+* feat: support for environment variable `cfg.exchanges.kucoin.password` (Kucoin)
+* feat: support for environment variable `cfg.exchanges.okex.password` (OKEx)
+
 ## [v1.10.1]
 ### Gateway
 * Replace https://api.ratesapi.io with https://api.exchangerate.host for `/fxConverter` endpoint (previous one requires an API key)

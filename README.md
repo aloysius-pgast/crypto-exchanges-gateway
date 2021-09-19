@@ -71,10 +71,10 @@ A _Node.js_ client is available [here](https://github.com/aloysius-pgast/crypto-
 
 Currently supports for following exchanges :
 
-* [Binance](https://www.binance.com/) (my favorite)
+* [Binance](https://www.binance.com/) (used to be my favorite)
 * [Bittrex](https://www.bittrex.com/)
-* [Kucoin](https://www.kucoin.com)
-* [OKEx](https://www.okex.com)
+* [Kucoin](https://www.kucoin.com) (optional KYC)
+* [OKEx](https://www.okex.com) (optional KYC)
 * [Poloniex](https://www.poloniex.com) ([**worst support**](https://www.reddit.com/r/PoloniexForum/) ever)
 * More to come...
 
@@ -301,10 +301,12 @@ By default, only public API will be enabled. In order to access trading/private 
 * cfg.exchanges.kucoin.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.kucoin.key : Kucoin user key
 * cfg.exchanges.kucoin.secret : Kucoin secret
+* cfg.exchanges.kucoin.password : Kucoin API password
 * cfg.exchanges.okex.enabled : value should be set to _1_ to enable exchange, _0_ to disable exchange (default = _1_)
 * cfg.exchanges.okex.requirePair : value should be set to _0_ to allow retrieving tickers/orders for all pairs at once, _1_ to require pair for such operations (default = _0_)
 * cfg.exchanges.okex.key : OKEx user key
 * cfg.exchanges.okex.secret : OKEx secret
+* cfg.exchanges.okex.password : OKEx password
 
 If you don't want to use environment variables or want to customize config for a running container, you can create and edit *custom_config/config.json*
 
@@ -351,4 +353,4 @@ BTC: `163Bu8qMSDoHc1sCatcnyZcpm38Z6PWf6E`
 
 ETH: `0xDEBBEEB9624449D7f2c87497F21722b1731D42a8`
 
-NEO/GAS: `AaQ5xJt4v8GunVchTJXur8WtM8ksprnxRZ`
+NEO/GAS: `NXbbNQ2wSuavGRRffxFQrKLvSysEewzSHZ`

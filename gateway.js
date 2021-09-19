@@ -168,6 +168,15 @@ if (!hasCustomConfig)
                 config.exchanges[exchange]['key'] = key;
                 config.exchanges[exchange]['secret'] = secret;
             }
+            // check if extra password is supported
+            if (config.exchanges[exchange].hasOwnProperty('password'))
+            {
+                let password = process.env[util.format('cfg.exchanges.%s.password', exchange)];
+                if (undefined !== password && '' != password)
+                {
+                    config.exchanges[exchange]['password'] = password;
+                }
+            }
             // check if requirePair is supported
             if (config.exchanges[exchange].hasOwnProperty('requirePair'))
             {
