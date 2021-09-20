@@ -47,6 +47,7 @@ ENV cfg.exchanges.okex.enabled "1"
 ENV cfg.exchanges.okex.requirePair "0"
 ENV cfg.exchanges.okex.key ""
 ENV cfg.exchanges.okex.secret ""
+ENV cfg.exchanges.okex.password ""
 
 EXPOSE 8000
 EXPOSE 8001
