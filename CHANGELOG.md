@@ -1,5 +1,10 @@
 # Change Log
 
+## [v1.10.3]
+### UI
+* fix: display error message in case auth is refused by exchange
+* fix: fix hover color after selecting an entry in top menu
+
 ## [v1.10.2]
 ### Gateway
 * feat: support for environment variable `cfg.exchanges.kucoin.password` (Kucoin)
