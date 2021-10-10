@@ -177,10 +177,10 @@ _loadBalances(pair)
         {
             return;
         }
-        alert(err);
+        //alert(err);
         let timestamp = new Date().getTime();
         self.setState((prevState, props) => {
-            return {pairs:{loaded:true, data:null, err:err, loadedTimestamp:timestamp}};
+            return {balances:{loaded:true, data:null, err:err, loadedTimestamp:timestamp}};
         });
     });
 }
@@ -304,6 +304,19 @@ componentDidMount()
 render() {
     if (null !== this.state.pairs.err || null !== this.state.balances.err || null !== this.state.ticker.err)
     {
+        if (null !== this.state.balances.err)
+        {
+            if (undefined !== this.state.balances.err.extError &&
+                'ExchangeError.Forbidden.InvalidAuthentication' == this.state.balances.err.extError.errorType)
+            {
+                return (
+                    <div>
+                        <br/>
+                        <h6 className="text-danger">Authentication was refused by exchange</h6>
+                    </div>
+                );
+            }
+        }
         return null;
     }
 

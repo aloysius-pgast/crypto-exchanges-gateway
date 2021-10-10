@@ -98,6 +98,11 @@ render()
     }
     if (null !== this.state.err)
     {
+        if (undefined !== this.state.err && undefined !== this.state.err.extError &&
+            'ExchangeError.Forbidden.InvalidAuthentication' == this.state.err.extError.errorType)
+        {
+            return <h6 className="text-danger">Authentication was refused by exchange</h6>
+        }
         return null;
     }
     return (

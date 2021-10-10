@@ -237,7 +237,7 @@ render(){
     };
 
     const navList = (items) => {
-      return items.map( (item, index) => navItem(item, index) );
+      return items.map( (item, index) => navItem(item, item.name) );
     };
 
     const HelpIcon = () => {
