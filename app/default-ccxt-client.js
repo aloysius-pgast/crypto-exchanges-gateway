@@ -311,7 +311,8 @@ async getPairs()
         }
         throw e;
     }
-    return {ccxt:data, custom:this.formatPairs(data)};
+    const customData = this.formatPairs(data);
+    return {ccxt:data, custom:customData};
 }
 
 /**

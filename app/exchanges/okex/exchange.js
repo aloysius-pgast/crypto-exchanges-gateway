@@ -7,7 +7,7 @@ const CcxtClient = require('./ccxt-client');
 const AbstractCcxtExchangeClass = require('../../abstract-ccxt-exchange');
 const SubscriptionManagerClass = require('./subscription-manager');
 
-const exchangeType = 'okex';
+const exchangeType = 'okex5';
 
 // limit when retrieving trades (OKex will always return the last 60 trades)
 const TRADES_LIMIT = 60;
@@ -61,7 +61,11 @@ class Exchange extends AbstractCcxtExchangeClass
 constructor(exchangeId, exchangeName, config)
 {
     let opt = AbstractCcxtExchangeClass.getCcxtOpt(exchangeId, config, {
-        options:{warnOnFetchOHLCVLimitArgument:false},
+        options:{
+            warnOnFetchOHLCVLimitArgument:false,
+            // only retrieve spot markets
+            fetchMarkets:['spot']
+        },
         fetchOrderBookWarning:false
     });
     let client = new CcxtClient('okex', opt);
@@ -73,8 +77,9 @@ constructor(exchangeId, exchangeName, config)
 async _getPairs()
 {
     let list = {};
+    const pairs = await super._getPairs();
     // ignore futures (ie: baseCurrency == USD)
-    _.forEach(await super._getPairs(), (e, pair) => {
+    _.forEach(pairs, (e, pair) => {
         if ('USD' == e.baseCurrency)
         {
             return;

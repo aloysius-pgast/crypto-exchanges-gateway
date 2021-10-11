@@ -1,5 +1,11 @@
 # Change Log
 
+## [v1.11.0]
+### Gateway
+* chore: update ccxt to version `1.57.94`
+* feat: use `OKex` V5 API (requires a *Unified* account)
+* fix: fix `ccxt` pairs retrieval when precision mode is `TICK_SIZE` (ex: `OKex`)
+
 ## [v1.10.3]
 ### UI
 * fix: display error message in case auth is refused by exchange
