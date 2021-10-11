@@ -187,10 +187,15 @@ _getCurrencyPrecision(currency)
     {
         return null;
     }
-    return {
-        precision:this._client.ccxt.currencies[currency].precision,
-        step:this._precisionToStep(this._client.ccxt.currencies[currency].precision)
+    let precision = this._client.ccxt.currencies[currency].precision;
+    if (this._client.ccxt.TICK_SIZE == this._client.ccxt.precisionMode) {
+        precision = this._stepToPrecision(precision);
     }
+    let step = this._precisionToStep(precision);
+    return {
+        precision:precision,
+        step:step
+    };
 }
 
 /**
