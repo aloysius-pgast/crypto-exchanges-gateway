@@ -32,7 +32,7 @@
     "webpack-dev-server": "^2.7.1"
   },
   "dependencies": {
-    "axios": "^0.16.2",
+    "axios": "^0.21.2",
     "big.js": "^5.0.3",
     "bootstrap": "^4.0.0-beta",
     "debug": "^4.1.1",
