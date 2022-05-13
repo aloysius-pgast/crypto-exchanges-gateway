@@ -483,7 +483,7 @@ registerSocket(ws, path)
             return;
         }
         ws._isAlive = false;
-        ws.ping('', false, true);
+        ws.ping('', false);
     }, PING_TIMEOUT);
 
     // ping / pong
@@ -493,7 +493,7 @@ registerSocket(ws, path)
     });
 
     ws.on('ping', function(){
-        this.pong('', false, true);
+        this.pong('', false);
     });
 
     // handle disconnection
@@ -509,7 +509,7 @@ registerSocket(ws, path)
     });
 
     // initial ping
-    ws.ping('', false, true);
+    ws.ping('', false);
 
     // process message, send hello & disable expiry
     if (this._isRpc)

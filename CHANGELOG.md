@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.12.0]
+### Gateway
+* chore: update ws to version `8.6.0`
+* fix: fix `OKex` ws endpoint
+### UI
+* chore: update node-sass to version `6.0.1`
+
 ## [v1.11.0]
 ### Gateway
 * chore: update ccxt to version `1.57.94`

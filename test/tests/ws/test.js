@@ -202,7 +202,7 @@ MochaHelper.prepare(() => {
                     });
                     // reply to ping
                     ws.on('ping', function(data){
-                        this.pong('', true, true);
+                        this.pong('', true);
                     });
                 });
             });
@@ -261,7 +261,7 @@ MochaHelper.prepare(() => {
                     });
                     // reply to ping
                     ws.on('ping', function(data){
-                        this.pong('', true, true);
+                        this.pong('', true);
                     });
                 });
 

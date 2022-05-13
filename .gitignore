@@ -1,0 +1,9 @@
+/node_modules/
+/.history/
+/ui/dist/
+/ui/node_modules/
+/ui/public/config/config.json
+/config/config.json
+/ssl/certificate.crt
+/ssl/certificate.key
+/storage/db/database.sqlite
