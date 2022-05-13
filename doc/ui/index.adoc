@@ -60,7 +60,7 @@ Following should be run in _ui_ subdirectory
 === Install dependencies
 
 ```
-sudo npm install -g webpack && npm install
+npm install --legacy-peer-deps
 ```
 
 === Build UI

@@ -34,7 +34,7 @@
     "sqlite3": "^4.1.0",
     "uuid": "^3.1.0",
     "winston": "^2.4.5",
-    "ws": "^3.2.0"
+    "ws": "^8.6.0"
   },
   "devDependencies": {
     "mocha": "^8.3.0",

@@ -6,7 +6,7 @@ const Big = require('big.js');
 const zlib = require('zlib');
 const AbstractExchangeStreamClientClass = require('../../abstract-exchange-stream-client');
 
-const WS_URI = 'wss://real.okex.com:8443/ws/v3';
+const WS_URI = 'wss://ws.okx.com:8443/ws/v5/public';
 
 class StreamClient extends AbstractExchangeStreamClientClass
 {
@@ -47,11 +47,11 @@ _getExchangeChannelType(customType)
     switch (customType)
     {
         case 'ticker':
-            return `spot/ticker`;
+            return `tickers`;
         case 'orderBook':
-            return 'spot/depth';
+            return 'books';
         case 'trades':
-            return 'spot/trade';
+            return 'trades';
     }
     logger.warn(`Unknown channel customType '${customType}' for exchange '${this.getExchangeId()}'`);
     return null;
@@ -65,11 +65,11 @@ _getCustomChannelType(exchangeType)
 {
     switch (exchangeType)
     {
-        case 'spot/ticker':
+        case 'tickers':
             return 'ticker';
-        case 'spot/depth':
+        case 'books':
             return 'orderBook';
-        case 'spot/trade':
+        case 'trades':
             return 'trades';
     }
     logger.warn(`Unknown channel exchangeType '${exchangeType}' for exchange '${this.getExchangeId()}'`);
@@ -89,7 +89,11 @@ _getChannelParameters(type, pair)
         return null;
     }
     let p = this._toExchangePair(pair);
-    return [`${exchangeType}:${p}`];
+    return [{
+        channel: exchangeType,
+        instId: `${p}`,
+        instType: "SPOT"
+    }];
 }
 
 /**
@@ -132,7 +136,7 @@ getUnsubscribeMessage(channel)
 _processMessage(message)
 {
     /*
-        Data is sent using Deflate compression (see https://www.okex.com/docs/en/#WebSocketAPI)
+        Data is sent using Deflate compression (see https://www.okx.com/docs/en/#websocket-api)
      */
     this._decodeData(message, (jsonData) => {
         let data;
@@ -148,7 +152,7 @@ _processMessage(message)
         try
         {
             // ignore since we won't be able to do anything with this
-            if (undefined === data.table && undefined === data.event)
+            if (undefined === data.arg && undefined === data.event)
             {
                 return;
             }
@@ -156,14 +160,14 @@ _processMessage(message)
             if (undefined !== data.event) {
                 return this._processResult(data);
             }
-            const customType = this._getCustomChannelType(data.table);
+            const customType = this._getCustomChannelType(data.arg.channel);
             _.forEach(data.data, (e) => {
                 switch (customType)
                 {
                     case 'ticker':
                         return this._processTickerData(e);
                     case 'orderBook':
-                        return this._processOrderBookData(e, 'partial' === data.action);
+                        return this._processOrderBookData(e, data.arg.instId, 'snapshot' === data.action);
                     case 'trades':
                         return this._processTradesData(e);
                 }
@@ -178,20 +182,11 @@ _processMessage(message)
 
 /**
  * Decode data received from endpoint :
- * 1) gzip inflate
+ * 2022-05-13 : data is not compressed anymore
  */
 _decodeData(d, cb)
 {
-    // we need to use inflateRaw to avoid zlib error 'incorrect header check' (Z_DATA_ERROR)
-    zlib.inflateRaw(d, (err, str) => {
-        if (null !== err)
-        {
-            logger.warn("Could not decompress Okex gzip data : %s", err);
-            cb.call(this, undefined);
-            return;
-        }
-        cb.call(this, str);
-    });
+    cb.call(this, d.toString('utf-8'));
 }
 
 /*
@@ -228,30 +223,33 @@ Process tickers data and emit a 'ticker' event
 Example data
 
 {
-   "instrument_id":"BTC-USDT",
-   "last":"7174.4",
-   "last_qty":"0.0016916",
-   "best_bid":"7174.4",
-   "best_bid_size":"0.06094569",
-   "best_ask":"7174.5",
-   "best_ask_size":"4.65278962",
-   "open_24h":"7237.2",
-   "high_24h":"7271",
-   "low_24h":"7132.3",
-   "base_volume_24h":"16545.6",
-   "quote_volume_24h":"119408171.4",
-   "timestamp":"2019-12-11T15:59:52.771Z"
+    "instType": "SPOT",
+    "instId": "BTC-USDT",
+    "last": "30012.9",
+    "lastSz": "0.00811145",
+    "askPx": "30017.3",
+    "askSz": "0.00000058",
+    "bidPx": "30017.2",
+    "bidSz": "0.10919929",
+    "open24h": "28842.3",
+    "high24h": "31073",
+    "low24h": "28020.3",
+    "sodUtc0": "29028.8",
+    "sodUtc8": "30337.7",
+    "volCcy24h": "475881664.82894433",
+    "vol24h": "15802.25746788",
+    "ts": "1652474478780"
 }
 
 */
 _processTickerData(data)
 {
-    let pair = this._toCustomPair(data.instrument_id);
+    const pair = this._toCustomPair(data.instId);
     if (debug.enabled)
     {
         debug(`Got ticker for pair '${pair}'`);
     }
-    let priceChangePercent = parseFloat(new Big(data.last).minus(data.open_24h).div(data.open_24h).times(100).toFixed(4));
+    let priceChangePercent = parseFloat(new Big(data.last).minus(data.open24h).div(data.open24h).times(100).toFixed(4));
     if (isNaN(priceChangePercent))
     {
         priceChangePercent = null;
@@ -260,12 +258,12 @@ _processTickerData(data)
         pair:pair,
         last: parseFloat(data.last),
         priceChangePercent:priceChangePercent,
-        sell: parseFloat(data.best_ask),
-        buy: parseFloat(data.best_bid),
-        volume: parseFloat(data.base_volume_24h),
-        high: parseFloat(data.high_24h),
-        low: parseFloat(data.low_24h),
-        timestamp:parseFloat(new Date(data.timestamp).getTime() / 1000.0)
+        sell: parseFloat(data.askPx),
+        buy: parseFloat(data.bidPx),
+        volume: parseFloat(data.vol24h),
+        high: parseFloat(data.high24h),
+        low: parseFloat(data.low24h),
+        timestamp:parseFloat(data.ts / 1000.0)
     }
     this.emit('ticker', {
         pair:pair,
@@ -279,97 +277,85 @@ Process order books and emit 'orderBook'/'orderBookUpdate'
 Data example for full order book
 
 {
-   "instrument_id":"BTC-USDT",
-   "asks":[
-      [
-         "7185.2",
-         "0.06",
-         "2"
-      ],
-      [
-         "7185.7",
-         "0.001",
-         "1"
-      ],
-      [
-         "7186.1",
-         "0.01",
-         "1"
-      ]
-   ],
-   "bids":[
-      [
-         "7185.1",
-         "3.90247387",
-         "19"
-      ],
-      [
-         "7185",
-         "0.56557922",
-         "5"
-      ],
-      [
-         "7184.9",
-         "2.12499199",
-         "4"
-      ]
-   ],
-   "timestamp":"2019-12-11T16:22:51.107Z",
-   "checksum":768871585
+    "asks": [
+        [
+            "29940.6", // depth price
+            "0.06814205", // number of token at the price
+            "0", // deprecated (always 0)
+            "2" // number of orders at the price
+        ],
+        [
+            "29946.8",
+            "0.06389098",
+            "0",
+            "1"
+        ]
+    ],
+    "bids": [
+        [
+            "29940.5",
+            "0.79407178",
+            "0",
+            "5"
+        ],
+        [
+            "29924.2",
+            "0.05",
+            "0",
+            "1"
+        ]
+    ],
+    "ts": "1652474743129",
+    "checksum": 33278385
 }
 
 Data example for order book update (totalSize == 0 => removed from order book)
 
 {
-   "instrument_id":"BTC-USDT",
-   "asks":[
-      [
-         "7207.1",
-         "0.3",
-         "1"
-      ]
-   ],
-   "bids":[
-      [
-         "7184",
-         "1.271",
-         "3"
-      ],
-      [
-         "7183.8",
-         "0",
-         "0"
-      ],
-      [
-         "7176",
-         "0.05924333",
-         "1"
-      ],
-      [
-         "7171.1",
-         "0",
-         "0"
-      ],
-      [
-         "7108.1",
-         "0.00101",
-         "1"
-      ]
-   ],
-   "timestamp":"2019-12-11T16:22:51.251Z",
-   "checksum":1303704781
+    "asks": [
+        [
+            "29790.1",
+            "0.29494738",
+            "0",
+            "3"
+        ],
+        [
+            "29793.4",
+            "0.025",
+            "0",
+            "1"
+        ]
+    ],
+    "bids": [
+        [
+            "29825.3",
+            "0",
+            "0",
+            "0"
+        ],
+        [
+            "29824.4",
+            "0",
+            "0",
+            "0"
+        ]
+    ],
+    "ts": "1652475536404",
+    "checksum": 787147469
 }
 
-bids and asks value example: In ["411.8","10","8"], 411.8 is price depth, 10 is the amount at the price, 8 is the number of orders at the price.
+bids and asks value example: In  ["411.8", "10", "0", "4"] "411.8" is the depth price, "10" is the number of token at the price,
+"0" is the number of liquidated orders at the price and deprecated, it is always "0", and "4" is the number of orders at the price.
 
 */
-_processOrderBookData(data, isFull)
+_processOrderBookData(data, exchangePair, isFull)
 {
+    const pair = this._toCustomPair(exchangePair);
     if (isFull)
     {
-        return this._processFullOrderBook(data);
+        return this._processFullOrderBook(data, pair);
     }
-    return this._processOrderBookUpdates(data);
+    return this._processOrderBookUpdates(data, pair);
 }
 
 /*
@@ -377,15 +363,14 @@ _processOrderBookData(data, isFull)
  *
  * Emit 'orderBook' event
  */
-_processFullOrderBook(data)
+_processFullOrderBook(data, pair)
 {
-    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
         debug(`Got full order book for pair '${pair}': ${data.asks.length} asks, ${data.bids.length} bids`);
     }
     // cseq will be computed by subscription manager
-    let evt = {
+    const evt = {
         pair:pair,
         data:{
             buy:[],
@@ -407,15 +392,14 @@ _processFullOrderBook(data)
  *
  * Emit 'orderBookUpdate' event
  */
-_processOrderBookUpdates(data)
+_processOrderBookUpdates(data, pair)
 {
-    let pair = this._toCustomPair(data.instrument_id);
     if (debug.enabled)
     {
         debug(`Got order book update for pair '${pair}': ${data.asks.length + data.bids.length} changes`);
     }
     // cseq will be computed by subscription manager
-    let evt = {
+    const evt = {
         pair:pair,
         data:{
             buy:[],
@@ -423,7 +407,7 @@ _processOrderBookUpdates(data)
         }
     };
     _.forEach(data.asks, (e) => {
-        let obj = {
+        const obj = {
             action: 'update',
             quantity:parseFloat(e[1]),
             rate:parseFloat(e[0])
@@ -456,18 +440,18 @@ _processOrderBookUpdates(data)
 Process trades data and emit a 'trades' event
 
 {
-   "instrument_id":"BTC-USDT",
-   "price":"7200.7",
-   "side":"sell",
-   "size":"0.00127736",
-   "timestamp":"2019-12-11T16:44:56.768Z",
-   "trade_id":"2750455009"
+    "instId": "BTC-USDT",
+    "tradeId": "338559763",
+    "px": "29808",
+    "sz": "0.00129485",
+    "side": "buy",
+    "ts": "1652475893267"
 }
 
 */
 _processTradesData(data)
 {
-    let pair = this._toCustomPair(data.instrument_id);
+    let pair = this._toCustomPair(data.instId);
     if (debug.enabled)
     {
         debug(`Got trade update for pair '${pair}'`);
@@ -483,11 +467,11 @@ _processTradesData(data)
         orderType = 'buy';
     }
     let obj = {
-        id: data.trade_id,
-        quantity:parseFloat(data.size),
-        rate:parseFloat(data.price),
+        id: data.tradeId,
+        quantity:parseFloat(data.sz),
+        rate:parseFloat(data.px),
         orderType:orderType,
-        timestamp:parseFloat(new Date(data.timestamp).getTime() / 1000.0)
+        timestamp:parseFloat(data.ts / 1000.0)
     }
     obj.price = parseFloat(new Big(obj.quantity).times(obj.rate));
     evt.data.unshift(obj);

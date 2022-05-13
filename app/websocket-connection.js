@@ -309,7 +309,7 @@ connect()
                 {
                     ws.isAlive = false;
                     // initial ping
-                    ws.ping('', true, true);
+                    ws.ping('', true);
                     const interval = setInterval(() => {
                         if (WebSocket.OPEN != ws.readyState)
                         {
@@ -331,7 +331,7 @@ connect()
                         {
                             debug("Sending WS PING (%s)", uri);
                         }
-                        ws.ping('', true, true);
+                        ws.ping('', true);
                     }, this._pingTimeout);
                 }
                 this.emit('connected', {uri:uri});
@@ -413,7 +413,7 @@ connect()
             });
             // reply to ping
             ws.on('ping', (data) => {
-                ws.pong('', true, true);
+                ws.pong('', true);
             });
             ws.on('pong', (data) => {
                 ws.isAlive = true;

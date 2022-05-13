@@ -40,10 +40,12 @@ _check()
     let valid = super._check();
     if ('' != this._finalConfig.key && '' != this._finalConfig.secret)
     {
-        if ('' == this._finalConfig.password)
-        {
-            this._err(`Exchange type '${this._finalConfig.type}' requires 'password'`);
-            valid = false;
+        if ('demo' != this._finalConfig.key && 'demo' != this._finalConfig.secret) {
+            if ('' == this._finalConfig.password)
+            {
+                this._err(`Exchange type '${this._finalConfig.type}' requires 'password'`);
+                valid = false;
+            }
         }
     }
     return valid;

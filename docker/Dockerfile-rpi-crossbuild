@@ -1,7 +1,6 @@
 FROM apendergast/ceg-docker-base:rpi-gateway-latest as gateway
 FROM apendergast/ceg-docker-base:rpi-ui-latest as ui
 COPY --from=gateway /root/dummy /root/dummy
-RUN [ "cross-build-start" ]
 WORKDIR /root/
 ARG GIT_BRANCH=master
 ARG TIMESTAMP=0
@@ -13,10 +12,8 @@ RUN echo "$TIMESTAMP" && git clone https://github.com/aloysius-pgast/crypto-exch
 # build ui
 RUN cd crypto-exchanges-gateway/ui && \
     cp -R /root/dummy/ui/node_modules . && npm install --unsafe-perm && npm run build && rm -fr node_modules
-RUN [ "cross-build-end" ]
 
 FROM apendergast/alpine-node:rpi-runtime-latest
-RUN [ "cross-build-start" ]
 WORKDIR /root/crypto-exchanges-gateway/
 COPY --from=ui /root/crypto-exchanges-gateway .
 
@@ -55,4 +52,3 @@ ENV cfg.exchanges.okex.password ""
 EXPOSE 8000
 EXPOSE 8001
 CMD ["node", "./gateway.js"]
-RUN [ "cross-build-end" ]

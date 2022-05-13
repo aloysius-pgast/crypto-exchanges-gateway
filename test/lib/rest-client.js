@@ -7,7 +7,7 @@ const tracer = require('./tracer');
 
 const DEFAULT_SOCKETTIMEOUT = 300 * 1000;
 const DEFAULT_BASE_URI = 'http://127.0.0.1:8000';
-const DEFAULT_WS_BASE_URI = 'http://127.0.0.1:8001';
+const DEFAULT_WS_BASE_URI = 'ws://127.0.0.1:8001';
 
 let client = null;
 
