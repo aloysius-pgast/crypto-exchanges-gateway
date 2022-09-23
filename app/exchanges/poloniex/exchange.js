@@ -640,7 +640,8 @@ async _getKlines(pair, interval, fromTimestamp, toTimestamp)
         let list = [];
         _.forEach(data, (entry) => {
             list.push({
-                timestamp:parseFloat(entry.date),
+                // we have ts in ms
+                timestamp:parseFloat(entry.date / 1000.0),
                 open:parseFloat(entry.open),
                 high:parseFloat(entry.high),
                 low:parseFloat(entry.low),
