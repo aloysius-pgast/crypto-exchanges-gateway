@@ -1,6 +1,6 @@
 {
   "name": "crypto-exchanges-gateway",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Your gateway to the crypto world",
   "main": "gateway.js",
   "scripts": {},
