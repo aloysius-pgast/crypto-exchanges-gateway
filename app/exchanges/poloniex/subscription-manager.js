@@ -4,19 +4,6 @@ const debug = require('debug')('CEG:ExchangeSubscriptionManager:Poloniex');
 const AbstractExchangeSubscriptionManagerClass = require('../../abstract-exchange-subscription-manager');
 const StreamClientClass = require('./stream-client');
 
-// use to keep track of whether or not markets id have been retrieved
-const MARKETS_STATE_UNKNOWN = 1;
-const MARKETS_STATE_RETRIEVING = 2;
-const MARKETS_STATE_RETRIEVED = 3;
-
-// how often should we try to fetch markets
-const MARKETS_FETCH_PERIOD = 3600 * 1000;
-// how long should we wait before retrying to fetch markets in case of failure
-const MARKETS_FETCH_FAILURE_PERIOD = 10 * 10000;
-
-// this is the only static channel we're interested in
-const CHANNEL_TICKERS = 1002;
-
 class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
 {
 
@@ -25,12 +12,35 @@ class SubscriptionManager extends AbstractExchangeSubscriptionManagerClass
  */
 constructor(exchange)
 {
-    super(exchange, {globalTickersSubscription:true, marketsSubscription:true});
+    super(exchange, {globalTickersSubscription:false, marketsSubscription:false});
     this._client = null;
     this._waitingForFullOrderBooks = {};
-    this._marketsById = {};
-    this._marketsState = MARKETS_STATE_UNKNOWN;
 }
+
+/**
+ * Convert pair from exchange format Y_X to custom format X-Y
+ *
+ * @param {string} pair pair in exchange format (Y_X)
+ * @return {string} pair in custom format (X-Y)
+ */
+_toCustomPair(pair)
+{
+    let arr = pair.split('_');
+    return arr[1] + '-' + arr[0];
+}
+
+
+/**
+ * Convert pair from custom format X-Y to exchange format Y_X
+ * @param {string} pair pair in custom format (X-Y)
+ * @return {string} pair in exchange format (Y_X)
+ */
+_toExchangePair(pair)
+{
+    let arr = pair.split('-');
+    return arr[1] + '_' + arr[0];
+}
+
 
 /**
  * Used to retrieve full order book and block order book updates until order book has been successfull retrieved
@@ -109,7 +119,6 @@ _registerClient(connect)
         return;
     }
     let client = new StreamClientClass(this._exchangeId);
-    client.updateMarkets(this._marketsById);
     client.on('connected', () => {
         this._registerConnection('default', {uri:client.getUri()});
         this._processSubscriptions();
@@ -127,11 +136,6 @@ _registerClient(connect)
         // ignore if we don't support this pair
         if (undefined === this._subscriptions.tickers.pairs[evt.pair])
         {
-            // update markets entry to indicate we're not interested in this pair anymore
-            if (undefined !== this._subscriptions.tickers.pairs[evt.pair].id)
-            {
-                this._marketsById[this._subscriptions.tickers.pairs[evt.pair].id].ignore = true;
-            }
             return;
         }
         evt.exchange = this._exchangeId;
@@ -195,30 +199,7 @@ _registerClient(connect)
  */
 _processChanges(changes, opt)
 {
-    // markets not retrieved yet
-    if (MARKETS_STATE_RETRIEVED != this._marketsState)
-    {
-        if (MARKETS_STATE_UNKNOWN == this._marketsState)
-        {
-            this._retrieveMarkets(true, opt.connect);
-        }
-        return;
-    }
-
     this._registerClient(opt.connect);
-
-    // updates markets to indicate which markets we want to accept
-    _.forEach(this._marketsById, (obj, id) => {
-        if (undefined !== this._subscriptions.tickers.pairs[obj.pair])
-        {
-            this._subscriptions.tickers.pairs[obj.pair].id = id;
-            obj.ignore = false;
-        }
-        else
-        {
-            obj.ignore = true;
-        }
-    });
 
     //-- this is where we will forward subscriptions
     let messages = [];
@@ -229,12 +210,14 @@ _processChanges(changes, opt)
         _.forEach(changes.unsubscribe, (entry) => {
             switch (entry.entity)
             {
-                case 'tickers':
-                    messages.push({command:'unsubscribe',channel:CHANNEL_TICKERS});
+                case 'ticker':
+                    messages.push({event:'unsubscribe',channel:['ticker'],symbols:[this._toExchangePair(entry.pair)]});
                     break;
-                case 'market':
-                    let p = this._exchangeInstance._toExchangePair(entry.pair);
-                    messages.push({command:'unsubscribe',channel:p});
+                case 'orderBook':
+                    messages.push({event:'unsubscribe',channel:['book_lv2'],symbols:[this._toExchangePair(entry.pair)]});
+                    break;
+                case 'trades':
+                    messages.push({event:'unsubscribe',channel:['trades'],symbols:[this._toExchangePair(entry.pair)]});
                     break;
             }
         });
@@ -249,10 +232,10 @@ _processChanges(changes, opt)
         });
     }
     _.forEach(Object.keys(resyncOrderBooks), (pair) => {
-        let p = this._exchangeInstance._toExchangePair(pair);
         this._waitForFullOrderBook(pair);
-        messages.push({command:'unsubscribe',channel:p});
-        messages.push({command:'subscribe',channel:p});
+        const p = this._toExchangePair(pair);
+        messages.push({event:'unsubscribe',channel:['book_lv2'],symbols:[p]});
+        messages.push({event:'subscribe',channel:['book_lv2'],symbols:[p]});
     });
 
     // subscribe
@@ -261,17 +244,19 @@ _processChanges(changes, opt)
         _.forEach(changes.subscribe, (entry) => {
             switch (entry.entity)
             {
-                case 'tickers':
-                    messages.push({command:'subscribe',channel:CHANNEL_TICKERS});
+                case 'ticker':
+                    messages.push({event:'subscribe',channel:['ticker'],symbols:[this._toExchangePair(entry.pair)]});
                     break;
-                case 'market':
+                case 'orderBook':
                     // only if we didn't already ask for a resync
                     if (undefined !== resyncOrderBooks[entry.pair])
                     {
                         return;
                     }
-                    let p = this._exchangeInstance._toExchangePair(entry.pair);
-                    messages.push({command:'subscribe',channel:p});
+                    messages.push({event:'subscribe',channel:['book_lv2'],symbols:[this._toExchangePair(entry.pair)]});
+                    break;
+                case 'trades':
+                    messages.push({event:'subscribe',channel:['trades'],symbols:[this._toExchangePair(entry.pair)]});
                     break;
             }
         });
@@ -294,52 +279,6 @@ _processChanges(changes, opt)
             this._client.send(messages);
         }
     }
-}
-
-/**
- * Once markets have been retrieved, we will try to start WS client
- * Markets will be refreshed periodically
- *
- * @param {boolean} initial whether or not we're doing initial retrieval of market
- * @param {boolean} connect whether or not socket should be connected automatically
- */
-_retrieveMarkets(initial, connect)
-{
-    if (initial)
-    {
-        this._marketsState = MARKETS_STATE_RETRIEVING;
-    }
-    let timeout = 0;
-    this._exchangeInstance.getPairsById().then((data) => {
-        let marketsById = {};
-        _.forEach(data, (entry) => {
-            marketsById[entry.id] = {pair:entry.pair, ignore:true};
-            if (undefined !== this._subscriptions.tickers.pairs[entry.pair])
-            {
-                marketsById[entry.id].ignore = false;
-            }
-        });
-        this._marketsById = marketsById;
-        if (null !== this._client)
-        {
-            this._client.updateMarkets(marketsById);
-        }
-        if (initial)
-        {
-            this._marketsState = MARKETS_STATE_RETRIEVED;
-            initial = false;
-            this._registerClient(connect);
-        }
-        timeout = MARKETS_FETCH_PERIOD;
-        setTimeout(() => {
-            this._retrieveMarkets(initial);
-        }, timeout);
-    }).catch((err) => {
-        timeout = MARKETS_FETCH_FAILURE_PERIOD;
-        setTimeout(() => {
-            this._retrieveMarkets(initial);
-        }, timeout);
-    });
 }
 
 }

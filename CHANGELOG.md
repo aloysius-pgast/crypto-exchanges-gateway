@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.13.0]
+### Gateway
+* fix: fix `poloniex` ws endpoint (use wss://ws.poloniex.com/ws/public)
+
 ## [v1.12.0]
 ### Gateway
 * chore: update ws to version `8.6.0`

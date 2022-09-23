@@ -1478,7 +1478,7 @@ async getKlines(pair, opt)
             if (0 != data.length)
             {
                 let last = data[data.length - 1];
-                // consider we're done is last kline has at least toTimestamp - interval
+                // consider we're done if last kline has at least toTimestamp - interval
                 let minTimestamp = toTimestamp - klinesIntervalsMapping[interval];
                 if (last.timestamp >= minTimestamp)
                 {

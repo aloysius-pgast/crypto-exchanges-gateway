@@ -344,6 +344,7 @@ _createConnection(delay)
         }
         logger.info("Connection (%s|%d|%s) connected", this._exchangeId, counter, data.uri);
         this._connectedTimestamp = new Date().getTime();
+        this._onConnected();
         this._processQueue();
         this.emit('connected', {connectionId:counter,uri:data.uri});
     });
@@ -413,6 +414,15 @@ _processMessage(message)
     {
         return;
     }
+}
+
+/**
+ * Should be overridden in children
+ * Method called upon successful connection
+ */
+ _onConnected()
+{
+    return;
 }
 
 }
