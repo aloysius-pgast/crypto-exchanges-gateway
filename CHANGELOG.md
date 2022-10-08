@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.13.1]
+### Gateway
+* fix: fix `poloniex` order book update (cancel orders were not removed)
+
 ## [v1.13.0]
 ### Gateway
 * fix: fix `poloniex` ws endpoint (use wss://ws.poloniex.com/ws/public)
