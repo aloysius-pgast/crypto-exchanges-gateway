@@ -251,10 +251,26 @@ _processOrderBookUpdates(data)
             }
         };
         for (const item of obj.asks) {
-            evt.data.sell.push({quantity:parseFloat(item[1]),rate:parseFloat(item[0])});
+            let action = 'update';
+            if ('0' == item[1]) {
+                action = 'remove';
+            }
+            evt.data.sell.push({
+                quantity:parseFloat(item[1]),
+                rate:parseFloat(item[0]),
+                action
+            });
         }
         for (const item of obj.bids) {
-            evt.data.buy.push({quantity:parseFloat(item[1]),rate:parseFloat(item[0])});
+            let action = 'update';
+            if ('0' == item[1]) {
+                action = 'remove';
+            }
+            evt.data.buy.push({
+                quantity:parseFloat(item[1]),
+                rate:parseFloat(item[0]),
+                action
+            });
         }
         this.emit('orderBookUpdate', evt);
     }
