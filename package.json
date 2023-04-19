@@ -37,7 +37,7 @@
     "ws": "^8.6.0"
   },
   "devDependencies": {
-    "mocha": "^8.3.0",
+    "mocha": "^10.2.0",
     "yargs": "^16.2.0"
   }
 }
