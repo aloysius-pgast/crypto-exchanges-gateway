@@ -205,7 +205,7 @@ _toExchangePair(pair)
                  },
                  {
                      "minNotional":"0.00100000",
-                     "filterType":"MIN_NOTIONAL"
+                     "filterType":"NOTIONAL"
                  }
              ],
              "orderTypes":[
@@ -252,7 +252,7 @@ _toExchangePair(pair)
                      "filterType":"LOT_SIZE"
                  },
                  {
-                     "filterType":"MIN_NOTIONAL",
+                     "filterType":"NOTIONAL",
                      "minNotional":"0.00100000"
                  }
              ]
@@ -319,8 +319,8 @@ async _getPairs()
                         precision:self._stepToPrecision(filters['LOT_SIZE'].stepSize)
                     },
                     price:{
-                        min:parseFloat(filters['MIN_NOTIONAL'].minNotional),
-                        max:null
+                        min:parseFloat(filters['NOTIONAL'].minNotional),
+                        max:(undefined !== filters['NOTIONAL']['maxNotional']) ? parseFloat(filters['NOTIONAL'].maxNotional) : null
                     }
                 }
             }
@@ -1496,7 +1496,7 @@ async _createOrder(orderType, pair, targetRate, quantity)
                     {
                         throw new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidRate(self.getId(), pair, targetRate, e);
                     }
-                    else if (/MIN_NOTIONAL/.test(e.msg))
+                    else if (/NOTIONAL/.test(e.msg))
                     {
                         throw new Errors.ExchangeError.InvalidRequest.OrderError.InvalidOrderDefinition.InvalidPrice(self.getId(), pair, targetRate, quantity, e);
                     }
