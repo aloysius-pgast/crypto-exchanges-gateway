@@ -33,7 +33,7 @@
     "retry": "^0.10.1",
     "sqlite3": "^5.1.6",
     "uuid": "^3.1.0",
-    "winston": "^2.4.5",
+    "winston": "^3.11.0",
     "ws": "^8.6.0"
   },
   "devDependencies": {
