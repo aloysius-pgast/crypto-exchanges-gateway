@@ -1,5 +1,9 @@
 # Change Log
 
+## [v1.13.2]
+### Gateway
+* fix: fix `binance` pairs retrieval
+
 ## [v1.13.1]
 ### Gateway
 * fix: fix `poloniex` order book update (cancel orders were not removed)
