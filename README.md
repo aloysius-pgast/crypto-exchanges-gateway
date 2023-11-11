@@ -2,6 +2,8 @@
 
 Your gateway to the world of crypto !
 
+NB: this project won't build unless you use node 14.x. It's unlikely to be updated since I don't really have time to worj on here anymore :)
+
 ## Disclaimer
 
 This project cannot be considered in any way as trading advice.
