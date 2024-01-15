@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "big.js": "^5.0.3",
-    "binance": "^1.3.5",
+    "binance": "^2.9.0",
     "bittrex-signalr-client": "git+https://github.com/aloysius-pgast/bittrex-signalr-client.git#master",
     "body-parser": "^1.17.2",
     "bottleneck": "^2.3.0",
