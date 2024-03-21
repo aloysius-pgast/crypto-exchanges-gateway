@@ -29,7 +29,7 @@
     "uglify-js": "^3.0.27",
     "url-loader": "^0.5.9",
     "webpack": "^3.5.3",
-    "webpack-dev-server": "^2.7.1"
+    "webpack-dev-server": "^5.0.4"
   },
   "dependencies": {
     "axios": "^0.16.2",
