@@ -23,7 +23,7 @@
     "debug": "^3.1.0",
     "express": "^4.15.3",
     "express-ipfilter": "^1.0.1",
-    "express-ws": "^4.0.0",
+    "express-ws": "^5.0.2",
     "htmlparser2": "^3.9.2",
     "joi": "^13.1.2",
     "lodash": "^4.17.21",
