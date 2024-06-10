@@ -30,7 +30,7 @@
     "node-bittrex-api": "^0.8.3",
     "poloniex-api-node": "^1.9.0",
     "request": "^2.83.0",
-    "retry": "^0.10.1",
+    "retry": "^0.13.1",
     "sqlite3": "^5.1.6",
     "uuid": "^3.1.0",
     "winston": "^2.4.5",
