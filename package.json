@@ -18,7 +18,7 @@
     "bottleneck": "^2.3.0",
     "ccxt": "^1.57.94",
     "chump": "^1.2.0",
-    "compression": "^1.7.1",
+    "compression": "^1.8.0",
     "css-select": "^2.0.0",
     "debug": "^3.1.0",
     "express": "^4.15.3",
